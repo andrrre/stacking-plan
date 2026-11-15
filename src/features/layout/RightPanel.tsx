@@ -2,6 +2,7 @@ import { activeRequirement } from '../../app/state/selectors'
 import type { AppState } from '../../app/state/types'
 import { useAppState } from '../../app/state/useAppState'
 import { SuiteDetails } from '../details/SuiteDetails'
+import { MatchList } from '../finder/MatchList'
 import styles from './RightPanel.module.css'
 
 type PanelView =
@@ -26,7 +27,7 @@ export function RightPanel() {
     <aside className={styles.panel} data-testid="right-panel" data-print="hide" aria-label="Details">
       {view.kind === 'match' && (
         <>
-          {/* slot:match-why (S7) */}
+          {/* slot:match-why (S7) */}<MatchList />
         </>
       )}
       {view.kind === 'suite' && (
@@ -36,7 +37,7 @@ export function RightPanel() {
       )}
       {view.kind === 'list' && (
         <>
-          {/* slot:match-list (S5) */}
+          <MatchList />
         </>
       )}
       {view.kind === 'empty' && (

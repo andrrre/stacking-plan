@@ -1,0 +1,90 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.label {
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+.hint {
+  color: var(--c-text-muted);
+  font-weight: var(--fw-regular);
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 7px var(--sp-3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-variant-numeric: tabular-nums;
+}
+.input::placeholder { color: var(--c-text-muted); opacity: .8; }
+.input:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 0; border-color: var(--c-focus); }
+.input[aria-invalid='true'] { border-color: var(--c-down); }
+
+/* The first field is the one a broker types into: make it the obvious target. */
+.form > .field .input {
+  padding: 9px var(--sp-3);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-2);
+}
+
+.error {
+  margin: 0;
+  color: var(--c-down);
+  font-size: var(--fs-xs);
+  line-height: var(--lh);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+.check input { width: 16px; height: 16px; margin: 0; accent-color: var(--c-accent); }
+
+.clear {
+  align-self: flex-start;
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+.clear:hover { background: var(--c-surface-2); }
+.clear:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }

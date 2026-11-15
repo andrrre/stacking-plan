@@ -1,16 +1,16 @@
 import { useMemo } from 'react'
 import { kpis } from '../../domain/kpis'
-import type { Candidate } from '../../domain/types'
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { useAppState } from '../../app/state/useAppState'
+import { useMatches } from '../finder/useMatches'
 import { buildStackModel, type StackModel } from './suiteVisual'
 
-// S5 replaces NO_MATCHES with useMatches().matches; S11 replaces NO_MODIFIED with modifiedSuiteIds(...).
-const NO_MATCHES: readonly Candidate[] = []
+// S11 replaces NO_MODIFIED with modifiedSuiteIds(...).
 const NO_MODIFIED: ReadonlySet<string> = new Set()
 
 export function useStackModel(): StackModel {
   const { state } = useAppState()
+  const { matches } = useMatches()
   const building = selectBuilding(state)
   const { asOf, today, mode, highlight, selection } = state
   const includePotential = state.req.includePotential
@@ -23,9 +23,9 @@ export function useStackModel(): StackModel {
 
   return useMemo(
     () => buildStackModel({
-      building, asOf, today, mode, matches: NO_MATCHES, highlightIds, modifiedIds: NO_MODIFIED, selectedSuiteId,
+      building, asOf, today, mode, matches, highlightIds, modifiedIds: NO_MODIFIED, selectedSuiteId,
     }),
-    // S5 and S11: add `matches` / `modifiedIds` here when you replace NO_MATCHES / NO_MODIFIED.
-    [building, asOf, today, mode, highlightIds, selectedSuiteId],
+    // S11: add `modifiedIds` here when you replace NO_MODIFIED.
+    [building, asOf, today, mode, matches, highlightIds, selectedSuiteId],
   )
 }

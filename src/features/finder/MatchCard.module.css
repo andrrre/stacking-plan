@@ -1,0 +1,102 @@
+.card {
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-accent);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.main:hover { background: var(--c-surface-2); border-color: var(--c-border-strong); border-left-color: var(--c-accent); }
+.main:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+.main[aria-pressed='true'] { background: var(--c-surface-2); border-color: var(--c-accent); }
+
+/* Same badge as the stack outline, so list rank and stack rank read as one thing. */
+.rank {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-md);
+}
+
+.title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+}
+
+.total {
+  flex: none;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.muted { color: var(--c-text-muted); }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.unit { color: var(--c-text-muted); font-size: var(--fs-xs); }
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-top: 3px;
+}
+
+.tag {
+  padding: 1px 7px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+.tag[data-tone='now'] { border-color: var(--c-up); color: var(--c-up); background: var(--c-surface); }
+.tag[data-tone='later'] { border-color: var(--c-text-muted); color: var(--c-text); background: var(--c-surface); }
+.tag[data-tone='potential'] { border: 1px dashed var(--c-potential-edge); background: var(--c-potential); color: var(--c-potential-ink); }
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
