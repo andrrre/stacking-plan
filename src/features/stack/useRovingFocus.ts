@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState, type KeyboardEvent } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 // Roving tabindex over a grid of rows (spec-technical §4): exactly one item has tabIndex 0.
 // Left/Right move within a row, Up/Down move to the same index on the previous/next row (clamped),
-// Enter and Space select, Escape clears the selection.
+// Enter and Space select, Escape clears the selection. When an item's element is replaced while it holds
+// focus (a match outline re-parents it), focus moves to the new element.
 
 export type RovingItemProps = {
   tabIndex: 0 | -1
@@ -39,6 +40,14 @@ function idAt(grid: Grid, p: Pos): string | undefined {
 export function useRovingFocus(grid: Grid, { selectedId, onSelect }: RovingOptions) {
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const elements = useRef(new Map<string, HTMLElement>())
+  const lostFocusId = useRef<string | null>(null) // set when a focused element is detached
+
+  useLayoutEffect(() => {
+    const id = lostFocusId.current
+    lostFocusId.current = null
+    const active = document.activeElement
+    if (id !== null && (active === null || active === document.body)) elements.current.get(id)?.focus()
+  })
   const activeId = find(grid, focusedId) ? focusedId : find(grid, selectedId) ? selectedId : (grid[0]?.[0] ?? null)
 
   const onKey = useCallback((id: string, e: KeyboardEvent<HTMLElement>) => {
@@ -61,8 +70,12 @@ export function useRovingFocus(grid: Grid, { selectedId, onSelect }: RovingOptio
   const getItemProps = (id: string): RovingItemProps => ({
     tabIndex: id === activeId ? 0 : -1,
     ref: (el) => {
-      if (el) elements.current.set(id, el)
-      else elements.current.delete(id)
+      if (el) {
+        elements.current.set(id, el)
+        return
+      }
+      if (elements.current.get(id) === document.activeElement) lostFocusId.current = id
+      elements.current.delete(id)
     },
     onFocus: () => setFocusedId(id),
     onKeyDown: (e) => onKey(id, e),

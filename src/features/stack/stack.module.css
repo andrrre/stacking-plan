@@ -1,0 +1,310 @@
+/* The stack (spec-technical §5.6, §7). Selectors for state use data-* attributes, never test ids. */
+
+/* ---------- floors ---------- */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--floor-gap);
+}
+
+.floorRow {
+  display: grid;
+  grid-template-columns: var(--floor-label-w) minmax(0, 1fr);
+  height: var(--floor-h);
+}
+
+.floorLabel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: var(--sp-2);
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.plateTrack {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.plate {
+  display: flex;
+  gap: var(--suite-gap);
+  min-width: 0;
+  height: 100%;
+}
+
+/* ---------- suite ---------- */
+
+.suite {
+  --fill: var(--c-occupied);
+  --ink: var(--c-occupied-ink);
+  position: relative;
+  flex: 1 1 0px; /* flex-grow = areaSf, set inline */
+  min-width: var(--suite-min-w);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background-color: var(--fill);
+  color: var(--ink);
+  text-align: left;
+  transition:
+    background-color var(--dur-status) var(--ease),
+    color var(--dur-status) var(--ease),
+    opacity var(--dur-status) var(--ease),
+    filter var(--dur-status) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+/* Edge layer: expiring, potential and committed edges, and the selection ring. */
+.suite::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.suite:hover { filter: brightness(1.07); }
+.suite:focus-visible { z-index: 3; outline-offset: 1px; }
+
+.suite[aria-pressed='true'] {
+  z-index: 2;
+  box-shadow: 0 0 0 2px var(--c-surface), 0 0 0 4px var(--c-text);
+}
+
+.suite[data-dimmed='true'] {
+  opacity: var(--dim-opacity);
+  filter: var(--dim-filter);
+}
+
+/* Opacity would fade the focus and selection rings too, so a dimmed suite lights up while focused or selected. */
+.suite[data-dimmed='true']:focus-visible,
+.suite[data-dimmed='true'][aria-pressed='true'] {
+  opacity: 1;
+  filter: none;
+}
+
+/* A dashed joint in the gap between neighbouring vacant suites that can combine; a plain gap is a wall. */
+.suite[data-joins-next='true']::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(-1 * var(--suite-gap));
+  width: var(--suite-gap);
+  background: repeating-linear-gradient(to bottom, var(--c-vacant-ink) 0 4px, transparent 4px 8px);
+  pointer-events: none;
+}
+
+.modifiedDot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-modified);
+  box-shadow: 0 0 0 1.5px var(--c-surface);
+}
+
+/* ---------- fills (shared by suites and legend swatches) ---------- */
+
+.suite[data-fill='expiring'], .swatch[data-fill='expiring'] { --fill: var(--c-expiring); --ink: var(--c-expiring-ink); }
+.suite[data-fill='expiring']::before, .swatch[data-fill='expiring']::before { border: 1px solid var(--c-expiring-edge); }
+
+.suite[data-fill='vacant'], .swatch[data-fill='vacant'] {
+  --fill: var(--c-vacant);
+  --ink: var(--c-vacant-ink);
+  background-image: var(--pat-hatch);
+}
+
+.suite[data-fill='potential'], .swatch[data-fill='potential'] { --fill: var(--c-potential); --ink: var(--c-potential-ink); }
+.suite[data-fill='potential']::before, .swatch[data-fill='potential']::before { border: var(--edge-potential); }
+
+.suite[data-fill='committed'], .swatch[data-fill='committed'] {
+  --fill: var(--c-committed);
+  --ink: var(--c-committed-ink);
+  background-image: var(--pat-committed);
+}
+.suite[data-fill='committed']::before, .swatch[data-fill='committed']::before { border: var(--edge-committed); }
+
+.suite[data-fill='common'], .swatch[data-fill='common'] { --fill: var(--c-common); --ink: var(--c-common-ink); }
+
+.suite[data-fill='risk-le6'], .swatch[data-fill='risk-le6'] { --fill: var(--c-risk-le6); --ink: var(--c-risk-le6-ink); }
+.suite[data-fill='risk-le12'], .swatch[data-fill='risk-le12'] { --fill: var(--c-risk-le12); --ink: var(--c-risk-le12-ink); }
+.suite[data-fill='risk-le24'], .swatch[data-fill='risk-le24'] { --fill: var(--c-risk-le24); --ink: var(--c-risk-le24-ink); }
+.suite[data-fill='risk-le36'], .swatch[data-fill='risk-le36'] { --fill: var(--c-risk-le36); --ink: var(--c-risk-le36-ink); }
+.suite[data-fill='risk-gt36'], .swatch[data-fill='risk-gt36'] { --fill: var(--c-risk-gt36); --ink: var(--c-risk-gt36-ink); }
+.suite[data-fill='risk-open'], .swatch[data-fill='risk-open'] { --fill: var(--c-risk-open); --ink: var(--c-risk-open-ink); }
+
+/* ---------- label ---------- */
+
+/* The container whose width drives the label tiers; it spans the whole cell. */
+.label {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* Cue · number · SF · end · tag, in priority order. One line; whatever does not fit wraps out of sight. */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  height: 14px;
+  overflow: hidden;
+  padding: 0 6px;
+  font-size: var(--fs-xs);
+  line-height: 14px;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: var(--fw-semibold);
+}
+
+.glyph {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.number { font-weight: var(--fw-semibold); }
+.sf, .end, .tag { opacity: .85; }
+
+.primary {
+  display: block;
+  padding: 0 6px;
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  line-height: 15px;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Plain vacant space shouts its status: "VACANT" (the model says "Vacant"). */
+.suite[data-status='vacant'][data-overlay='none'] .primary {
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* Label tiers by cell width (literal px: custom properties do not work in @container conditions). */
+@container (max-width: 139px) {
+  .end, .tag { display: none; }
+}
+
+@container (max-width: 103px) {
+  .sf { display: none; }
+}
+
+@container (max-width: 71px) {
+  .primary { display: none; }
+  .meta { height: auto; max-height: 28px; padding: 0 4px; }
+}
+
+@container (max-width: 43px) {
+  .suite[data-has-cue='true'] .number { display: none; }
+  .meta { justify-content: center; padding: 0 2px; }
+  .cueText { display: none; }
+}
+
+/* ---------- match outline ---------- */
+
+.run {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 0px; /* flex-grow = combined areaSf, set inline */
+  gap: var(--suite-gap);
+  border-radius: var(--r-sm);
+  box-shadow: var(--match-ring);
+}
+
+.runBadge {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  box-shadow: 0 0 0 1.5px var(--c-surface);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ---------- legend ---------- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-5);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+}
+
+.legendGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.swatch {
+  --fill: var(--c-occupied);
+  --ink: var(--c-occupied-ink);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 16px;
+  border-radius: var(--r-sm);
+  background-color: var(--fill);
+  color: var(--ink);
+}
+
+.swatch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.legendNote {
+  flex-basis: 100%;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+}

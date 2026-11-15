@@ -119,9 +119,9 @@ describe('buildStackModel: labels', () => {
     ])
   })
 
-  it('a committed suite carries the lock cue; occupied and vacant suites carry none', () => {
+  it('a committed suite carries the lock cue plus its start MM/YYYY; occupied and vacant suites carry none', () => {
     const m = model()
-    expect(visual(m, '1010').label.cue).toEqual({ glyph: 'lock' })
+    expect(visual(m, '1010').label.cue).toEqual({ glyph: 'lock', text: '03/2027' })
     expect(visual(m, '900').label.cue).toBeUndefined()
     expect(visual(m, '500').label.cue).toBeUndefined()
   })
@@ -285,12 +285,19 @@ describe('buildStackModel: modified and selected', () => {
 })
 
 describe('buildStackModel: edge cases', () => {
-  it('a vacant suite whose vacating lease has ended reads plain Vacant', () => {
+  it('a vacant suite whose vacating lease has ended reads plain Vacant, tagged "Vacant from MM/YYYY"', () => {
     const v = visual(model({ asOf: JUL }), '400')
     expect(v.status).toMatchObject({ status: 'vacant', overlay: 'none' })
     expect(v.label.primary).toBe('Vacant')
-    expect(v.label.tag).toBeUndefined()
+    expect(v.label.tag).toBe('Vacant from 06/2027')
     expect(v.fill).toBe('vacant')
+    expect(v.ariaLabel).toBe('Suite 400, floor 4, vacant, 6,100 SF, vacant from 1 Jun 2027')
+    expect(v.tooltip).toBe('Vacant\nSuite 400 · Floor 4 · 6,100 SF\nVacant from 06/2027')
+  })
+
+  it('space vacant since before today carries no "Vacant from" tag', () => {
+    expect(visual(model({ asOf: JUL }), '500').label.tag).toBeUndefined()
+    expect(visual(model(), '700').label.tag).toBeUndefined()
   })
 
   it('a common suite without a name falls back to "Common area"', () => {

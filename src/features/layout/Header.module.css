@@ -1,0 +1,79 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+  height: var(--header-h);
+  padding: 0 var(--sp-4);
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: none;
+}
+
+.mark { width: 20px; height: 20px; }
+
+.title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -.01em;
+}
+
+.building {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding-left: var(--sp-4);
+  border-left: 1px solid var(--c-border);
+  white-space: nowrap;
+}
+
+.buildingName {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+}
+
+.address {
+  overflow: hidden;
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex: none;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.button {
+  height: 30px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.button:hover { background: var(--c-surface-2); }

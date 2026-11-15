@@ -134,3 +134,44 @@ describe('useRovingFocus', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 })
+
+/** Wrapping an item (as a match outline does) re-parents its button, so React mounts a new element. */
+function Wrapping({ wrapped, tick = 0 }: { wrapped: boolean; tick?: number }) {
+  const row = ['a1', 'a2', 'a3']
+  const { getItemProps } = useRovingFocus([row], { selectedId: null, onSelect: () => {} })
+  const button = (id: string) => <button key={id} type="button" data-tick={tick} {...getItemProps(id)}>{id}</button>
+  return (
+    <div>
+      {button('a1')}
+      {wrapped ? <span>{button('a2')}</span> : button('a2')}
+      {button('a3')}
+    </div>
+  )
+}
+
+describe('useRovingFocus: focus survives a remount', () => {
+  it('refocuses the focused item when an outline appears around it', () => {
+    const { rerender } = render(<Wrapping wrapped={false} />)
+    const before = screen.getByRole('button', { name: 'a2' })
+    before.focus()
+    rerender(<Wrapping wrapped />)
+    const after = screen.getByRole('button', { name: 'a2' })
+    expect(after).not.toBe(before)
+    expect(after).toHaveFocus()
+  })
+
+  it('refocuses it when the outline disappears', () => {
+    const { rerender } = render(<Wrapping wrapped />)
+    screen.getByRole('button', { name: 'a2' }).focus()
+    rerender(<Wrapping wrapped={false} />)
+    expect(screen.getByRole('button', { name: 'a2' })).toHaveFocus()
+  })
+
+  it('does not take focus back after the user moved it out of the grid', () => {
+    const { rerender } = render(<Wrapping wrapped={false} />)
+    screen.getByRole('button', { name: 'a2' }).focus()
+    screen.getByRole('button', { name: 'a2' }).blur()
+    rerender(<Wrapping wrapped tick={1} />)
+    expect(document.body).toHaveFocus()
+  })
+})

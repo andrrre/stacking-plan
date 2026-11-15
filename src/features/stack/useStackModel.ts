@@ -25,6 +25,7 @@ export function useStackModel(): StackModel {
     () => buildStackModel({
       building, asOf, today, mode, matches: NO_MATCHES, highlightIds, modifiedIds: NO_MODIFIED, selectedSuiteId,
     }),
+    // S5 and S11: add `matches` / `modifiedIds` here when you replace NO_MATCHES / NO_MODIFIED.
     [building, asOf, today, mode, highlightIds, selectedSuiteId],
   )
 }

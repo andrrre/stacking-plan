@@ -1,0 +1,31 @@
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-4) var(--sp-5);
+}
+
+/* Suites sit on the white surface: the 2px gaps between them read as walls (spec-technical §7). */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5) var(--sp-4) var(--sp-3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.legendRow {
+  padding: var(--sp-3) 0 0 var(--floor-label-w);
+  border-top: 1px solid var(--c-border);
+}
+
+@media print {
+  .pane { overflow: visible; }
+  .card { box-shadow: none; }
+}

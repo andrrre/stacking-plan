@@ -11,8 +11,8 @@ export type FillKey =
   | 'occupied' | 'expiring' | 'vacant' | 'potential' | 'committed' | 'common'
   | 'risk-le6' | 'risk-le12' | 'risk-le24' | 'risk-le36' | 'risk-gt36' | 'risk-open'
 
-/** Non-colour status cue drawn before the number: clock + MM/YYYY (expiring) or a lock (committed). */
-export type SuiteCue = { glyph: 'clock'; text: string } | { glyph: 'lock' }
+/** Non-colour status cue drawn before the number: clock + lease end MM/YYYY (expiring) or lock + start MM/YYYY (committed). */
+export type SuiteCue = { glyph: 'clock' | 'lock'; text: string }
 
 export type SuiteLabel = {
   number: string
@@ -73,8 +73,9 @@ function fillFor(st: StatusResult, risk: RiskBucket, mode: ColourMode): FillKey 
   return RISK_FILL[risk]
 }
 
-/** "Vacant from MM/YYYY" for an active lease the tenant is leaving. */
-function vacatingFrom(st: StatusResult): ISODate | null {
+/** "Vacant from MM/YYYY": an active lease the tenant is leaving, or plain vacant space freed after today. */
+function vacatingFrom(st: StatusResult, today: ISODate): ISODate | null {
+  if (st.status === 'vacant') return st.overlay === 'none' && st.availableFrom > today ? st.availableFrom : null
   if (st.status !== 'occupied' && st.status !== 'expiring') return null
   const { lease } = st
   return lease.vacating && lease.end !== null ? addDaysIso(lease.end, 1) : null
@@ -92,24 +93,24 @@ function primaryFor(s: Suite, st: StatusResult): string {
   }
 }
 
-function tagFor(st: StatusResult): string | undefined {
-  const from = vacatingFrom(st)
+function tagFor(st: StatusResult, today: ISODate): string | undefined {
+  const from = vacatingFrom(st, today)
   if (from) return `Vacant from ${formatMmYyyy(from)}`
   if (st.status === 'occupied' && st.openEnded) return 'No end date'
   return undefined
 }
 
-function labelFor(s: Suite, st: StatusResult): SuiteLabel {
-  const tag = tagFor(st)
+function labelFor(s: Suite, st: StatusResult, today: ISODate): SuiteLabel {
+  const tag = tagFor(st, today)
   const label: SuiteLabel = { number: s.number, primary: primaryFor(s, st), sf: formatSf(s.areaSf), ...(tag && { tag }) }
   if (st.status === 'expiring' && st.lease.end !== null) return { ...label, cue: { glyph: 'clock', text: formatMmYyyy(st.lease.end) } }
-  if (st.status === 'vacant' && st.overlay === 'committed') return { ...label, cue: { glyph: 'lock' } }
+  if (st.status === 'vacant' && st.overlay === 'committed') return { ...label, cue: { glyph: 'lock', text: formatMmYyyy(st.nextLease.start) } }
   if (st.status === 'occupied' && st.lease.end !== null) return { ...label, end: formatMmYyyy(st.lease.end) }
   return label
 }
 
 /** The status part of the aria-label, after "Suite N, floor F, ". */
-function ariaStatus(s: Suite, st: StatusResult): string {
+function ariaStatus(s: Suite, st: StatusResult, today: ISODate): string {
   const sf = formatSf(s.areaSf)
   switch (st.status) {
     case 'common': return `${s.name ?? 'Common area'}, ${sf}, common area`
@@ -117,7 +118,7 @@ function ariaStatus(s: Suite, st: StatusResult): string {
     case 'expiring': {
       const { lease } = st
       const ends = lease.end === null ? 'no end date' : `lease ends ${formatLongDate(lease.end)}`
-      const from = vacatingFrom(st)
+      const from = vacatingFrom(st, today)
       return `${lease.tenant}, ${sf}, ${st.status}, ${ends}${from ? `, vacant from ${formatLongDate(from)}` : ''}`
     }
     case 'vacant':
@@ -127,11 +128,11 @@ function ariaStatus(s: Suite, st: StatusResult): string {
       if (st.overlay === 'committed') {
         return `vacant, ${sf}, committed: ${st.nextLease.tenant} lease starts ${formatLongDate(st.nextLease.start)}`
       }
-      return `vacant, ${sf}`
+      return st.availableFrom > today ? `vacant, ${sf}, vacant from ${formatLongDate(st.availableFrom)}` : `vacant, ${sf}`
   }
 }
 
-type Marks = { risk: RiskBucket; mode: ColourMode; matchRank: number | null; modified: boolean }
+type Marks = { risk: RiskBucket; mode: ColourMode; matchRank: number | null; modified: boolean; today: ISODate }
 
 /** Spoken risk bucket for leased suites, in risk mode only (the fill is the only other risk cue). */
 function riskWords(m: Marks): string | undefined {
@@ -139,7 +140,7 @@ function riskWords(m: Marks): string | undefined {
 }
 
 function ariaLabelFor(s: Suite, floorNumber: number, st: StatusResult, m: Marks): string {
-  const parts = [`Suite ${s.number}`, `floor ${floorNumber}`, ariaStatus(s, st)]
+  const parts = [`Suite ${s.number}`, `floor ${floorNumber}`, ariaStatus(s, st, m.today)]
   const risk = riskWords(m)
   if (risk) parts.push(`lease risk: ${risk}`)
   if (m.matchRank !== null) parts.push(`match ${m.matchRank}`)
@@ -173,8 +174,8 @@ function suiteVisual(s: Suite, floorNumber: number, ctx: Context): SuiteVisual {
   const status = statusAt(s, ctx.asOf, ctx.today)
   const risk = riskBucket(s, ctx.asOf, ctx.today)
   const matchRank = ctx.ranks.get(s.id) ?? null
-  const marks: Marks = { risk, mode: ctx.mode, matchRank, modified: ctx.modifiedIds.has(s.id) }
-  const label = labelFor(s, status)
+  const marks: Marks = { risk, mode: ctx.mode, matchRank, modified: ctx.modifiedIds.has(s.id), today: ctx.today }
+  const label = labelFor(s, status, ctx.today)
   const dimmed = ctx.highlightIds ? !ctx.highlightIds.has(s.id) : ctx.ranks.size > 0 && matchRank === null
   return {
     suite: s,

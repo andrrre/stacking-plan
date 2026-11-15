@@ -1,0 +1,23 @@
+.app {
+  height: 100%;
+}
+
+/* Header, KPI bar (S4), then three columns that scroll on their own. */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--panel-w);
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+@media print {
+  .shell { height: auto; }
+  .body { display: block; }
+}
