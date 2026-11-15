@@ -1,0 +1,51 @@
+/* Reset, body, focus ring and print base. Tokens live in tokens.css; import it first. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root { color-scheme: light; } /* light theme only */
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, p, ul, ol, figure, dl, dd { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* Keyboard focus is always visible; mouse focus is not. */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}
+
+/*
+  Print.
+  - Stack print (the default): elements marked data-print="hide" (left rail, right panel, slider, toolbars)
+    are dropped, and the stack keeps its fills.
+  - Client summary: the App root carries data-overlay="summary"; the app shell, marked data-print="shell",
+    is hidden so only the client summary prints.
+*/
+@media print {
+  @page { margin: 12mm; }
+  html, body, #root { height: auto; }
+  body { background: #FFFFFF; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  [data-print="hide"] { display: none !important; }
+  [data-overlay="summary"][data-print="shell"],
+  [data-overlay="summary"] [data-print="shell"] { display: none !important; }
+}
