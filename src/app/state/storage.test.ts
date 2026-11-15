@@ -63,6 +63,14 @@ describe('load cleans valid data', () => {
     expect(loadShortlist(memoryStorage({ [SHORTLIST_KEY]: JSON.stringify(many) }))).toEqual(many.slice(0, 10))
   })
 
+  it('keeps ten per building, not ten in total', () => {
+    const odt = Array.from({ length: 11 }, (_, i) => ({ ...entry, id: `odt${i}`, buildingId: 'odt' }))
+    const pbp = Array.from({ length: 3 }, (_, i) => ({ ...entry, id: `pbp${i}`, buildingId: 'pbp' }))
+    const loaded = loadShortlist(memoryStorage({ [SHORTLIST_KEY]: JSON.stringify([...odt, ...pbp]) }))
+    expect(loaded.filter((e) => e.buildingId === 'odt')).toHaveLength(10)
+    expect(loaded.filter((e) => e.buildingId === 'pbp')).toHaveLength(3)
+  })
+
   it('drops imported buildings whose id collides with a bundled building', () => {
     const clash = building({ id: 'odt' })
     const ok = building({ id: 'csv-ok' })

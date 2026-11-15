@@ -1,5 +1,6 @@
 import { AskBox } from '../ask/AskBox'
 import { RequirementForm } from '../finder/RequirementForm'
+import { Shortlist } from '../shortlist/Shortlist'
 import styles from './LeftRail.module.css'
 
 export function LeftRail() {
@@ -7,7 +8,7 @@ export function LeftRail() {
     <aside className={styles.rail} data-testid="left-rail" data-print="hide" aria-label="Requirement and shortlist">
       <AskBox />
       <RequirementForm />
-      {/* slot:shortlist (S9) */}
+      <Shortlist />
     </aside>
   )
 }

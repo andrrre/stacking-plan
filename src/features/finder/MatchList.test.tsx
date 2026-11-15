@@ -43,7 +43,7 @@ describe('MatchList', () => {
     expect(second).toHaveTextContent('+500 SF')
     expect(second).toHaveTextContent('$52.18')
     expect(second).toHaveTextContent(/combined/i)
-    expect(within(first).getByRole('button')).toHaveAccessibleName(/^Match 1: Suite 500/)
+    expect(within(first).getByRole('button', { name: /^Match 1:/ })).toHaveAccessibleName(/^Match 1: Suite 500/)
   })
 
   it('at 2027-07-01: firm 400+410 shows "from Jun 2027", 600 is marked potential', () => {
@@ -59,7 +59,7 @@ describe('MatchList', () => {
 
   it('clicking a card selects that match', async () => {
     const dispatch = renderList({ minSf: 10_000 })
-    await userEvent.click(within(screen.getByTestId('match-2')).getByRole('button'))
+    await userEvent.click(within(screen.getByTestId('match-2')).getByRole('button', { name: /^Match 2:/ }))
     expect(dispatch).toHaveBeenCalledWith({ type: 'select', selection: { kind: 'match', key: 'odt-700+odt-710' } })
   })
 

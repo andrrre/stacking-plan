@@ -1,6 +1,7 @@
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { useAppState } from '../../app/state/useAppState'
 import { BuildingSwitcher } from '../building/BuildingSwitcher'
+import { SummaryButton } from '../shortlist/SummaryButton'
 import styles from './Header.module.css'
 
 function BrandMark() {
@@ -30,7 +31,7 @@ export function Header() {
       <span className={styles.badge} data-testid="demo-badge">Demo data</span>
       <div className={styles.actions} data-print="hide">
         {/* slot:import (S14) */}
-        {/* slot:summary-button (S9) */}
+        <SummaryButton className={styles.button} />
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
       </div>
     </header>

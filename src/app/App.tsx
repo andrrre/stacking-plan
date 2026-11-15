@@ -3,6 +3,7 @@ import { Header } from '../features/layout/Header'
 import { LeftRail } from '../features/layout/LeftRail'
 import { RightPanel } from '../features/layout/RightPanel'
 import { KpiBar } from '../features/kpi/KpiBar'
+import { Overlays } from '../features/shortlist/Overlays'
 import { useAppState } from './state/useAppState'
 import { useUrlSync } from './state/useUrlSync'
 import styles from './App.module.css'
@@ -23,7 +24,7 @@ export function App() {
           <RightPanel />
         </main>
       </div>
-      {/* slot:overlays (S9) */}
+      <Overlays />
     </div>
   )
 }

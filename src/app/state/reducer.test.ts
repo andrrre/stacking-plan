@@ -159,6 +159,14 @@ describe('reducer', () => {
     expect(next.shortlist).toBe(full.shortlist)
   })
 
+  it('the shortlist cap is per building', () => {
+    const odt = Array.from({ length: 10 }, (_, i) => entry(i))
+    const full = makeState({ shortlist: odt })
+    const pbpEntry: ShortlistEntry = { ...entry(1), id: 'pbp|k1', buildingId: 'pbp' }
+    expect(run(full, { type: 'shortlist/add', entry: pbpEntry }).shortlist).toHaveLength(11)
+    expect(reducer(full, { type: 'shortlist/add', entry: entry(99) }).shortlist).toBe(full.shortlist)
+  })
+
   it('shortlist/remove removes by id', () => {
     const s = makeState({ shortlist: [entry(1), entry(2)] })
     expect(run(s, { type: 'shortlist/remove', id: entry(1).id }).shortlist).toEqual([entry(2)])

@@ -16,7 +16,7 @@ function applyParsed(req: RequirementDraft, parsed: ParsedQuery): RequirementDra
 }
 
 function addEntry(list: ShortlistEntry[], entry: ShortlistEntry): ShortlistEntry[] {
-  if (list.length >= MAX_SHORTLIST || list.some((e) => e.id === entry.id)) return list
+  if (list.filter((e) => e.buildingId === entry.buildingId).length >= MAX_SHORTLIST || list.some((e) => e.id === entry.id)) return list
   return [...list, entry]
 }
 

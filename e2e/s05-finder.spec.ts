@@ -65,11 +65,11 @@ test.describe('space finder', () => {
 
   test('clicking a card opens why it works; back returns to the list', async ({ page }) => {
     await page.getByTestId('req-min-sf').fill('10,000')
-    await page.getByTestId('match-1').getByRole('button').click()
+    await page.getByTestId('match-1').getByRole('button', { name: /^Match 1:/ }).click()
     await expect(page.getByTestId('match-why')).toBeVisible()
     await page.getByTestId('match-why').getByRole('button', { name: /all matches/i }).click()
     await expect(page.getByTestId('match-list')).toBeVisible()
-    await expect(page.getByTestId('match-1').getByRole('button')).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByTestId('match-1').getByRole('button', { name: /^Match 1:/ })).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('Clear restores the empty panel and undims the stack', async ({ page }) => {

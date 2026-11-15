@@ -42,10 +42,16 @@ function save(storage: StorageLike | null, key: string, value: unknown): void {
   }
 }
 
-/** Valid entries only, first occurrence of each id, capped at MAX_SHORTLIST (the reducer's invariants). */
+/** Valid entries only, first occurrence of each id, capped at MAX_SHORTLIST per building (the reducer's invariants). */
 export function loadShortlist(storage: StorageLike | null): ShortlistEntry[] {
   const entries = load(storage, SHORTLIST_KEY, ShortlistArray)
-  return entries.filter((e, i) => entries.findIndex((x) => x.id === e.id) === i).slice(0, MAX_SHORTLIST)
+  const seen = new Map<string, number>()
+  return entries.filter((e, i) => {
+    if (entries.findIndex((x) => x.id === e.id) !== i) return false
+    const n = (seen.get(e.buildingId) ?? 0) + 1
+    seen.set(e.buildingId, n)
+    return n <= MAX_SHORTLIST
+  })
 }
 
 export function saveShortlist(storage: StorageLike | null, entries: readonly ShortlistEntry[]): void {

@@ -122,11 +122,11 @@ describe('RightPanel with the real reducer', () => {
 })
 
 describe('RightPanel focus after a panel swap', () => {
-  const firstCard = () => within(screen.getByTestId('match-1')).getByRole('button')
+  const firstCard = () => within(screen.getByTestId('match-1')).getByRole('button', { name: /^Match 1:/ })
 
   it('clicking a match card focuses the MatchWhy heading', async () => {
     renderLive({}, { minSf: 10_000 })
-    await userEvent.click(within(screen.getByTestId('match-2')).getByRole('button'))
+    await userEvent.click(within(screen.getByTestId('match-2')).getByRole('button', { name: /^Match 2:/ }))
     expect(screen.getByRole('heading', { name: 'Suites 700 + 710' })).toHaveFocus()
   })
 

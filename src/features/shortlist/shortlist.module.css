@@ -1,0 +1,78 @@
+.shortlist { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
+.title { margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); line-height: var(--lh-tight); }
+.count { color: var(--c-text-muted); font-weight: var(--fw-regular); font-variant-numeric: tabular-nums; }
+
+.compare {
+  height: 26px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.compare:hover { background: var(--c-surface-2); }
+.compare:focus-visible,
+.remove:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+
+.empty { margin: 0; color: var(--c-text-muted); font-size: var(--fs-sm); }
+
+.items { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+
+.entry {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+}
+
+.rank {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.body { flex: 1; min-width: 0; }
+.line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin: 0; }
+.name { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+.num { font-size: var(--fs-md); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta { margin: 1px 0 0; color: var(--c-text-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+
+.whatIf {
+  margin-left: var(--sp-2);
+  padding: 0 6px;
+  border: 1px solid var(--c-modified);
+  border-radius: 999px;
+  color: var(--c-modified);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+}
+
+.remove {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+.remove:hover { background: var(--c-surface-2); color: var(--c-down); }

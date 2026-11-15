@@ -1,6 +1,7 @@
 import { useAppState } from '../../app/state/useAppState'
 import { formatMonthYear, formatNumber, formatPsf, formatSf } from '../../domain/format'
 import type { Candidate, ISODate } from '../../domain/types'
+import { SaveMatch } from '../shortlist/SaveMatch'
 import styles from './MatchCard.module.css'
 
 type Props = { candidate: Candidate; rank: number }
@@ -39,7 +40,7 @@ export function MatchCard({ candidate: c, rank }: Props) {
           </span>
         </span>
       </button>
-      {/* slot:save-match (S9) */}
+      <SaveMatch candidate={c} rank={rank} />
     </li>
   )
 }

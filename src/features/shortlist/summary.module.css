@@ -1,0 +1,71 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  padding: var(--sp-6) var(--sp-4);
+  background: rgba(17, 24, 39, .55);
+}
+
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  box-shadow: 0 10px 40px rgba(16, 24, 40, .35);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  padding: var(--sp-8);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+.button,
+.primary {
+  height: 32px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.button:hover { background: var(--c-surface-2); }
+.primary { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-accent-ink); }
+.primary:hover { filter: brightness(.94); }
+.button:focus-visible,
+.primary:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+
+.head { display: flex; flex-direction: column; gap: 2px; padding-bottom: var(--sp-4); border-bottom: 2px solid var(--c-text); }
+.kicker { margin: 0; color: var(--c-accent); font-size: var(--fs-xs); font-weight: var(--fw-semibold); letter-spacing: .08em; text-transform: uppercase; }
+.title { margin: 0; font-size: 28px; font-weight: var(--fw-semibold); letter-spacing: -.01em; line-height: var(--lh-tight); }
+.address { margin: 0; color: var(--c-text-muted); font-size: var(--fs-lg); }
+.prepared { margin: var(--sp-2) 0 0; color: var(--c-text-muted); font-size: var(--fs-md); }
+
+.section { display: flex; flex-direction: column; gap: var(--sp-2); break-inside: avoid; }
+.sub { margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
+.foot { margin: var(--sp-2) 0 0; color: var(--c-text-muted); font-size: var(--fs-sm); }
+
+@media print {
+  .backdrop {
+    position: static;
+    padding: 0;
+    overflow: visible;
+    background: none;
+  }
+  .page { max-width: none; border-radius: 0; box-shadow: none; }
+  .sheet { padding: 0; }
+  .title { font-size: 24px; }
+}
+.page:focus { outline: none; }
