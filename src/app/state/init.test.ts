@@ -35,6 +35,15 @@ describe('initState', () => {
     }
   })
 
+  it('ignores a today outside 1900-01-01..2200-12-31 and uses the clock', () => {
+    for (const far of ['9999-12-31', '2201-01-01', '1899-12-31']) {
+      const s = initState(`?today=${far}`, empty, CLOCK)
+      expect(s.today).toBe(CLOCK)
+      expect(s.asOf).toBe(CLOCK)
+    }
+    expect(initState('?today=2200-12-31', empty, CLOCK).today).toBe('2200-12-31')
+  })
+
   it('reads the shortlist from storage and survives bad storage', () => {
     const bad: StorageLike = { getItem: (k) => (k === SHORTLIST_KEY ? '[[' : null), setItem: () => undefined }
     expect(initState('', bad, CLOCK).shortlist).toEqual([])

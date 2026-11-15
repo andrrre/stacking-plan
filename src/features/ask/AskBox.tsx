@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { horizonEnd } from '../../app/state/selectors'
 import { useAppState } from '../../app/state/useAppState'
+import { BUNDLED_BUILDINGS } from '../../data'
 import { formatLongDate, formatMonthYear, formatNumber, formatPsf } from '../../domain/format'
 import type { ISODate, ParsedQuery } from '../../domain/types'
 import { askService, type AskResult } from './askService'
@@ -78,7 +79,9 @@ function useAsk() {
     const reqAtSubmit = state.req
     setBusy(true)
     try {
-      const result = await askService(text, state.today)
+      // Only the bundled demo buildings may use the AI; an imported building's context stays in the browser.
+      const allowAi = BUNDLED_BUILDINGS.some((b) => b.id === state.buildingId)
+      const result = await askService(text, state.today, fetch, allowAi)
       if (call !== latest.current) return
       const edited = currentReq.current !== reqAtSubmit
       setOutcome({ result, note: edited ? EDITED : null })

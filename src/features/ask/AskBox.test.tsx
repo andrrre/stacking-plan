@@ -7,12 +7,13 @@ import type { Action, AppState } from '../../app/state/types'
 import { AppStateContext } from '../../app/state/useAppState'
 import { RequirementForm } from '../finder/RequirementForm'
 import { AskBox } from './AskBox'
+import { building } from '../../domain/testing/fixtures'
 
 const TODAY = '2026-11-15'
 const LAW_FIRM = 'Law firm, roughly 9–11k SF, moving in by Q2 next year, under $60'
 
-function renderBox() {
-  const state: AppState = initState('', null, TODAY)
+function renderBox(overrides: Partial<AppState> = {}) {
+  const state: AppState = { ...initState('', null, TODAY), ...overrides }
   const dispatch = vi.fn<(a: Action) => void>()
   render(
     <AppStateContext.Provider value={{ state, dispatch }}>
@@ -102,5 +103,25 @@ describe('AskBox', () => {
     expect(await screen.findByTestId('ask-warning')).toHaveTextContent(/form was edited/i)
     expect(screen.getByTestId('req-min-sf')).toHaveValue('12k')
     expect(screen.getByTestId('ask-submit')).toHaveTextContent('Ask')
+  })
+
+  it('for an imported building, parses offline and sends nothing to /api/ask', async () => {
+    const fetchFn = vi.fn(async () => Response.json({ minSf: 1234 }))
+    vi.stubGlobal('fetch', fetchFn)
+    const own = building({ id: 'csv-own' })
+    const dispatch = renderBox({ importedBuildings: [own], buildingId: 'csv-own' })
+    await userEvent.type(screen.getByTestId('ask-input'), `${LAW_FIRM}{Enter}`)
+    expect(await screen.findByTestId('ask-status')).toHaveTextContent('Offline parsing')
+    expect(fetchFn).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'ask/apply', parsed: expect.objectContaining({ minSf: 9000 }) }))
+  })
+
+  it('for a bundled building, still asks /api/ask', async () => {
+    const fetchFn = vi.fn(async () => Response.json({ minSf: 1234 }))
+    vi.stubGlobal('fetch', fetchFn)
+    renderBox()
+    await userEvent.type(screen.getByTestId('ask-input'), `${LAW_FIRM}{Enter}`)
+    expect(await screen.findByTestId('ask-status')).toHaveTextContent('Read by AI')
+    expect(fetchFn).toHaveBeenCalledTimes(1)
   })
 })

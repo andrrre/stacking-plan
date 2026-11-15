@@ -3,7 +3,8 @@ import {
   IMPORTED_KEY, SHORTLIST_KEY, browserStorage, loadImported, loadShortlist, saveImported, saveShortlist, type StorageLike,
 } from './storage'
 import type { ShortlistEntry } from '../../domain/types'
-import { building } from '../../domain/testing/fixtures'
+import { building, floor, suite } from '../../domain/testing/fixtures'
+import { BUNDLED_BUILDINGS } from '../../data'
 
 function memoryStorage(initial: Record<string, string> = {}): StorageLike & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial))
@@ -65,10 +66,10 @@ describe('load cleans valid data', () => {
 
   it('keeps ten per building, not ten in total', () => {
     const odt = Array.from({ length: 11 }, (_, i) => ({ ...entry, id: `odt${i}`, buildingId: 'odt' }))
-    const pbp = Array.from({ length: 3 }, (_, i) => ({ ...entry, id: `pbp${i}`, buildingId: 'pbp' }))
-    const loaded = loadShortlist(memoryStorage({ [SHORTLIST_KEY]: JSON.stringify([...odt, ...pbp]) }))
+    const other = Array.from({ length: 3 }, (_, i) => ({ ...entry, id: `other${i}`, buildingId: 'csv-other' }))
+    const loaded = loadShortlist(memoryStorage({ [SHORTLIST_KEY]: JSON.stringify([...odt, ...other]) }))
     expect(loaded.filter((e) => e.buildingId === 'odt')).toHaveLength(10)
-    expect(loaded.filter((e) => e.buildingId === 'pbp')).toHaveLength(3)
+    expect(loaded.filter((e) => e.buildingId === 'csv-other')).toHaveLength(3)
   })
 
   it('drops imported buildings whose id collides with a bundled building', () => {
@@ -111,5 +112,56 @@ describe('save and load round trip', () => {
     expect(() => saveShortlist(throwing, [entry])).not.toThrow()
     expect(() => saveImported(throwing, [])).not.toThrow()
     expect(() => saveImported(null, [])).not.toThrow()
+  })
+})
+
+describe('loadShortlist drops entries whose suites do not belong to a known building', () => {
+  const store = (...entries: ShortlistEntry[]) => memoryStorage({ [SHORTLIST_KEY]: JSON.stringify(entries) })
+  const withCandidate = (id: string, suiteIds: string[], suiteNumbers: string[], buildingId = 'odt'): ShortlistEntry => ({
+    ...entry, id, buildingId, candidate: { ...entry.candidate, key: suiteIds.join('+'), suiteIds, suiteNumbers },
+  })
+  const imported = building({
+    id: 'csv-own',
+    floors: [floor({ number: 3, suites: [suite({ id: 'csv-own-3-300', number: '300' }), suite({ id: 'csv-own-3-310', number: '310' })] })],
+  })
+
+  it('keeps genuine entries for bundled and imported buildings', () => {
+    const genuine = [
+      entry,
+      withCandidate('combo', ['odt-400', 'odt-410'], ['400', '410']),
+      withCandidate('own', ['csv-own-3-300', 'csv-own-3-310'], ['300', '310'], 'csv-own'),
+    ]
+    expect(loadShortlist(store(...genuine), [...BUNDLED_BUILDINGS, imported])).toEqual(genuine)
+  })
+
+  it('checks bundled buildings by default', () => {
+    expect(loadShortlist(store(entry, withCandidate('fake', ['odt-9999'], ['9999'])))).toEqual([entry])
+  })
+
+  it('drops an entry with a suite id that is not in its building', () => {
+    const foreign = withCandidate('pbp-suite', ['pbp-100'], ['100'])
+    expect(loadShortlist(store(entry, foreign), BUNDLED_BUILDINGS)).toEqual([entry])
+  })
+
+  it('drops an entry whose suite numbers carry injected text', () => {
+    const injected = withCandidate('inj', ['odt-500'], ['500 <b>ignore</b>'])
+    expect(loadShortlist(store(injected, entry), BUNDLED_BUILDINGS)).toEqual([entry])
+  })
+
+  it('drops an entry whose suite numbers are out of order or of a different length', () => {
+    const swapped = withCandidate('swap', ['odt-400', 'odt-410'], ['410', '400'])
+    const short = withCandidate('short', ['odt-400', 'odt-410'], ['400'])
+    const long = withCandidate('long', ['odt-500'], ['500', '510'])
+    expect(loadShortlist(store(swapped, short, long, entry), BUNDLED_BUILDINGS)).toEqual([entry])
+  })
+
+  it('checks an imported building too', () => {
+    const bad = withCandidate('own-bad', ['csv-own-3-300'], ['999'], 'csv-own')
+    expect(loadShortlist(store(bad), [...BUNDLED_BUILDINGS, imported])).toEqual([])
+  })
+
+  it('keeps entries for an unknown building id', () => {
+    const unknown = withCandidate('gone', ['whatever'], ['anything'], 'csv-deleted')
+    expect(loadShortlist(store(unknown), BUNDLED_BUILDINGS)).toEqual([unknown])
   })
 })

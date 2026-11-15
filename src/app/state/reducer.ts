@@ -1,3 +1,4 @@
+import { BUNDLED_BUILDINGS } from '../../data'
 import { snapToSlider } from '../../domain/dates'
 import { MAX_SHORTLIST } from '../../domain/constants'
 import type { ParsedQuery, ShortlistEntry } from '../../domain/types'
@@ -23,6 +24,17 @@ function addEntry(list: ShortlistEntry[], entry: ShortlistEntry): ShortlistEntry
 /** Switching building clears selection, KPI highlight and the scenario (A8). */
 function switchBuilding(state: AppState, buildingId: string): AppState {
   return { ...state, buildingId, selection: null, highlight: null, changes: [] }
+}
+
+/** Only an imported building can be removed; its shortlist entries go with it. */
+function removeBuilding(state: AppState, buildingId: string): AppState {
+  if (!state.importedBuildings.some((b) => b.id === buildingId)) return state
+  const removed = {
+    ...state,
+    importedBuildings: state.importedBuildings.filter((b) => b.id !== buildingId),
+    shortlist: state.shortlist.filter((e) => e.buildingId !== buildingId),
+  }
+  return state.buildingId === buildingId ? switchBuilding(removed, BUNDLED_BUILDINGS[0].id) : removed
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -69,6 +81,8 @@ export function reducer(state: AppState, action: Action): AppState {
       const imported = { ...state, importedBuildings: [...state.importedBuildings, ...action.buildings] }
       return first ? switchBuilding(imported, first.id) : imported
     }
+    case 'building/remove':
+      return removeBuilding(state, action.buildingId)
     case 'overlay/set':
       return { ...state, overlay: action.overlay }
   }

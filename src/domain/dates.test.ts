@@ -92,3 +92,28 @@ describe('maxIso', () => {
     expect(maxIso('2027-01-01')).toBe('2027-01-01')
   })
 })
+
+describe('date helpers at the edges of the accepted range (1900-01-01..2200-12-31)', () => {
+  const MIN = '1900-01-01'
+  const MAX = '2200-12-31'
+
+  it('adding five years to the last accepted date gives a real date', () => {
+    expect(addMonthsIso(MAX, 60)).toBe('2205-12-31')
+    expect(sliderDate(MAX, 60)).toBe('2205-12-01')
+    expect(addDaysIso(MAX, 1)).toBe('2201-01-01')
+  })
+
+  it('stepping back from the first accepted date gives a real date', () => {
+    expect(addDaysIso(MIN, -1)).toBe('1899-12-31')
+    expect(addMonthsIso(MIN, -1)).toBe('1899-12-01')
+  })
+
+  it('snap, offset and month counts work across the whole range', () => {
+    expect(snapToSlider(MAX, MIN)).toBe(sliderDate(MIN, 60))
+    expect(monthOffset(MAX, MIN)).toBe(60)
+    expect(snapToSlider(MIN, MAX)).toBe(MAX)
+    expect(monthOffset(MAX, MAX)).toBe(0)
+    expect(monthsBetweenIso(MIN, MAX)).toBe(3611)
+    expect(maxIso(MIN, MAX)).toBe(MAX)
+  })
+})

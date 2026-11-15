@@ -1,5 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { gotoApp } from './helpers'
+
+const IMPORT_FIXTURE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'csv-valid.csv')
 
 const LAW_FIRM = 'Law firm, roughly 9–11k SF, moving in by Q2 next year, under $60'
 
@@ -74,5 +78,21 @@ test.describe('ask box (offline fallback)', () => {
     await expect(page.getByTestId('req-max-sf')).not.toHaveAttribute('aria-invalid', 'true')
     await expect(page.getByTestId('req-max-rent')).not.toHaveAttribute('aria-invalid', 'true')
     await expect(page.getByTestId('match-1')).toHaveAttribute('data-key', 'odt-500')
+  })
+})
+
+test.describe('ask box with an imported building', () => {
+  test('parses offline and sends no request to /api/ask', async ({ page }) => {
+    const askRequests: string[] = []
+    page.on('request', (r) => { if (new URL(r.url()).pathname === '/api/ask') askRequests.push(r.url()) })
+    await gotoApp(page)
+    await page.getByTestId('import-csv-input').setInputFiles(IMPORT_FIXTURE)
+    await expect(page.getByTestId('building-switcher')).toHaveValue('csv-bayfront-commons')
+
+    await ask(page, '2,000 SF under $60')
+    await expect(page.getByTestId('ask-status')).toContainText('Offline parsing')
+    await expect(page.getByTestId('req-min-sf')).toHaveValue('2,000')
+    await expect(page.getByTestId('req-max-rent')).toHaveValue('60')
+    expect(askRequests).toEqual([])
   })
 })

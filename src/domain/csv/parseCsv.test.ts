@@ -265,11 +265,18 @@ describe('parseCsv: limits and non-text input', () => {
   })
 
   it(`accepts ${MAX_ROWS} rows and rejects ${MAX_ROWS + 1}`, () => {
-    const rows = Array.from({ length: MAX_ROWS }, (_, i) => `Bay House,1,${i + 1},10,leasable,1,no,,,,,`)
+    // Spread over floors: the schema allows at most 200 suites per floor.
+    const rows = Array.from({ length: MAX_ROWS }, (_, i) => `Bay House,${(i % 10) + 1},${i + 1},10,leasable,1,no,,,,,`)
     expect(parseCsv(csv(...rows), []).ok).toBe(true)
     const e = errs(parseCsv(csv(...rows, 'Bay House,1,x,10,leasable,1,no,,,,,'), []))
     expect(e).toHaveLength(1)
     expect(e[0]?.message).toMatch(/2,000 rows/)
+  })
+
+  it('rejects more than 200 suites on one floor with a whole-file message', () => {
+    const rows = Array.from({ length: 201 }, (_, i) => `Bay House,1,${i + 1},10,leasable,1,no,,,,,`)
+    const e = errs(parseCsv(csv(...rows), []))
+    expect(e).toEqual([expect.objectContaining({ row: 0, column: null, message: expect.stringContaining('Bay House') })])
   })
 
   it('rejects binary content such as an .xlsx renamed to .csv', () => {
@@ -385,5 +392,24 @@ describe('parseCsv: review fixes', () => {
     expect(b).toMatchObject({ id: 'csv-bay-house-2', name: 'Bay House (2)' })
     const [c] = ok(parseCsv(csv(VACANT), []))
     expect(c?.name).toBe('Bay House')
+  })
+})
+
+describe('parseCsv: dates outside 1900-01-01..2200-12-31', () => {
+  it('rejects a lease ending 9999-12-31 with a message that names the range', () => {
+    const e = errs(parseCsv(csv('Bay House,5,510,3000,leasable,42,no,Gull Media,2025-01-01,9999-12-31,41,no'), []))
+    expect(e).toEqual([
+      expect.objectContaining({ row: 2, column: 'lease_end', message: expect.stringMatching(/between 1900-01-01 and 2200-12-31/) }),
+    ])
+  })
+
+  it('rejects a lease starting before 1900', () => {
+    const e = errs(parseCsv(csv('Bay House,5,510,3000,leasable,42,no,Gull Media,1899-12-31,2028-12-31,41,no'), []))
+    expect(e).toEqual([expect.objectContaining({ row: 2, column: 'lease_start', message: expect.stringMatching(/between/) })])
+  })
+
+  it('accepts a lease ending on 2200-12-31', () => {
+    const [b] = ok(parseCsv(csv('Bay House,5,510,3000,leasable,42,no,Gull Media,2025-01-01,2200-12-31,41,no'), []))
+    expect(suiteOf(b as Building, 'csv-bay-house-5-510').leases[0]?.end).toBe('2200-12-31')
   })
 })

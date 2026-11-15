@@ -117,9 +117,8 @@ test('demo flow: the eight beats in order, in one session', async ({ page }) => 
   await expect(page.getByTestId('date-label')).toContainText('May 2027')
   await expect(page.getByTestId('req-include-potential')).toBeChecked()
   await expect(page.getByTestId('match-1')).toHaveAttribute('data-key', 'odt-600')
-  const params = new URL(page.url()).searchParams
-  expect(params.get('asOf')).toBe('2027-05-01')
-  expect(params.has('pot')).toBe(false)
+  // The URL write is debounced: wait for it.
+  await expect(page).toHaveURL((url) => url.searchParams.get('asOf') === '2027-05-01' && !url.searchParams.has('pot'))
 
   // 8. Client summary
   await page.getByTestId('open-summary').click()

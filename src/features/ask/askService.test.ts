@@ -89,6 +89,12 @@ describe('askService', () => {
     await expect(askService('   ', TODAY, fetchFn)).resolves.toEqual({ parsed: {}, source: 'offline' })
     expect(fetchFn).not.toHaveBeenCalled()
   })
+
+  it('parses offline and makes no request when AI is not allowed (imported buildings)', async () => {
+    const fetchFn = respond({ minSf: 9500 })
+    await expect(askService(LAW_FIRM, TODAY, fetchFn, false)).resolves.toEqual({ parsed: OFFLINE, source: 'offline' })
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
 })
 
 function init(fetchFn: FetchFn): RequestInit {

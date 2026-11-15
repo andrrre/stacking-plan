@@ -47,4 +47,5 @@ export type Action =
   | { type: 'shortlist/add'; entry: ShortlistEntry } // no-op if the id exists or 10 entries are held
   | { type: 'shortlist/remove'; id: string }
   | { type: 'building/import'; buildings: Building[] } // append; buildingId = first imported
+  | { type: 'building/remove'; buildingId: string } // imported only: drops it and its shortlist; if selected, switches to the first bundled
   | { type: 'overlay/set'; overlay: Overlay }

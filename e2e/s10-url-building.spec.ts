@@ -41,7 +41,7 @@ test.describe('url state and second building', () => {
     await switcher.selectOption('pbp')
     await expect(page.getByTestId('suite-pbp-202')).toBeVisible()
     await expect(page.getByTestId('suite-details')).toHaveCount(0)
-    expect(new URL(page.url()).searchParams.get('b')).toBe('pbp')
+    await expect(page).toHaveURL((url) => url.searchParams.get('b') === 'pbp') // debounced write
   })
 
   test('the second building finds a 3-suite 10,000 SF answer', async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe('url state and second building', () => {
     const slider = page.getByTestId('date-slider')
     for (let i = 1; i <= 10; i++) await slider.fill(String(i))
     await expect(page.getByTestId('date-label')).toContainText('Sep 2027')
+    await expect(page).toHaveURL((url) => url.searchParams.get('asOf') === '2027-09-01') // debounced write
     expect(await page.evaluate(() => history.length)).toBe(before)
-    expect(new URL(page.url()).searchParams.get('asOf')).toBe('2027-09-01')
   })
 })

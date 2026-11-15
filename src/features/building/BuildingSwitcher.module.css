@@ -13,3 +13,41 @@
 }
 
 .select:hover { border-color: var(--c-border-strong); }
+
+.switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.question {
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+}
+
+.remove,
+.danger {
+  height: 24px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.remove:hover { color: var(--c-text); }
+
+.danger {
+  border-color: var(--c-risk-le6);
+  color: var(--c-risk-le6);
+}

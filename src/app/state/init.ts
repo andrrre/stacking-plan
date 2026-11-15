@@ -14,7 +14,8 @@ function readToday(search: string, clockToday: ISODate): ISODate {
 export function initState(search: string, storage: StorageLike | null, clockToday: ISODate): AppState {
   const today = readToday(search, clockToday)
   const importedBuildings = loadImported(storage)
-  const buildingIds = [...BUNDLED_BUILDINGS, ...importedBuildings].map((b) => b.id)
+  const buildings = [...BUNDLED_BUILDINGS, ...importedBuildings]
+  const buildingIds = buildings.map((b) => b.id)
   const url = parseUrlState(search, { today, buildingIds })
   return {
     today,
@@ -26,7 +27,7 @@ export function initState(search: string, storage: StorageLike | null, clockToda
     selection: null,
     highlight: null,
     changes: [],
-    shortlist: loadShortlist(storage),
+    shortlist: loadShortlist(storage, buildings),
     importedBuildings,
     overlay: 'none',
   }

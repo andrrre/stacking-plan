@@ -42,9 +42,26 @@ function save(storage: StorageLike | null, key: string, value: unknown): void {
   }
 }
 
-/** Valid entries only, first occurrence of each id, capped at MAX_SHORTLIST per building (the reducer's invariants). */
-export function loadShortlist(storage: StorageLike | null): ShortlistEntry[] {
-  const entries = load(storage, SHORTLIST_KEY, ShortlistArray)
+/** Suite id → suite number, per building id. */
+function suiteNumbersByBuilding(buildings: readonly Building[]): Map<string, Map<string, string>> {
+  return new Map(buildings.map((b) => [b.id, new Map(b.floors.flatMap((f) => f.suites.map((s) => [s.id, s.number] as const)))]))
+}
+
+/** An entry for a known building must name its real suites, numbers in the same order; unknown buildings are never shown. */
+function matchesBuilding(e: ShortlistEntry, known: Map<string, Map<string, string>>): boolean {
+  const suites = known.get(e.buildingId)
+  if (!suites) return true
+  const { suiteIds, suiteNumbers } = e.candidate
+  return suiteIds.length === suiteNumbers.length && suiteIds.every((id, i) => suites.get(id) === suiteNumbers[i])
+}
+
+/**
+ * Valid entries only, first occurrence of each id, capped at MAX_SHORTLIST per building (the reducer's invariants).
+ * Entries for a known building whose suites are not that building's own are dropped (tampered storage).
+ */
+export function loadShortlist(storage: StorageLike | null, buildings: readonly Building[] = BUNDLED_BUILDINGS): ShortlistEntry[] {
+  const known = suiteNumbersByBuilding(buildings)
+  const entries = load(storage, SHORTLIST_KEY, ShortlistArray).filter((e) => matchesBuilding(e, known))
   const seen = new Map<string, number>()
   return entries.filter((e, i) => {
     if (entries.findIndex((x) => x.id === e.id) !== i) return false

@@ -37,10 +37,13 @@ function clampPast(parsed: ParsedQuery, today: ISODate): ParsedQuery {
 /**
  * Parsed requirement fields: from /api/ask when it answers well, otherwise from the offline parser.
  * An AI answer with no fields at all also falls back, since the offline parser may still read something.
+ * With `allowAi` false (an imported building: the broker's own data) nothing is sent; only the offline parser runs.
  */
-export async function askService(query: string, today: ISODate, fetchFn: typeof fetch = fetch): Promise<AskResult> {
+export async function askService(
+  query: string, today: ISODate, fetchFn: typeof fetch = fetch, allowAi = true,
+): Promise<AskResult> {
   const text = query.trim().slice(0, MAX_CHARS)
-  const parsed = text === '' ? null : await fetchParsed(text, today, fetchFn)
+  const parsed = text === '' || !allowAi ? null : await fetchParsed(text, today, fetchFn)
   return parsed && Object.keys(parsed).length > 0
     ? { parsed: clampPast(parsed, today), source: 'ai' }
     : { parsed: parseQuery(text, today), source: 'offline' }

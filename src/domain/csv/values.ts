@@ -1,4 +1,4 @@
-import { isoDate } from '../../shared/isoDate'
+import { MAX_ISO_DATE, MIN_ISO_DATE, isoDate } from '../../shared/isoDate'
 import { formatNumber } from '../format'
 import type { ISODate } from '../types'
 
@@ -48,10 +48,13 @@ export function parseMoney(raw: string, range: Range, what: string): Parsed<numb
   return inRange(Number(raw.replace(/[$,]/g, '')), range, what)
 }
 
-/** A real calendar date written YYYY-MM-DD. */
+/** A real calendar date written YYYY-MM-DD, between MIN_ISO_DATE and MAX_ISO_DATE. */
 export function parseDate(raw: string, what: string): Parsed<ISODate> {
   if (raw === '') return fail(`${what} is empty. Enter a date as YYYY-MM-DD, e.g. 2027-01-31.`)
   const r = isoDate.safeParse(raw)
   if (r.success) return { ok: true, value: r.data }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw) && (raw < MIN_ISO_DATE || raw > MAX_ISO_DATE)) {
+    return fail(`${what} ${quoted(raw)} is out of range. Enter a date between ${MIN_ISO_DATE} and ${MAX_ISO_DATE}.`)
+  }
   return fail(`${quoted(raw)} is not a real date written as YYYY-MM-DD. Enter it like 2027-01-31.`)
 }

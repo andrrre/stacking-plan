@@ -191,6 +191,49 @@ describe('reducer', () => {
     expect(run(makeState(), { type: 'building/import', buildings: [] }).buildingId).toBe('odt')
   })
 
+  describe('building/remove', () => {
+    const own = building({ id: 'csv-own' })
+    const other = building({ id: 'csv-other' })
+    const ownEntry: ShortlistEntry = { ...entry(1), id: 'csv-own|k1', buildingId: 'csv-own' }
+    const otherEntry: ShortlistEntry = { ...entry(2), id: 'csv-other|k2', buildingId: 'csv-other' }
+
+    it('removes the selected imported building and its shortlist, switching to the first bundled building', () => {
+      const s = makeState({
+        buildingId: 'csv-own',
+        importedBuildings: [own, other],
+        shortlist: [entry(3), ownEntry, otherEntry],
+        selection: { kind: 'suite', suiteId: 'csv-own-1' },
+        highlight: 'vacant',
+        changes: [{ kind: 'vacate', leaseId: 'x', on: '2027-01-31' }],
+      })
+      const next = run(s, { type: 'building/remove', buildingId: 'csv-own' })
+      expect(next.importedBuildings).toEqual([other])
+      expect(next.shortlist).toEqual([entry(3), otherEntry])
+      expect(next.buildingId).toBe('odt')
+      expect(next.selection).toBeNull()
+      expect(next.highlight).toBeNull()
+      expect(next.changes).toEqual([])
+    })
+
+    it('removing a building that is not selected keeps the view as it is', () => {
+      const s = makeState({
+        buildingId: 'pbp', importedBuildings: [own, other], shortlist: [ownEntry],
+        selection: { kind: 'suite', suiteId: 'pbp-701' },
+      })
+      const next = run(s, { type: 'building/remove', buildingId: 'csv-other' })
+      expect(next.importedBuildings).toEqual([own])
+      expect(next.shortlist).toEqual([ownEntry])
+      expect(next.buildingId).toBe('pbp')
+      expect(next.selection).toEqual({ kind: 'suite', suiteId: 'pbp-701' })
+    })
+
+    it('a bundled building or an unknown id cannot be removed', () => {
+      const s = makeState({ shortlist: [entry(1)], importedBuildings: [own] })
+      expect(reducer(s, { type: 'building/remove', buildingId: 'odt' })).toBe(s)
+      expect(reducer(s, { type: 'building/remove', buildingId: 'nope' })).toBe(s)
+    })
+  })
+
   it('overlay/set', () => {
     expect(run(makeState(), { type: 'overlay/set', overlay: 'summary' }).overlay).toBe('summary')
   })

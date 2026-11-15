@@ -1,3 +1,4 @@
+import './zodConfig' // first: zod reads its config when each schema is built
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { format } from 'date-fns'
@@ -5,6 +6,7 @@ import '@fontsource-variable/inter'
 import './styles/tokens.css'
 import './styles/global.css'
 import { App } from './app/App'
+import { ErrorBoundary } from './app/ErrorBoundary'
 import { StateProvider } from './app/state/StateProvider'
 import { initState } from './app/state/init'
 import { browserStorage } from './app/state/storage'
@@ -17,8 +19,10 @@ const initialState = initState(location.search, browserStorage(), format(new Dat
 
 createRoot(root).render(
   <StrictMode>
-    <StateProvider initialState={initialState}>
-      <App />
-    </StateProvider>
+    <ErrorBoundary>
+      <StateProvider initialState={initialState}>
+        <App />
+      </StateProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )
