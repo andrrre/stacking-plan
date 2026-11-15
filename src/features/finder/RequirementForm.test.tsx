@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { initState } from '../../app/state/init'
 import { StateProvider } from '../../app/state/StateProvider'
 import type { Action, AppState, RequirementDraft } from '../../app/state/types'
+import type { ParsedQuery } from '../../domain/types'
 import { AppStateContext, useAppState } from '../../app/state/useAppState'
 import { RequirementForm } from './RequirementForm'
 
@@ -157,5 +158,67 @@ describe('RequirementForm with the real reducer', () => {
     expect(screen.getByTestId('req-min-sf')).toHaveValue('9,000')
     expect(screen.getByTestId('req-max-sf')).toHaveValue('11,000')
     expect(screen.getByTestId('req-max-rent')).toHaveValue('60')
+  })
+})
+
+function AskApply({ parsed }: { parsed: ParsedQuery }) {
+  const { dispatch } = useAppState()
+  return <button type="button" onClick={() => dispatch({ type: 'ask/apply', parsed })}>ask</button>
+}
+
+describe('RequirementForm: invalid drafts after a requirement set from outside', () => {
+  function renderReal(req: Partial<RequirementDraft> = {}, parsed: ParsedQuery = { minSf: 10_000 }) {
+    const base = initState('', null, TODAY)
+    render(
+      <StateProvider initialState={{ ...base, req: { ...base.req, ...req } }}>
+        <RequirementForm />
+        <AskApply parsed={parsed} />
+      </StateProvider>,
+    )
+  }
+
+  async function typeInvalidMaxAndRent() {
+    await userEvent.type(screen.getByTestId('req-max-sf'), 'huge')
+    await userEvent.type(screen.getByTestId('req-max-rent'), 'cheap')
+    expect(screen.getByTestId('req-max-sf')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByTestId('req-max-rent')).toHaveAttribute('aria-invalid', 'true')
+  }
+
+  it('ask/apply {minSf: 10000} replaces "huge" in max and "cheap" in rent with empty fields and no error', async () => {
+    renderReal()
+    await typeInvalidMaxAndRent()
+    await userEvent.click(screen.getByRole('button', { name: 'ask' }))
+    expect(screen.getByTestId('req-min-sf')).toHaveValue('10,000')
+    expect(screen.getByTestId('req-max-sf')).toHaveValue('')
+    expect(screen.getByTestId('req-max-rent')).toHaveValue('')
+    expect(screen.getByTestId('req-max-sf')).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByTestId('req-max-rent')).not.toHaveAttribute('aria-invalid')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('also when the asked size equals the size already in state', async () => {
+    renderReal({ minSf: 10_000 })
+    await typeInvalidMaxAndRent()
+    await userEvent.click(screen.getByRole('button', { name: 'ask' }))
+    expect(screen.getByTestId('req-max-sf')).toHaveValue('')
+    expect(screen.getByTestId('req-max-rent')).toHaveValue('')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('typing a valid value in another field keeps the invalid text (nothing is dispatched)', async () => {
+    renderReal()
+    await typeInvalidMaxAndRent()
+    await userEvent.type(screen.getByTestId('req-min-sf'), '10k')
+    expect(screen.getByTestId('req-max-sf')).toHaveValue('huge')
+    expect(screen.getByTestId('req-max-rent')).toHaveValue('cheap')
+  })
+
+  it('the potential toggle keeps the invalid text the broker is still fixing', async () => {
+    renderReal({ minSf: 10_000 })
+    await typeInvalidMaxAndRent()
+    await userEvent.click(screen.getByTestId('req-include-potential'))
+    expect(screen.getByTestId('req-include-potential')).not.toBeChecked()
+    expect(screen.getByTestId('req-max-sf')).toHaveValue('huge')
+    expect(screen.getByTestId('req-max-rent')).toHaveValue('cheap')
   })
 })

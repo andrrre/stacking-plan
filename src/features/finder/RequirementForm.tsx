@@ -58,9 +58,15 @@ const sizeText = (n: number | null) => (n === null ? '' : formatNumber(n))
 const rentText = (n: number | null) => (n === null ? '' : String(n))
 const draftsOf = (r: RequirementDraft): Drafts => ({ min: sizeText(r.minSf), max: sizeText(r.maxSf), rent: rentText(r.maxRentPsf) })
 
-/** After the requirement changes from outside (Ask, Clear), show it, but keep text that already means the same value. */
+/**
+ * After the requirement changes from outside (Ask, Clear), show it, but keep text that already means the same value.
+ * Invalid text is replaced too (null === null would otherwise keep it), except when only the potential toggle moved:
+ * the checkbox dispatches even while a field is invalid, and the broker may still be fixing that text.
+ */
 function syncDrafts(d: Drafts, prev: RequirementDraft, next: RequirementDraft): Drafts {
-  const keep = (field: keyof Values, parsed: Parsed) => prev[field] === next[field] || valueOf(parsed) === next[field]
+  const toggled = prev.includePotential !== next.includePotential
+  const keep = (field: keyof Values, parsed: Parsed) =>
+    (toggled || !('error' in parsed)) && (prev[field] === next[field] || valueOf(parsed) === next[field])
   const shown = draftsOf(next)
   return {
     min: keep('minSf', parseSize(d.min)) ? d.min : shown.min,
