@@ -1,0 +1,240 @@
+/* The 3D stack (spec-technical §5.6): CSS 3D transforms only, orthographic (no perspective).
+   Every element between the scene and a billboard label keeps `transform-style: preserve-3d` and no
+   opacity or filter, because those would flatten it. Opacity and filter live on leaf elements only. */
+
+.wrap {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.stage {
+  --tilt: 58deg;
+  --w: min(400px, 84cqw); /* footprint width, from the pane */
+  /* Floor-to-floor rise. The --floor-3d-h token (22px) leaves the lower slabs hidden behind the floor above, so
+     3D uses its own step; it shrinks for tall buildings so the stage height stays bounded. */
+  --step: min(36px, calc(360px / var(--floors)));
+  --t: min(10px, calc(var(--step) * 0.5)); /* slab thickness */
+  position: relative;
+  /* the building's rise, plus the footprint's worst-case projected height (any angle), plus label room */
+  height: calc(var(--floors) * var(--step) * 0.85 + var(--w) * 0.55 + 28px);
+  isolation: isolate;
+  overflow: clip; /* the scene can never paint over the toolbar or the controls */
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage[data-dragging='true'] { cursor: grabbing; }
+
+.scene {
+  --lean: calc(var(--w) * 0.045);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--w);
+  height: calc(var(--w) * 0.15);
+  transform-style: preserve-3d;
+  /* screen-space nudge down by half the building's projected height, then the axonometric turn */
+  transform:
+    translateY(calc(var(--floors) * var(--step) * 0.42))
+    translate(-50%, -50%)
+    rotateX(var(--tilt))
+    rotateZ(var(--rot, -35deg));
+}
+
+/* ---------- slab ---------- */
+
+.slab {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: translateX(-50%) translateZ(calc(var(--level) * var(--step) + var(--t)));
+}
+
+.top {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: var(--suite-gap);
+  padding: var(--suite-gap);
+  background: var(--c-surface);
+  box-shadow: 0 0 0 1px var(--c-border-strong);
+  transform-style: preserve-3d;
+}
+
+.cell {
+  position: relative;
+  flex: 1 1 0px; /* flex-grow = areaSf, set inline */
+  min-width: 0;
+  transform-style: preserve-3d;
+}
+
+.run {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 0px; /* flex-grow = combined areaSf, set inline */
+  gap: var(--suite-gap);
+  min-width: 0;
+  border-radius: var(--r-sm);
+  box-shadow: var(--match-ring);
+  transform-style: preserve-3d;
+}
+
+/* The suite is the top face: same classes as 2D give it the fill, edges, dimming and selection ring. */
+.cell > .suite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  transform: translateZ(1px); /* off the slab's plane: hit-testing is then unambiguous */
+}
+
+/* The projected outline is a secondary cue; the chip carries the visible focus indicator. */
+.cell > .suite:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 1px; }
+
+/* ---------- side faces ---------- */
+
+.face {
+  position: absolute;
+  display: flex;
+  gap: var(--suite-gap);
+  background: var(--c-border-strong);
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+.front, .back {
+  left: 0;
+  width: 100%;
+  height: var(--t);
+  padding: 0 var(--suite-gap);
+  filter: brightness(0.8);
+}
+
+.front { top: 100%; transform-origin: top; transform: rotateX(-90deg); }
+.back { top: calc(-1 * var(--t)); transform-origin: bottom; transform: rotateX(90deg); }
+
+.left, .right {
+  top: 0;
+  width: var(--t);
+  height: 100%;
+  filter: brightness(0.62);
+}
+
+.left { left: calc(-1 * var(--t)); transform-origin: right; transform: rotateY(-90deg); }
+.right { left: 100%; transform-origin: left; transform: rotateY(90deg); }
+
+.stripCell {
+  min-width: 0;
+  border-radius: 0;
+  transition: none;
+}
+
+/* ---------- labels: upright chips standing on the top face ---------- */
+
+.chip {
+  position: absolute;
+  transform-origin: 0 0;
+  pointer-events: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip {
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.86);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  line-height: 14px;
+  /* lean toward the edge facing the viewer: that is the part of a lower floor the floor above does not cover */
+  transform:
+    translate(calc(sin(var(--rot, -35deg)) * var(--lean)), calc(cos(var(--rot, -35deg)) * var(--lean)))
+    rotateZ(calc(-1 * var(--rot, -35deg)))
+    rotateX(calc(-1 * var(--tilt)))
+    translate(-50%, -85%)
+    translateZ(200px); /* along the view axis: no shift on screen, but drawn in front of the floor above */
+}
+
+.chip[data-dimmed='true'] { opacity: 0.4; }
+
+/* A dimmed suite lights up while focused or selected, label included. */
+.suite:focus-visible + .chip,
+.chip[data-selected='true'] { opacity: 1; }
+
+.chip[data-narrow='true'] { display: none; }
+.suite:focus-visible + .chip[data-narrow='true'] { display: inline-flex; }
+
+.suite:focus-visible + .chip {
+  box-shadow: 0 0 0 2px var(--c-surface), 0 0 0 5px var(--c-focus);
+  background: var(--c-focus);
+  color: #fff;
+}
+
+.chip[data-selected='true'] {
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: 0 0 0 2px var(--c-text);
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-size: var(--fs-2xs);
+  line-height: 1;
+}
+
+/* ---------- controls ---------- */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding-left: var(--floor-label-w);
+}
+
+.hint {
+  margin-right: auto;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.ctl {
+  padding: 2px var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.ctl[aria-disabled='true'] { color: var(--c-text-muted); cursor: default; opacity: 0.6; }
+.ctl:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+
+/* No CSS trig: skip the lean toward the viewer and keep the chip upright over the centre. */
+@supports not (transform: rotate(calc(sin(1deg) * 1deg))) {
+  .chip {
+    transform: rotateZ(calc(-1 * var(--rot, -35deg))) rotateX(calc(-1 * var(--tilt))) translate(-50%, -85%) translateZ(200px);
+  }
+}

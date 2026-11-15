@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react'
+import { joinsNext } from './joins'
 import { MatchOutline } from './MatchOutline'
 import { SuiteCell } from './SuiteCell'
 import { segments } from './segments'
-import type { FloorVisual, SuiteVisual } from './suiteVisual'
+import type { FloorVisual } from './suiteVisual'
 import type { RovingItemProps } from './useRovingFocus'
 import styles from './stack.module.css'
 
@@ -11,14 +12,6 @@ type Props = {
   getItemProps: (id: string) => RovingItemProps
   onSelect: (suiteId: string) => void
   testId?: string // default `floor-{n}`
-}
-
-const isOpenVacant = (v: SuiteVisual | undefined) => v?.status.status === 'vacant' && v.status.overlay !== 'committed'
-
-/** A dashed joint is drawn between neighbouring vacant suites that can combine (spec A4). */
-function joinsNext(suites: readonly SuiteVisual[], i: number): boolean {
-  const v = suites[i]
-  return Boolean(v?.suite.joinsNext) && isOpenVacant(v) && isOpenVacant(suites[i + 1])
 }
 
 export function FloorRow({ floor, getItemProps, onSelect, testId }: Props) {

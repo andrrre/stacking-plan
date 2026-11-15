@@ -1,4 +1,5 @@
 import { useAppState } from '../../app/state/useAppState'
+import { ViewToggle } from '../three-d/ViewToggle'
 import { ColourModeToggle } from './ColourModeToggle'
 import styles from './risk.module.css'
 
@@ -7,7 +8,7 @@ export function StackToolbar() {
   return (
     <div className={styles.toolbar} role="toolbar" aria-label="Stack display options">
       <ColourModeToggle mode={state.mode} onChange={(mode) => dispatch({ type: 'mode/set', mode })} />
-      {/* slot:view-toggle (S13) */}
+      <ViewToggle view={state.view} onChange={(view) => dispatch({ type: 'view/set', view })} />
     </div>
   )
 }
