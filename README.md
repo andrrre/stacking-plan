@@ -38,14 +38,16 @@ Nothing from the design was cut. All fifteen planned stories are built, includin
 - Floors top to bottom, suites left to right. Suite width is proportional to area.
 - Status comes from the as-of date: occupied, expiring (within 12 months), vacant, common space.
 - Four KPI tiles: occupancy, vacant SF, SF expiring within 12 months, largest contiguous block. Clicking a tile highlights its suites.
-- Every suite is a keyboard-focusable button with a full text label. Status is never shown by colour alone.
+- Every suite is a keyboard-focusable button with a full text label. In the 2D stack, availability status is never shown by colour alone: vacant suites are hatched and say "VACANT", expiring suites show a clock and the end date, potential suites have a dashed edge and say "Potential" (with the ending lease when the cell is wide enough), and committed suites show a lock. Lease-risk mode is the exception noted under limitations.
+- The 3D view shows status by colour plus a glyph on each suite's number chip (a clock for expiring, a lock for committed). Full detail is in 2D.
 - Suite details: tenant, area, rent, lease dates, months left, what the suite can combine with.
 
 **Space finder**
 - Requirement: minimum SF, optional maximum SF, optional maximum rent, "include potential space".
 - Matches are single suites or runs of neighbouring suites that are marked combinable. Runs are minimal. The top 5 are ranked: firm before potential, smallest excess SF, fewest suites, higher floor.
 - "Why this works" for each match: suites, total SF, excess, blended asking rent, the date all space is free, and plain-word caveats.
-- When nothing fits, the app says why (largest block, space split across floors, a limit that is too tight) and names the earliest date a fit appears, with a **Jump to date** button.
+- When nothing fits, the app says why (largest block, space split across floors, a limit that is too tight) and names the earliest date a fit appears, with a **Jump to date** button. If potential space is switched off and a potential fit exists on the date shown, it offers **Include potential space** instead.
+- While a requirement field is invalid, the list keeps the last valid results and says so above them.
 
 **Time machine**
 - A date slider from today to five years out, in monthly steps (61 positions). Statuses, KPIs, matches and the 3D view all recompute.
@@ -101,6 +103,8 @@ npm run dev                        # http://localhost:5173
 
 The AI endpoints (`/api/ask`, `/api/summary`) are Vercel functions and do not run under `npm run dev`. The app does not need them: it falls back to offline parsing and templated text.
 
+A deploy ships security headers from `vercel.json`: a Content-Security-Policy and related headers.
+
 ### The `?today=` parameter
 
 The app reads today's date once. Add `?today=YYYY-MM-DD` to the URL to override it, for example `http://localhost:5173/?today=2026-11-15`.
@@ -122,9 +126,11 @@ What is sent to the model:
 
 - **Ask:** the sentence the broker typed (at most 500 characters) and today's date. The model returns only requirement fields (minimum and maximum SF, maximum rent, move-in date), checked against a schema. It never picks suites; the deterministic finder does.
 - **Client summary intro:** the shortlisted options in their client wording: building name, floor, suite numbers, SF, asking rent, available-from date, caveat notes. Never tenant names. At most 5 options.
-- **Imported buildings:** nothing for the summary intro, because imported data may be real. The Ask sentence is not building data and is still sent.
+- **Imported buildings:** nothing. While an imported building is shown, neither the Ask box nor the summary intro makes an AI request, because imported data may be real; both use the offline parser and templated copy.
 
 If the key is missing, or the call fails or takes more than 8 seconds, the app uses the offline parser and templated summary copy. The Ask box then shows an "offline parsing" note.
+
+For a public deploy, use a dedicated key with a spend limit set at the provider, and set it for the Production environment only, so preview deploys do not get it.
 
 ## Tools used
 
@@ -141,12 +147,14 @@ The challenge deck asks developer teams to use the BMAD loop (the `bmad-loop` to
 - Each story was implemented by a separate agent with no shared context.
 - The orchestrator ran the test command (`typecheck`, `lint`, `test`, then Playwright).
 - A separate reviewer agent reviewed every feature story before its commit (the two stack-view parts were reviewed together). The scaffold and the end-to-end demo-flow test were checked by the orchestrator only, with no reviewer agent.
-- There is one commit per story. `git log` has 21 commits: 16 feature-story commits (scaffold; types, data and status logic; stack view in two parts; KPIs and details; slider; finder; why and no-fit; lease risk; URL and second building; Ask; shortlist and summary; scenarios; 3D; CSV; AI summary), the end-to-end demo-flow test, a visual polish pass, these documents, and 2 small fixes (a test cleanup and a typecheck of the `api/` folder).
+- There is one commit per story; see `git log`. By kind: 16 feature-story commits (scaffold; types, data and status logic; stack view in two parts; KPIs and details; slider; finder; why and no-fit; lease risk; URL and second building; Ask; shortlist and summary; scenarios; 3D; CSV; AI summary), the end-to-end demo-flow test, a visual polish pass, these documents, small fixes, and the final-validation fixes.
 - **Stories built in parallel within a wave were tested together as one combined tree and then committed one by one.** Those individual commits were not each tested in isolation, so checking out a commit in the middle of a wave may not pass the full test command.
+
+At the end, three final validators (functional, security, code quality) reviewed the whole project, and their findings were fixed in a final commit.
 
 Reviews were substantive, not a rubber stamp. Several used independent brute-force or property checks against the domain logic: the space finder on 100,000 randomised cases, the no-fit explanation on 18,208, scenarios on 40,000, and the CSV parser on 1,357 hostile inputs. Reviews changed the code. Examples: a size parser read "10,5k" as 105,000 SF; an API endpoint accepted cross-site requests; clicks in the 3D view missed suites; a dialog's focus trap could be escaped.
 
-**Test counts at the time of writing:** 897 Vitest tests in 71 files, all passing; 89 Playwright tests in 15 files. The Playwright tests were counted with `npx playwright test --list`, not run for this document.
+**Test counts at the time of writing:** 980 Vitest tests in 76 files and 92 Playwright tests in 15 files, all passing in `npm run test:all`.
 
 **Not used, although the deck suggests them:** the UI/UX Pro Max and Taste skills, Lovable, Claude Design, ElevenLabs.
 
@@ -176,11 +184,11 @@ From the design:
 
 - **Desktop only.** Designed for 1280 px wide and up. No mobile layout.
 - **No accounts, no server database.** State lives in the browser. The URL holds the view; the shortlist and imported buildings are in `localStorage`. Scenarios are in memory and vanish on reload.
-- **Imported buildings:** if browser storage is full, the save fails silently and the building is gone after reload. CSV dates must be `YYYY-MM-DD` and the file UTF-8. Limits: 1 MB, 2,000 rows.
+- **Imported buildings:** they can be removed from the building switcher. If browser storage is full, the save fails silently and the building is gone after reload. CSV dates must be `YYYY-MM-DD` and the file UTF-8; dates outside the years 1900 to 2200 are rejected. Limits: 1 MB, 2,000 rows.
 - **Lease-risk mode:** suites narrower than 140 px show the risk bucket by colour only. The words are in the tooltip and the screen-reader label.
 - **Offline parser gaps:** it ignores sizes written with a European thousands dot ("9.000 SF") and does not read "by next year".
-- **AI summary intro:** requested only for the two bundled buildings, never for an imported one. The client summary shows no "offline" note when it uses the template.
-- **Rate limit is best-effort.** `/api/ask` and `/api/summary` share one budget of 10 requests per minute per client, counted per serverless instance. It trusts the platform's forwarded-IP headers. Real spend control is a budget cap on the provider key.
+- **AI on imported buildings:** the Ask box and the summary intro make no AI request for an imported building, only for the two bundled ones. The client summary shows no "offline" note when it uses the template.
+- **Rate limit is best-effort.** `/api/ask` and `/api/summary` deploy as separate functions, so each has its own budget of 10 requests per minute per client, counted per serverless instance; they do not share one. It trusts the platform's forwarded-IP headers. Real spend control is a budget cap on the provider key.
 - **No authentication** on the API endpoints. They accept only same-site JSON requests.
 - **Unverified on Vercel.** The `api/` functions have only been run in tests. Whether their imports resolve on Vercel is unknown until a deploy. If they fail, the AI paths return errors and the offline fallback keeps the app working.
 - **Playwright tests use one browser** (Chromium, 1440 x 900, New York time zone). Other browsers are untested.
@@ -195,13 +203,21 @@ From the design:
 | Public app link | Not done | Needs a Vercel account login and a decision to publish. An Anthropic key is optional. |
 | Demo video (60 s or less) | Not done | The planned tooling needs an ElevenLabs account. The beats are written in DESIGN.md section 9. |
 
+**Recording the demo:** go back to the match list ("All matches") before dragging the date. An open "why this works" panel hides the re-ranking.
+
 ## Repository map
 
 | Path | Contents |
 |---|---|
 | `DESIGN.md` | Product design and judging criteria |
+| `src/app/` | App shell and state: reducer, URL and storage sync |
 | `src/domain/` | Pure logic: status, KPIs, finder, no-fit, scenarios, CSV, query parser |
+| `src/shared/` | zod schemas and limits shared with the server |
+| `src/styles/` | Design tokens and global CSS |
 | `src/features/` | One folder per feature (stack, finder, shortlist, scenario, ask, 3D, import) |
 | `src/data/` | The two bundled mock buildings |
 | `api/`, `server/` | The two optional AI endpoints and their shared code |
 | `e2e/` | Playwright tests, including the three judging questions |
+| `docs/` | The development plan, and `docs/spec/`: the requirement resolutions and technical specification written before the build |
+
+Code comments that cite "spec" (for example "spec A6" or "spec-technical §5.4") refer to the files in `docs/spec/`.

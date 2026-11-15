@@ -1,7 +1,7 @@
 import type { MatchRun } from './suiteVisual'
 
-// How a floor's suites split into plain suites and match outlines. Pure, so the 2D stack, the 3D view (S13)
-// and the summary's mini stack (S9) draw the same outlines.
+// How a floor's suites split into plain suites and match outlines. Pure, so the 2D stack, the 3D view
+// and the client summary's mini stack draw the same outlines.
 
 export type Segment = { kind: 'suite'; index: number } | { kind: 'run'; run: MatchRun }
 

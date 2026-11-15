@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { StateProvider } from '../../app/state/StateProvider'
 import { initState } from '../../app/state/init'
 import type { AppState } from '../../app/state/types'
+import { StackView } from '../stack/StackView'
 import { KpiBar } from './KpiBar'
 
 const TODAY = '2026-11-15'
@@ -76,6 +77,24 @@ describe('KpiBar', () => {
     await userEvent.keyboard('{Escape}')
     expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'true')
     ;(document.activeElement as HTMLElement).blur()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('Escape on a selected, focused suite clears the selection only; a second Escape clears the highlight', async () => {
+    render(
+      <StateProvider initialState={initState('', null, TODAY)}>
+        <KpiBar />
+        <StackView />
+      </StateProvider>,
+    )
+    await userEvent.click(screen.getByTestId('kpi-vacant'))
+    await userEvent.click(screen.getByTestId('suite-odt-500'))
+    expect(screen.getByTestId('suite-odt-500')).toHaveFocus()
+    expect(screen.getByTestId('suite-odt-500')).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('suite-odt-500')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'true')
     await userEvent.keyboard('{Escape}')
     expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'false')
   })

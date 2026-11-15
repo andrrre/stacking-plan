@@ -91,7 +91,7 @@ The prototype already has keyboard-focusable suites, arrow-key navigation, text 
 
 ### Testing
 
-The prototype has 897 unit and component tests and 89 end-to-end tests, all on fictional data in one browser.
+The prototype has 980 unit and component tests and 92 end-to-end tests, all on fictional data in one browser.
 
 - Add a contract test suite for the xRE adapter, using anonymised real records.
 - Run end-to-end tests on more than Chromium and at the component's real width.

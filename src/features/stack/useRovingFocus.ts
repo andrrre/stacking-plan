@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type KeyboardEvent } fr
 
 // Roving tabindex over a grid of rows (spec-technical §4): exactly one item has tabIndex 0.
 // Left/Right move within a row, Up/Down move to the same index on the previous/next row (clamped),
-// Enter and Space select, Escape clears the selection. When an item's element is replaced while it holds
+// Enter and Space select, Escape clears the selection (and marks the event handled when there was one). When an item's element is replaced while it holds
 // focus (a match outline re-parents it), focus moves to the new element.
 
 export type RovingItemProps = {
@@ -63,9 +63,11 @@ export function useRovingFocus(grid: Grid, { selectedId, onSelect }: RovingOptio
       e.preventDefault() // the button would otherwise also fire a click
       onSelect(id)
     } else if (e.key === 'Escape') {
+      // Handled only when it clears a suite selection; otherwise it passes on (the KPI bar clears its highlight).
+      if (selectedId !== null) e.preventDefault()
       onSelect(null)
     }
-  }, [grid, onSelect])
+  }, [grid, onSelect, selectedId])
 
   const getItemProps = (id: string): RovingItemProps => ({
     tabIndex: id === activeId ? 0 : -1,

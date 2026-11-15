@@ -14,8 +14,8 @@
 .stage {
   --tilt: 58deg;
   --w: min(360px, 80cqw); /* footprint width, from the pane */
-  /* Floor-to-floor rise. The --floor-3d-h token (22px) leaves the lower slabs hidden behind the floor above, so
-     3D uses its own step; it shrinks for tall buildings so the stage height stays bounded. */
+  /* Floor-to-floor rise: tall enough that each lower slab's front edge shows below the floor above, and
+     shrinking for tall buildings so the stage height stays bounded. */
   --step: min(23px, calc(300px / var(--floors)));
   --t: min(10px, calc(var(--step) * 0.5)); /* slab thickness */
   position: relative;

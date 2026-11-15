@@ -37,16 +37,20 @@
 .unit { color: var(--c-text-muted); font-size: var(--fs-xs); }
 .none { color: var(--c-text-muted); }
 
+/* Option number: the shortlist's neutral outlined square (shortlist.module.css), not a match rank's pink circle. */
 .badge {
   display: inline-grid;
   place-items: center;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: var(--c-accent);
-  color: var(--c-accent-ink);
+  border: 1.5px solid var(--c-text);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
 .whatIf {

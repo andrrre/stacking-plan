@@ -1,15 +1,12 @@
 import type { ReactNode } from 'react'
 import { useAppState } from '../../app/state/useAppState'
 import { caveatText } from '../../domain/caveats'
-import { formatLongDate, formatNumber, formatPsf, formatSf } from '../../domain/format'
+import { formatLongDate, formatNumber, formatPsf, formatSf, suitesLabel } from '../../domain/format'
 import type { Candidate } from '../../domain/types'
 import { PlaceTenant } from '../scenario/PlaceTenant'
 import styles from './MatchWhy.module.css'
 
 type Props = { candidate: Candidate; rank: number }
-
-const suitesText = (c: Candidate) =>
-  c.suiteNumbers.length === 1 ? `Suite ${c.suiteNumbers[0]}` : `Suites ${c.suiteNumbers.join(' + ')}`
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -34,7 +31,7 @@ export function MatchWhy({ candidate: c, rank }: Props) {
         <span className={styles.rank} aria-hidden="true">{rank}</span>
         <div>
           <p className={styles.kicker}>Why this works · match {rank}</p>
-          <h2 id="match-why-title" className={styles.title} tabIndex={-1} data-focus-target="why">{suitesText(c)}</h2>
+          <h2 id="match-why-title" className={styles.title} tabIndex={-1} data-focus-target="why">{suitesLabel(c.suiteNumbers)}</h2>
           <p className={styles.where}>Floor {c.floor}{combined ? ` · ${c.suiteIds.length} suites combined` : ''}</p>
         </div>
       </header>

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type SyntheticEvent
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { selectBaseBuilding } from '../../app/state/selectors'
 import { useAppState } from '../../app/state/useAppState'
-import { formatLongDate, formatSf } from '../../domain/format'
+import { formatLongDate, formatSf, suitesLabel } from '../../domain/format'
 import { applyScenario, findLease } from '../../domain/scenario'
 import type { Building, Change } from '../../domain/types'
 import { parseForm, toForm, type ChangeForm } from './changeForm'
@@ -17,11 +17,10 @@ function heading(b: Building, c: Change): Heading {
     const suites = b.floors.flatMap((f) => f.suites).filter((s) => c.suiteIds.includes(s.id))
     const numbers = suites.map((s) => s.number)
     const area = suites.reduce((sum, s) => sum + s.areaSf, 0)
-    const where = numbers.length === 1 ? `Suite ${numbers[0]}` : `Suites ${numbers.join(' + ')}`
-    return { title: 'New lease', sub: `${where} · ${formatSf(area)}` }
+    return { title: 'New lease', sub: `${suitesLabel(numbers)} · ${formatSf(area)}` }
   }
   const loc = findLease(b, c.leaseId)
-  const sub = loc ? `${loc.lease.tenant} · Suite ${loc.suite.number}` : ''
+  const sub = loc ? `${loc.lease.tenant} · ${suitesLabel([loc.suite.number])}` : ''
   const term = loc ? `Lease ${formatLongDate(loc.lease.start)} → ${loc.lease.end ? formatLongDate(loc.lease.end) : 'no end date'}` : undefined
   return { title: c.kind === 'renew' ? 'Renew lease' : 'Vacate', sub, hint: term }
 }

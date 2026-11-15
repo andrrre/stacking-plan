@@ -208,6 +208,10 @@
   text-overflow: ellipsis;
 }
 
+/* A potential suite's reason ("Tenant lease ends 04/2027") trails the word "Potential" and is the first thing
+   cut: the ellipsis eats it on a mid-width cell, and it goes entirely where it would leave only a stub. */
+.reason { font-weight: var(--fw-medium); opacity: .85; }
+
 /* Plain vacant space shouts its status: "VACANT" (the model says "Vacant"). */
 .suite[data-status='vacant'][data-overlay='none'] .primary {
   text-transform: uppercase;
@@ -215,6 +219,10 @@
 }
 
 /* Label tiers by cell width (literal px: custom properties do not work in @container conditions). */
+@container (max-width: 179px) {
+  .reason { display: none; }
+}
+
 @container (max-width: 139px) {
   .end, .tag { display: none; }
 }

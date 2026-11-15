@@ -1,13 +1,10 @@
 import { useAppState } from '../../app/state/useAppState'
-import { formatMonthYear, formatNumber, formatPsf, formatSf } from '../../domain/format'
+import { formatMonthYear, formatNumber, formatPsf, formatSf, suitesLabel } from '../../domain/format'
 import type { Candidate, ISODate } from '../../domain/types'
 import { SaveMatch } from '../shortlist/SaveMatch'
 import styles from './MatchCard.module.css'
 
 type Props = { candidate: Candidate; rank: number }
-
-const suitesText = (c: Candidate) =>
-  c.suiteNumbers.length === 1 ? `Suite ${c.suiteNumbers[0]}` : `Suites ${c.suiteNumbers.join(' + ')}`
 
 /** "now" iff the space is free by today; a firm run freed later still reads "from MMM yyyy" (spec A5). */
 const availabilityText = (c: Candidate, today: ISODate) =>
@@ -26,7 +23,7 @@ export function MatchCard({ candidate: c, rank }: Props) {
         <span className={styles.rank} aria-hidden="true">{rank}</span>
         <span className={styles.body}>
           <span className={styles.line}>
-            <span className={styles.title}><span className={styles.sr}>Match {rank}:</span> {suitesText(c)}</span>
+            <span className={styles.title}><span className={styles.sr}>Match {rank}:</span> {suitesLabel(c.suiteNumbers)}</span>
             <span className={styles.total}>{formatSf(c.totalSf)}</span>
           </span>
           <span className={styles.line}>

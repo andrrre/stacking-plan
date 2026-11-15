@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactElement } from 'react'
 import { joinsNext } from '../stack/joins'
 import { segments } from '../stack/segments'
+import { ClockGlyph, LockGlyph } from '../stack/SuiteCell'
 import { suiteDataAttributes } from '../stack/suiteAttributes'
 import type { FloorVisual } from '../stack/suiteVisual'
 import type { RovingItemProps } from '../stack/useRovingFocus'
@@ -67,6 +68,7 @@ export function Floor3D({ floor, level, dense = false, getItemProps, onSelect }:
     if (!v) return <span key={i} />
     const approxPx = (v.suite.areaSf / floor.plateSf) * (floor.widthPct / 100) * REF_WIDTH_PX
     const narrow = (dense || approxPx < NARROW_PX) && !v.selected && v.matchRank === null
+    const cue = v.label.cue // the same status glyph as the 2D cell: clock when expiring, lock when committed
     return (
       <div key={v.suite.id} className={styles.cell} style={{ flexGrow: v.suite.areaSf }}>
         <button
@@ -82,8 +84,12 @@ export function Floor3D({ floor, level, dense = false, getItemProps, onSelect }:
         >
           {v.modified && <span className={stackStyles.modifiedDot} aria-hidden="true" />}
         </button>
-        <span className={styles.chip} data-narrow={String(narrow)} data-dimmed={String(v.dimmed)} data-selected={String(v.selected)} aria-hidden="true">
+        <span
+          className={styles.chip} data-narrow={String(narrow)} data-dimmed={String(v.dimmed)} data-selected={String(v.selected)}
+          data-cue={cue?.glyph} aria-hidden="true"
+        >
           {badge !== null && <span className={styles.badge}>{badge}</span>}
+          {cue && (cue.glyph === 'lock' ? <LockGlyph /> : <ClockGlyph />)}
           {v.suite.number}
         </span>
       </div>

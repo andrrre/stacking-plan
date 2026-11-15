@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest'
-import { formatLongDate, formatMmYyyy, formatMoney, formatMonthYear, formatNumber, formatPsf, formatSf } from './format'
+import { formatLongDate, formatMmYyyy, formatMoney, formatMonthYear, formatNumber, formatPsf, formatSf, suitesLabel } from './format'
 
 it('formats square feet with thousands separators', () => {
   expect(formatSf(38150)).toBe('38,150 SF')
@@ -27,4 +27,11 @@ it('formats dates', () => {
   expect(formatMmYyyy('2027-04-30')).toBe('04/2027')
   expect(formatLongDate('2027-04-30')).toBe('30 Apr 2027')
   expect(formatLongDate('2026-11-05')).toBe('5 Nov 2026')
+})
+
+it('names one suite or a run of suites', () => {
+  expect(suitesLabel(['500'])).toBe('Suite 500')
+  expect(suitesLabel(['700', '710'])).toBe('Suites 700 + 710')
+  expect(suitesLabel(['1000', '1010', '1020'])).toBe('Suites 1000 + 1010 + 1020')
+  expect(suitesLabel([])).toBe('')
 })

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { gotoApp } from './helpers'
 
-// No URL assertions here (plan C1): S10 checks the serialized URL after a jump.
+// No URL assertions here: the URL spec checks the serialized URL after a jump.
 test.describe('why this works, no-fit, jump to date', () => {
   test.beforeEach(async ({ page }) => gotoApp(page))
 

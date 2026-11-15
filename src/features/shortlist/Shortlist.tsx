@@ -1,7 +1,6 @@
 import { useAppState } from '../../app/state/useAppState'
-import { formatLongDate, formatNumber, formatPsf } from '../../domain/format'
+import { formatLongDate, formatNumber, formatPsf, suitesLabel } from '../../domain/format'
 import { useShortlist } from './useShortlist'
-import { suitesLabel } from './suitesLabel'
 import styles from './shortlist.module.css'
 
 /** The entries saved for this building: frozen snapshots, each removable, with the compare entry point. */
@@ -27,7 +26,7 @@ export function Shortlist() {
               <span className={styles.rank} aria-hidden="true">{i + 1}</span>
               <div className={styles.body}>
                 <p className={styles.line}>
-                  <span className={styles.name}>{suitesLabel(e.candidate)}</span>
+                  <span className={styles.name}>{suitesLabel(e.candidate.suiteNumbers)}</span>
                   <span className={styles.num}>{formatNumber(e.candidate.totalSf)} SF</span>
                 </p>
                 <p className={styles.meta}>
@@ -41,7 +40,7 @@ export function Shortlist() {
               </div>
               <button
                 type="button" className={styles.remove} data-testid={`shortlist-remove-${i + 1}`}
-                aria-label={`Remove ${suitesLabel(e.candidate)}`}
+                aria-label={`Remove ${suitesLabel(e.candidate.suiteNumbers)}`}
                 onClick={() => dispatch({ type: 'shortlist/remove', id: e.id })}
               >
                 <span aria-hidden="true">×</span>

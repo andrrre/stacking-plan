@@ -1,3 +1,4 @@
+import { FormValidityProvider } from '../features/finder/FormValidityProvider'
 import { CenterPane } from '../features/layout/CenterPane'
 import { Header } from '../features/layout/Header'
 import { LeftRail } from '../features/layout/LeftRail'
@@ -19,9 +20,11 @@ export function App() {
         <Header />
         <KpiBar />
         <main className={styles.body}>
-          <LeftRail />
-          <CenterPane />
-          <RightPanel />
+          <FormValidityProvider>
+            <LeftRail />
+            <CenterPane />
+            <RightPanel />
+          </FormValidityProvider>
         </main>
       </div>
       <Overlays />

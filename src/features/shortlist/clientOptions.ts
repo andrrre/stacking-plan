@@ -1,8 +1,8 @@
+import { suitesLabel } from '../../domain/format'
 import type { ISODate, ShortlistEntry } from '../../domain/types'
 import { optionNotes } from './optionNotes'
-import { suitesLabel } from './suitesLabel'
 
-/** One option as a client may see it. The single client projection: the summary table renders it, S15 sends it. */
+/** One option as a client may see it. The single client projection: the summary table renders it and the AI summary request sends it. */
 export type ClientOption = {
   rank: number
   label: string
@@ -19,7 +19,7 @@ export type ClientOption = {
 export function clientOptions(entries: readonly ShortlistEntry[]): ClientOption[] {
   return entries.map((e, i) => ({
     rank: i + 1,
-    label: suitesLabel(e.candidate),
+    label: suitesLabel(e.candidate.suiteNumbers),
     floor: e.candidate.floor,
     suiteNumbers: [...e.candidate.suiteNumbers],
     totalSf: e.candidate.totalSf,

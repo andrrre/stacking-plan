@@ -37,6 +37,9 @@ test.describe('date slider', () => {
     await expect(s600).toHaveAttribute('data-overlay', 'potential')
     await expect(s600).toHaveAttribute('title', /Potential · Flamingo Row Media lease ends 04\/2027/)
     await expect(s600).toHaveAttribute('aria-label', /potential: Flamingo Row Media lease ends 30 Apr 2027/)
+    // The reason is on the cell itself, after the word "Potential", not only in the tooltip.
+    await expect(s600.getByText('Potential', { exact: false })).toBeVisible()
+    await expect(s600.getByText('Flamingo Row Media lease ends 04/2027', { exact: false })).toBeVisible()
   })
 
   test('suite colour transition exists, and is off under reduced motion', async ({ page }) => {

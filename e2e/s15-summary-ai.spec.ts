@@ -40,7 +40,7 @@ test.describe('client summary intro', () => {
     await expect(intro).toContainText(HEADLINE)
     await expect(intro).toContainText('10,250 to 12,400 SF')
     await expect(intro).toContainText('earliest available from 15 Nov 2026 (Suite 500)')
-    await expect(intro).toContainText('Notes: Suite 600 – subject to the current tenant vacating (30 Apr 2027).')
+    await expect(intro).toContainText('(Suite 500). Suite 600 – subject to the current tenant vacating (30 Apr 2027).')
     await expect(intro).toHaveAttribute('data-source', 'template')
     await expect.poll(() => bodies.length).toBe(1)
 

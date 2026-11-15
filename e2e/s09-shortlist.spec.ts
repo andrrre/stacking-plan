@@ -35,6 +35,18 @@ test.describe('shortlist, compare, client summary', () => {
     await expect(page.getByTestId('save-match-1')).not.toContainText('Saved')
   })
 
+  test('a shortlist option number does not look like a match rank', async ({ page }) => {
+    await page.getByTestId('save-match-1').click()
+    const look = (el: import('@playwright/test').Locator) => el.evaluate((n) => {
+      const cs = getComputedStyle(n)
+      return { bg: cs.backgroundColor, radius: cs.borderTopLeftRadius }
+    })
+    const option = await look(page.getByTestId('shortlist-entry-1').locator('[aria-hidden="true"]').first())
+    const rank = await look(page.getByTestId('match-1').locator('[aria-hidden="true"]').first())
+    expect(option.bg).not.toBe(rank.bg)
+    expect(option.radius).not.toBe(rank.radius)
+  })
+
   test('an entry can be removed, and the summary button needs one', async ({ page }) => {
     await expect(page.getByTestId('open-summary')).toBeDisabled()
     await page.getByTestId('save-match-1').click()

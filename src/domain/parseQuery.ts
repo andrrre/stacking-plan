@@ -1,4 +1,5 @@
 import { isoDate } from '../shared/isoDate'
+import { MAX_RENT_PSF, MAX_REQ_SF, MIN_RENT_PSF, MIN_REQ_SF } from './constants'
 import { addDaysIso, addMonthsIso } from './dates'
 import type { ISODate, ParsedQuery } from './types'
 
@@ -6,8 +7,6 @@ import type { ISODate, ParsedQuery } from './types'
 // then rents, so a year or a "$" amount is never read as a size.
 
 const MAX_CHARS = 500
-const MAX_SF = 1_000_000
-const MAX_RENT = 1000
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 const MONTH = String.raw`(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?`
@@ -95,7 +94,7 @@ function findRent(text: string): number | undefined {
     const amounts = [g.a && toNumber(g.a) * (g.ak ? 1000 : 1), g.b && toNumber(g.b) * (g.bk ? 1000 : 1), g.c && toNumber(g.c)]
       .filter((x): x is number => typeof x === 'number')
     const rent = Math.max(...amounts)
-    if (rent >= 1 && rent <= MAX_RENT) return rent
+    if (rent >= MIN_RENT_PSF && rent <= MAX_RENT_PSF) return rent
   }
   return undefined
 }
@@ -106,7 +105,7 @@ function areaOf(t: Term): number | null {
   const bare = !t.k && !t.unit
   if (bare && (t.n < 1000 || /^(?:19|20)\d{2}$/.test(t.raw))) return null // under 1000, or a year
   const sf = Math.round(t.n * (t.k ? 1000 : 1))
-  return sf >= 1 && sf <= MAX_SF ? sf : null
+  return sf >= MIN_REQ_SF && sf <= MAX_REQ_SF ? sf : null
 }
 
 function termOf(g: Record<string, string | undefined>, p: 'a' | 'b'): Term | null {

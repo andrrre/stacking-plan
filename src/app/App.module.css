@@ -2,7 +2,7 @@
   height: 100%;
 }
 
-/* Header, KPI bar (S4), then three columns that scroll on their own. */
+/* Header, KPI bar, then three columns that scroll on their own. */
 .shell {
   display: flex;
   flex-direction: column;

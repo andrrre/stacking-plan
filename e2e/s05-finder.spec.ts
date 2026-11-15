@@ -61,6 +61,15 @@ test.describe('space finder', () => {
     await expect(page.getByTestId('req-max-sf')).toHaveAttribute('aria-invalid', 'true')
     await expect(page.getByTestId('match-1')).toHaveAttribute('data-key', 'odt-500')
     await expect(page.getByTestId('match-2')).toHaveAttribute('data-key', 'odt-700+odt-710')
+    // The list says its results are for the last valid requirement, and the URL keeps it.
+    const stale = page.getByTestId('match-stale')
+    await expect(stale).toHaveText('Showing results for 10,000 SF+. Fix the highlighted field to update.')
+    await expect(stale).toHaveAttribute('aria-live', 'polite')
+    await expect(stale).toBeVisible()
+    await expect(page).toHaveURL(/[?&]min=10000(&|$)/)
+    await page.getByTestId('req-max-sf').fill('11,000')
+    await expect(stale).toHaveText('')
+    await expect(page.getByTestId('match-2')).toHaveAttribute('data-key', 'odt-700+odt-710')
   })
 
   test('clicking a card opens why it works; back returns to the list', async ({ page }) => {

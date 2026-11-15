@@ -119,7 +119,7 @@ test('keyboard: one tab stop, arrows move focus, Enter selects, Escape clears', 
 
 test('a dimmed suite drops its dimming while focused or selected, so the ring stays visible', async ({ page }) => {
   await gotoApp(page)
-  // Nothing dims the stack before S4/S5, so mark suites dimmed directly; React leaves the unchanged prop alone.
+  // Mark suites dimmed directly rather than through a search or KPI highlight; React leaves the unchanged prop alone.
   const opacity = (n: number) => suite(page, n).evaluate((el) => getComputedStyle(el).opacity)
   // The dimmed opacity is a design token, so assert "dimmed" rather than a literal value.
   const dimmed = async (n: number) => Number(await opacity(n)) < 1

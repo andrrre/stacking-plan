@@ -8,3 +8,4 @@ export const MAX_RESULTS = 5
 export const RISK_EDGES = [6, 12, 24, 36] as const
 /** The shortlist holds at most this many entries (A11). */
 export const MAX_SHORTLIST = 10
+export { MIN_REQ_SF, MAX_REQ_SF, MIN_RENT_PSF, MAX_RENT_PSF } from '../shared/limits'

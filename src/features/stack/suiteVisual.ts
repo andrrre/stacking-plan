@@ -5,7 +5,7 @@ import type { Building, Candidate, Floor, ISODate, RiskBucket, StatusResult, Sui
 import type { ColourMode } from '../../app/state/types'
 
 // The one place that turns data into what a suite looks like and says (spec-technical §4, §5.6, §7).
-// Pure: no React, no clock. Later stories only feed it data.
+// Pure: no React, no clock. Callers only feed it data.
 
 export type FillKey =
   | 'occupied' | 'expiring' | 'vacant' | 'potential' | 'committed' | 'common'
@@ -17,6 +17,7 @@ export type SuiteCue = { glyph: 'clock' | 'lock'; text: string }
 export type SuiteLabel = {
   number: string
   primary: string // tenant | 'Vacant' | 'Potential' | 'Leased from 03/2027' | common-area name
+  reason?: string // potential only, drawn after the primary text: 'Flamingo Row Media lease ends 04/2027'
   sf: string
   end?: string // MM/YYYY, occupied suites with an end date (expiring suites carry it in the cue)
   cue?: SuiteCue
@@ -93,6 +94,11 @@ function primaryFor(s: Suite, st: StatusResult): string {
   }
 }
 
+/** Why a potential suite may come free: "Flamingo Row Media lease ends 04/2027". */
+function potentialReason(st: Extract<StatusResult, { overlay: 'potential' }>): string {
+  return `${st.endedLease.tenant} lease ends ${formatMmYyyy(st.endedLease.end ?? st.availableFrom)}`
+}
+
 function tagFor(st: StatusResult, today: ISODate): string | undefined {
   const from = vacatingFrom(st, today)
   if (from) return `Vacant from ${formatMmYyyy(from)}`
@@ -105,6 +111,7 @@ function labelFor(s: Suite, st: StatusResult, today: ISODate): SuiteLabel {
   const label: SuiteLabel = { number: s.number, primary: primaryFor(s, st), sf: formatSf(s.areaSf), ...(tag && { tag }) }
   if (st.status === 'expiring' && st.lease.end !== null) return { ...label, cue: { glyph: 'clock', text: formatMmYyyy(st.lease.end) } }
   if (st.status === 'vacant' && st.overlay === 'committed') return { ...label, cue: { glyph: 'lock', text: formatMmYyyy(st.nextLease.start) } }
+  if (st.status === 'vacant' && st.overlay === 'potential') return { ...label, reason: potentialReason(st) }
   if (st.status === 'occupied' && st.lease.end !== null) return { ...label, end: formatMmYyyy(st.lease.end) }
   return label
 }
@@ -154,7 +161,7 @@ function headline(st: StatusResult, primary: string): string {
     case 'occupied':
     case 'expiring': return st.lease.end === null ? st.lease.tenant : `${st.lease.tenant} · lease ends ${formatMmYyyy(st.lease.end)}`
     case 'vacant':
-      if (st.overlay === 'potential') return `Potential · ${st.endedLease.tenant} lease ends ${formatMmYyyy(st.endedLease.end ?? st.availableFrom)}`
+      if (st.overlay === 'potential') return `Potential · ${potentialReason(st)}`
       if (st.overlay === 'committed') return `${primary} · ${st.nextLease.tenant}`
       return primary
   }

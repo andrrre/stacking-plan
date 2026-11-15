@@ -34,12 +34,25 @@
   list-style: none;
 }
 
-.none {
+/* The results are for the last valid requirement while a form field is invalid. Empty: kept in the DOM, out of sight. */
+.stale {
   margin: 0;
-  padding: var(--sp-4);
-  border: 1px dashed var(--c-border-strong);
-  border-radius: var(--r-md);
-  color: var(--c-text-muted);
-  font-size: var(--fs-md);
-  text-align: center;
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--c-down);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  line-height: var(--lh);
+  font-variant-numeric: tabular-nums;
+}
+
+.stale:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
 }

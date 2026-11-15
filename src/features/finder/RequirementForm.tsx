@@ -1,10 +1,12 @@
-import { useId, useState, type ChangeEvent } from 'react'
+import { useEffect, useId, useState, type ChangeEvent } from 'react'
 import type { RequirementDraft } from '../../app/state/types'
 import { useAppState } from '../../app/state/useAppState'
+import { MAX_RENT_PSF, MAX_REQ_SF, MIN_RENT_PSF, MIN_REQ_SF } from '../../domain/constants'
 import { formatNumber } from '../../domain/format'
+import { useFormValidity } from './formValidity'
 import styles from './RequirementForm.module.css'
 
-// Spec A13: minSf integer 1..1,000,000 typed as "10000", "10,000" or "10k"; maxSf ≥ minSf; maxRentPsf 1..1,000.
+// Spec A13: minSf a whole number of SF typed as "10000", "10,000" or "10k"; maxSf ≥ minSf; maxRentPsf bounded too.
 
 type FieldKey = 'min' | 'max' | 'rent'
 type Drafts = Record<FieldKey, string>
@@ -12,9 +14,8 @@ type Errors = Partial<Record<FieldKey, string>>
 type Values = Pick<RequirementDraft, 'minSf' | 'maxSf' | 'maxRentPsf'>
 type Parsed = { value: number | null } | { error: string }
 
-const MAX_SF = 1_000_000
-const SIZE_ERROR = 'Enter a whole number of SF between 1 and 1,000,000.'
-const RENT_ERROR = 'Enter a rent between $1 and $1,000 per SF per year.'
+const SIZE_ERROR = `Enter a whole number of SF between ${formatNumber(MIN_REQ_SF)} and ${formatNumber(MAX_REQ_SF)}.`
+const RENT_ERROR = `Enter a rent between $${formatNumber(MIN_RENT_PSF)} and $${formatNumber(MAX_RENT_PSF)} per SF per year.`
 const EMPTY: Drafts = { min: '', max: '', rent: '' }
 
 // Digits, or digits in comma thousands groups; then an optional decimal part and an optional "k".
@@ -27,14 +28,14 @@ function parseSize(text: string): Parsed {
   if (!m) return { error: SIZE_ERROR }
   const x = Number(`${(m[1] ?? '').replace(/,/g, '')}${m[2] ?? ''}`) * (m[3] ? 1000 : 1)
   const n = Math.round(x) // "16.1k" is 16100.000000000002 in floating point
-  return Math.abs(x - n) < 1e-6 && n >= 1 && n <= MAX_SF ? { value: n } : { error: SIZE_ERROR }
+  return Math.abs(x - n) < 1e-6 && n >= MIN_REQ_SF && n <= MAX_REQ_SF ? { value: n } : { error: SIZE_ERROR }
 }
 
 function parseRent(text: string): Parsed {
   const t = text.trim().replace(/^\$/, '')
   if (t === '') return { value: null }
   const n = /^\d+(?:\.\d+)?$/.test(t) ? Number(t) : NaN
-  return n >= 1 && n <= 1000 ? { value: n } : { error: RENT_ERROR }
+  return n >= MIN_RENT_PSF && n <= MAX_RENT_PSF ? { value: n } : { error: RENT_ERROR }
 }
 
 const valueOf = (p: Parsed) => ('value' in p ? p.value : null)
@@ -105,6 +106,10 @@ export function RequirementForm() {
     setDrafts(syncDrafts(drafts, prevReq, req))
   }
   const { errors } = validate(drafts)
+  const hasError = Object.keys(errors).length > 0
+  const { setInvalid } = useFormValidity()
+  useEffect(() => setInvalid(hasError), [hasError, setInvalid])
+  useEffect(() => () => setInvalid(false), [setInvalid])
 
   const onField = (k: FieldKey) => (e: ChangeEvent<HTMLInputElement>) => {
     const next = { ...drafts, [k]: e.target.value }

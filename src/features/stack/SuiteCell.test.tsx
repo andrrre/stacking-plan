@@ -39,4 +39,11 @@ describe('SuiteCell', () => {
       else expect(el).toHaveAttribute(name, String(value))
     }
   })
+
+  it('draws a label reason after the primary text, the primary word first', () => {
+    const v = visual('600')
+    const potential = { ...v, label: { ...v.label, primary: 'Potential', reason: 'Flamingo Row Media lease ends 04/2027' } }
+    render(<SuiteCell visual={potential} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    expect(screen.getByTestId('suite-odt-600')).toHaveTextContent(/Potential\W+Flamingo Row Media lease ends 04\/2027/)
+  })
 })

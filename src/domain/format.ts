@@ -39,3 +39,9 @@ export function formatMmYyyy(d: ISODate): string {
 export function formatLongDate(d: ISODate): string {
   return format(parseISO(d), 'd MMM yyyy')
 }
+
+/** "Suite 500", "Suites 700 + 710"; empty for no suites. */
+export function suitesLabel(suiteNumbers: readonly string[]): string {
+  if (suiteNumbers.length === 0) return ''
+  return suiteNumbers.length === 1 ? `Suite ${suiteNumbers[0]}` : `Suites ${suiteNumbers.join(' + ')}`
+}

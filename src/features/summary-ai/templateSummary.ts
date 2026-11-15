@@ -20,14 +20,25 @@ function span(values: readonly number[], format: (n: number) => string, unit: st
   return lo === hi ? `${format(lo)}${unit}` : `${format(lo)} to ${format(hi)}${unit}`
 }
 
-/** A note as a clause after its option: no closing stop, and a leading capital lowered ("Subject to" → "subject to"). */
+/** A note as a sentence: leading capital, one closing stop. */
+const sentence = (note: string) => `${note.charAt(0).toUpperCase()}${note.slice(1).replace(/\.$/, '')}.`
+
+/** A note as a clause after its option's label: no closing stop, and a leading capital lowered ("Subject to" → "subject to"). */
 const clause = (note: string) => note.replace(/\.$/, '').replace(/^([A-Z])(?=[a-z])/, (c) => c.toLowerCase())
 
+/**
+ * The notes as sentences. One option: each note on its own ("Subject to … . Indicative: …"). Several: each option's
+ * label leads its first note ("Suite 600 – subject to … ."), and any further notes follow as sentences.
+ */
 function notesSentence(options: readonly Option[]): string {
   const withNotes = options.filter((o) => o.notes.length > 0)
-  if (withNotes.length === 0) return ''
-  const items = withNotes.map((o) => `${options.length > 1 ? `${o.label} – ` : ''}${o.notes.map(clause).join('; ')}.`)
-  return `${options.length > 1 || withNotes.some((o) => o.notes.length > 1) ? 'Notes' : 'Note'}: ${items.join(' ')}`
+  if (options.length === 1) return withNotes.flatMap((o) => o.notes.map(sentence)).join(' ')
+  return withNotes
+    .map((o) => {
+      const [first = '', ...rest] = o.notes
+      return [`${o.label} – ${clause(first)}.`, ...rest.map(sentence)].join(' ')
+    })
+    .join(' ')
 }
 
 function rentPhrase(options: readonly Option[]): string {

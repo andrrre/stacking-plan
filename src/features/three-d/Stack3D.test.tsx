@@ -132,6 +132,22 @@ describe('3D keyboard and controls', () => {
     expect(chip('w-3')).toHaveAttribute('data-narrow', 'false')
   })
 
+  it('number chips carry the 2D status glyphs: a clock when expiring, a lock when committed', () => {
+    renderWith(<Stack3D />)
+    const chip = (n: string) => screen.getByTestId(`suite3d-odt-${n}`).nextElementSibling
+    for (const n of ['600', '400', '220', '1000']) {
+      expect(chip(n), n).toHaveAttribute('data-cue', 'clock')
+      expect(chip(n)?.querySelector('svg'), n).not.toBeNull()
+    }
+    expect(chip('1010')).toHaveAttribute('data-cue', 'lock')
+    expect(chip('1010')?.querySelector('svg')).not.toBeNull()
+    for (const n of ['500', '900', '100']) {
+      expect(chip(n), n).not.toHaveAttribute('data-cue')
+      expect(chip(n)?.querySelector('svg'), n).toBeNull()
+    }
+    expect(chip('600')).toHaveTextContent(/^600$/) // the glyph adds no text: the date stays in the label and tooltip
+  })
+
   it('the hero has no narrow suites', () => {
     renderWith(<Stack3D />)
     expect(document.querySelectorAll('[data-narrow="true"]')).toHaveLength(0)

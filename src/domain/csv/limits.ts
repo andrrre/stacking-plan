@@ -1,3 +1,4 @@
+import { MAX_RENT_PSF, MAX_REQ_SF, MIN_REQ_SF } from '../constants'
 import type { CsvColumn, CsvError } from '../types'
 
 /** The template's column order; the header may list them in any order and any case. */
@@ -20,8 +21,8 @@ export const FILE_ROW = 0
 
 export const LIMITS = {
   floor: { min: -10, max: 200 },
-  areaSf: { min: 1, max: 1_000_000 },
-  rentPsf: { min: 0, max: 1000 },
+  areaSf: { min: MIN_REQ_SF, max: MAX_REQ_SF },
+  rentPsf: { min: 0, max: MAX_RENT_PSF },
   buildingName: 80,
   tenant: 80,
   /** Display form as exported ("Suite 300", "3.01", "#300"); the id uses suiteSlug(number). */

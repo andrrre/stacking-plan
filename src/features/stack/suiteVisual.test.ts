@@ -85,6 +85,17 @@ describe('buildStackModel: labels', () => {
     expect(visual(model({ asOf: JUL }), '600').label.primary).toBe('Potential')
   })
 
+  it('a potential suite carries the reason as secondary text: 600 at 2027-07-01', () => {
+    const label = visual(model({ asOf: JUL }), '600').label
+    expect(label.primary).toBe('Potential')
+    expect(label.reason).toBe('Flamingo Row Media lease ends 04/2027')
+  })
+
+  it('only the potential overlay has a reason', () => {
+    const m = model()
+    for (const n of ['500', '600', '1010', '100', '400']) expect(visual(m, n).label.reason, n).toBeUndefined()
+  })
+
   it('common suites show their name', () => {
     expect(visual(model(), '100').label.primary).toBe('Lobby')
     expect(visual(model(), '110').label.primary).toBe('Fitness centre')

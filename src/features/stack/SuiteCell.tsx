@@ -72,7 +72,10 @@ export function SuiteCell({ visual: v, roving, joinsNext, onSelect, testIdPrefix
     >
       <span className={styles.label}>
         <MetaLine label={v.label} />
-        <span className={styles.primary}>{v.label.primary}</span>
+        <span className={styles.primary}>
+          {v.label.primary}
+          {v.label.reason && <span className={styles.reason}> · {v.label.reason}</span>}
+        </span>
       </span>
       {v.modified && <span className={styles.modifiedDot} aria-hidden="true" />}
     </button>

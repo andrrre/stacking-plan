@@ -121,6 +121,24 @@ describe('useRovingFocus', () => {
     expect(onSelect).toHaveBeenLastCalledWith(null)
   })
 
+  it('Escape that clears a selection is marked handled; with nothing selected it passes on', async () => {
+    const seen: boolean[] = []
+    const onDocKey = (e: KeyboardEvent) => { if (e.key === 'Escape') seen.push(e.defaultPrevented) }
+    document.addEventListener('keydown', onDocKey)
+    try {
+      const { user } = setup({ selectedId: 'a2' })
+      await user.tab()
+      await user.keyboard('{Escape}')
+      cleanup()
+      const second = setup({ selectedId: null })
+      await second.user.tab()
+      await second.user.keyboard('{Escape}')
+    } finally {
+      document.removeEventListener('keydown', onDocKey)
+    }
+    expect(seen).toEqual([true, false])
+  })
+
   it('other keys are ignored', async () => {
     const { user, onSelect } = setup()
     await user.tab()

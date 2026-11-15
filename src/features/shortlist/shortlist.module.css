@@ -34,17 +34,22 @@
   background: var(--c-surface);
 }
 
+/* Shortlist option numbers are a neutral outlined square, never the pink circle of a match rank: after a re-rank
+   option 1 and match 1 are different spaces. Same treatment in the compare and client tables and the mini stack. */
 .rank {
   flex: none;
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: var(--c-accent);
-  color: var(--c-accent-ink);
+  border: 1.5px solid var(--c-text);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
 .body { flex: 1; min-width: 0; }

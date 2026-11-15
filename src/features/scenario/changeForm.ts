@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { isoDate } from '../../shared/isoDate'
+import { MAX_RENT_PSF, MIN_RENT_PSF } from '../../domain/constants'
+import { formatNumber } from '../../domain/format'
 import type { Change } from '../../domain/types'
 
 // The change dialog's text fields, and their validation into a Change (zod validates all user input).
@@ -27,9 +29,9 @@ const NewLeaseFields = z.object({
   rent: z.string().trim().regex(/^\d+(\.\d+)?$/, 'Enter the rent as a number, e.g. 48.50.').transform(Number),
 }).refine((f) => f.end >= f.start, 'The end must not be before the start.')
 
-const RENT_BOUNDS = 'The rent must be between $1 and $1,000 /SF/yr.'
+const RENT_BOUNDS = `The rent must be between $${formatNumber(MIN_RENT_PSF)} and $${formatNumber(MAX_RENT_PSF)} /SF/yr.`
 /** Checked on the rent that goes into the change, so an untouched prefill is bounded too. */
-const RentPsf = z.number().min(1, RENT_BOUNDS).max(1000, RENT_BOUNDS)
+const RentPsf = z.number().min(MIN_RENT_PSF, RENT_BOUNDS).max(MAX_RENT_PSF, RENT_BOUNDS)
 
 function firstIssue(e: z.ZodError): string {
   return e.issues[0]?.message ?? 'Check the values.'

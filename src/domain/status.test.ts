@@ -131,7 +131,7 @@ describe('riskBucket', () => {
     expect(riskBucket(suite({ kind: 'common' }), D, TODAY)).toBe('common')
   })
 
-  it('matches A15 S8 for the hero building at today', () => {
+  it('puts the hero suites in the expected lease-risk buckets at today', () => {
     const hero = BUNDLED_BUILDINGS[0]
     const byNumber = new Map(hero.floors.flatMap((f) => f.suites).map((s) => [s.number, s]))
     const risk = (n: string) => {

@@ -2,7 +2,7 @@ import type { z } from 'zod'
 import type {
   BuildingSchema, CandidateSchema, CaveatSchema, ChangeSchema, FloorSchema, LeaseSchema, ShortlistEntrySchema, SuiteSchema,
 } from '../shared/domain.schema'
-import type { AskRequestSchema, ParsedQuerySchema } from '../shared/ask.schema'
+import type { ParsedQuerySchema } from '../shared/ask.schema'
 
 export type ISODate = string
 
@@ -14,7 +14,6 @@ export type Change = z.infer<typeof ChangeSchema>
 export type Caveat = z.infer<typeof CaveatSchema>
 export type Candidate = z.infer<typeof CandidateSchema>
 export type ShortlistEntry = z.infer<typeof ShortlistEntrySchema>
-export type AskRequest = z.infer<typeof AskRequestSchema>
 export type ParsedQuery = z.infer<typeof ParsedQuerySchema>
 
 export type Requirement = { minSf: number; maxSf?: number; maxRentPsf?: number; includePotential: boolean }

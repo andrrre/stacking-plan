@@ -1,7 +1,6 @@
-import { formatLongDate, formatNumber, formatPsf } from '../../domain/format'
+import { formatLongDate, formatNumber, formatPsf, suitesLabel } from '../../domain/format'
 import type { ShortlistEntry } from '../../domain/types'
 import { optionNotes } from './optionNotes'
-import { suitesLabel } from './suitesLabel'
 import styles from './compare.module.css'
 
 /** The broker's comparison, one row per option numbered as on the stack. Caveats name the tenant. */
@@ -29,7 +28,7 @@ export function CompareTable({ entries }: { entries: readonly ShortlistEntry[] }
             <tr key={e.id} data-testid={`compare-row-${i + 1}`}>
               <th scope="row"><span className={styles.badge}>{i + 1}</span></th>
               <td className={styles.space}>
-                {suitesLabel(c)}
+                {suitesLabel(c.suiteNumbers)}
                 {e.whatIf && <span className={styles.whatIf}>What-if</span>}
               </td>
               <td>{c.floor}</td>

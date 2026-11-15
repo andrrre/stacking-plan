@@ -13,7 +13,7 @@
   --c-risk-le12:#6D28D9; --c-risk-le12-ink:#FFFFFF;  /* 7.1 ✓*/
   --c-risk-le24:#A78BFA; --c-risk-le24-ink:#1A1033;  /* 6.6 ✓*/
   --c-risk-le36:#D4C9FB; --c-risk-le36-ink:#1A1033;  /*11.6 ✓*/
-  --c-risk-gt36:#E9E3FD; --c-risk-gt36-ink:#0D061E; --c-risk-gt36-edge:#8A74D8;  /*15.9 ✓; edge 3.8 vs surface ✓ (S17: was #F1EDFE, 1.1 vs surface)*/
+  --c-risk-gt36:#E9E3FD; --c-risk-gt36-ink:#0D061E; --c-risk-gt36-edge:#8A74D8;  /*15.9 ✓; edge 3.8 vs surface ✓; darker than the fill so the pale suite still has a visible edge*/
   --c-risk-open:#CBD2DC; --c-risk-open-ink:#1F2733;  /* 9.9 ✓*/
   --c-modified:#0F766E /*5.5 ✓*/; --c-up:#15803D; --c-down:#B91C1C;
   --pat-hatch:repeating-linear-gradient(135deg,var(--c-vacant-stripe) 0 3px,transparent 3px 8px);
@@ -27,7 +27,7 @@
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
   --r-sm:3px; --r-md:6px; --r-lg:10px; --shadow-1:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.10);
   --header-h:48px; --kpi-h:64px; --rail-w:272px; --panel-w:336px;
-  --floor-h:34px; --floor-gap:2px; --suite-gap:2px; --floor-label-w:32px; --suite-min-w:28px; --floor-3d-h:22px;
+  --floor-h:34px; --floor-gap:2px; --suite-gap:2px; --floor-label-w:32px; --suite-min-w:28px;
   --dur-fast:120ms; --dur-status:180ms; --ease:cubic-bezier(.2,0,0,1);
 }
 @media (prefers-reduced-motion:reduce){:root{--dur-fast:0ms;--dur-status:0ms}}

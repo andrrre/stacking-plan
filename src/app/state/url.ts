@@ -1,18 +1,17 @@
 import { z } from 'zod'
 import { isoDate } from '../../shared/isoDate'
 import { BUNDLED_BUILDINGS } from '../../data'
+import { MAX_RENT_PSF, MAX_REQ_SF, MIN_RENT_PSF, MIN_REQ_SF } from '../../domain/constants'
 import { snapToSlider } from '../../domain/dates'
 import type { ISODate } from '../../domain/types'
 import type { AppState, ColourMode, RequirementDraft, ViewMode } from './types'
 
 // spec-technical §3.5. Every parameter is validated on its own; an invalid one is ignored silently.
 
-const MAX_SF = 1_000_000
-const MAX_RENT = 1000
 const MANAGED = ['today', 'b', 'asOf', 'mode', 'view', 'min', 'max', 'rent', 'pot'] as const
 
-const intParam = z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(MAX_SF))
-const rentParam = z.string().regex(/^\d+(\.\d+)?$/).transform(Number).pipe(z.number().min(1).max(MAX_RENT))
+const intParam = z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(MIN_REQ_SF).max(MAX_REQ_SF))
+const rentParam = z.string().regex(/^\d+(\.\d+)?$/).transform(Number).pipe(z.number().min(MIN_RENT_PSF).max(MAX_RENT_PSF))
 const modeParam = z.enum(['availability', 'risk'])
 const viewParam = z.enum(['stack', '3d'])
 const potParam = z.enum(['0', '1'])

@@ -12,10 +12,10 @@ import { NoFit } from './NoFit'
 const TODAY = '2026-11-15'
 const hero = BUNDLED_BUILDINGS[0]
 
-function renderNoFit(noFit: NoFitResult) {
+function renderNoFit(noFit: NoFitResult, asOf = TODAY) {
   const dispatch = vi.fn<(a: Action) => void>()
   render(
-    <AppStateContext.Provider value={{ state: initState('', null, TODAY), dispatch }}>
+    <AppStateContext.Provider value={{ state: { ...initState('', null, TODAY), asOf }, dispatch }}>
       <NoFit noFit={noFit} />
     </AppStateContext.Provider>,
   )
@@ -74,5 +74,25 @@ describe('NoFit', () => {
   it('spread on one floor reads in the singular', () => {
     renderNoFit({ reasons: [{ kind: 'spread', totalSf: 2000, floorCount: 1, blockCount: 2 }], earliestFit: null })
     expect(reasonTexts()).toEqual(['2,000 SF is available, but split into 2 blocks on 1 floor.'])
+  })
+
+  it('a potential fit on the date already shown offers to include potential space instead of a jump', async () => {
+    const JUL = '2027-07-01'
+    const noFit = explainNoFit(hero, { minSf: 12_000, includePotential: false }, JUL, TODAY)
+    expect(noFit.earliestFit?.date).toBe(JUL)
+    const dispatch = renderNoFit(noFit, JUL)
+    expect(screen.getByTestId('no-fit')).toHaveTextContent('Suite 600 fits on this date if you include potential space.')
+    expect(screen.getByTestId('no-fit')).not.toHaveTextContent('Earliest fit')
+    expect(screen.queryByTestId('jump-to-date')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Include potential space' }))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'noFit/jump', asOf: JUL })
+  })
+
+  it('an earliest fit on a later date keeps the "Earliest fit" wording and the jump', () => {
+    const noFit = explainNoFit(hero, { minSf: 12_000, includePotential: false }, TODAY, TODAY)
+    renderNoFit(noFit)
+    expect(noFit.earliestFit?.date).not.toBe(TODAY)
+    expect(screen.getByTestId('no-fit')).toHaveTextContent(/Earliest fit: \w{3} \d{4} —/)
+    expect(screen.getByTestId('jump-to-date')).toHaveTextContent('Jump to date')
   })
 })
