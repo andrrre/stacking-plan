@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { gotoApp, suite } from './helpers'
 
 test.describe('date slider', () => {
-  test.beforeEach(async ({ page }) => gotoApp(page))
+  test.beforeEach(async ({ page }) => gotoApp(page, 'stack'))
 
   test('range attributes and Today at step 0', async ({ page }) => {
     const slider = page.getByTestId('date-slider')

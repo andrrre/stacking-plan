@@ -7,7 +7,7 @@ const RISK: Array<[string, string]> = [
 ]
 
 test.describe('lease-risk colour mode', () => {
-  test.beforeEach(async ({ page }) => gotoApp(page))
+  test.beforeEach(async ({ page }) => gotoApp(page, 'stack'))
 
   test('availability is the default, with its own legend', async ({ page }) => {
     await expect(page.getByTestId('mode-availability')).toBeChecked()

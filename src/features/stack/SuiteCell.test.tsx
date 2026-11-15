@@ -20,12 +20,9 @@ function visual(number: string): SuiteVisual {
 }
 
 describe('SuiteCell', () => {
-  it('uses the suite- test id by default and suite3d- when asked', () => {
-    const v = visual('500')
-    render(<SuiteCell visual={v} roving={roving} joinsNext={false} onSelect={() => {}} />)
-    render(<SuiteCell visual={v} roving={roving} joinsNext={false} onSelect={() => {}} testIdPrefix="suite3d" />)
+  it('uses the suite- test id', () => {
+    render(<SuiteCell visual={visual('500')} roving={roving} joinsNext={false} onSelect={() => {}} />)
     expect(screen.getByTestId('suite-odt-500')).toHaveAttribute('data-status', 'vacant')
-    expect(screen.getByTestId('suite3d-odt-500')).toHaveAttribute('data-status', 'vacant')
   })
 
   it('carries exactly the shared data attributes', () => {

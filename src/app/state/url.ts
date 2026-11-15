@@ -74,7 +74,7 @@ export function serializeUrl(state: AppState, currentSearch: string, includeToda
     ['b', state.buildingId === BUNDLED_BUILDINGS[0].id ? null : state.buildingId],
     ['asOf', state.asOf === state.today ? null : state.asOf],
     ['mode', state.mode === 'availability' ? null : state.mode],
-    ['view', state.view === 'stack' ? null : state.view],
+    ['view', state.view === '3d' ? null : state.view],
     ['min', req.minSf === null ? null : String(req.minSf)],
     ['max', req.maxSf === null ? null : String(req.maxSf)],
     ['rent', req.maxRentPsf === null ? null : String(req.maxRentPsf)],

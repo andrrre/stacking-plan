@@ -84,17 +84,25 @@ describe('initState with a URL', () => {
 
 describe('serializeUrl', () => {
   const full: AppState = {
-    ...base, buildingId: 'pbp', asOf: '2027-05-01', mode: 'risk', view: '3d',
+    ...base, buildingId: 'pbp', asOf: '2027-05-01', mode: 'risk', view: 'stack',
     req: { minSf: 9000, maxSf: 11000, maxRentPsf: 60, includePotential: false },
   }
 
   it('writes nothing for the defaults', () => {
+    expect(base.view).toBe('3d')
     expect(serializeUrl(base, '', false)).toBe('')
+  })
+
+  it('writes view=stack only for the 2D stack; the 3D building is the default and writes nothing', () => {
+    expect(serializeUrl({ ...base, view: 'stack' }, '', false)).toBe('?view=stack')
+    expect(serializeUrl({ ...base, view: '3d' }, '?view=3d', false)).toBe('')
+    expect(parseUrlState(serializeUrl({ ...base, view: 'stack' }, '', false), ctx)).toEqual({ view: 'stack' })
+    expect(parseUrlState('?view=3d', ctx)).toEqual({ view: '3d' })
   })
 
   it('writes every parameter', () => {
     expect(serializeUrl(full, '', true)).toBe(
-      '?today=2026-11-15&b=pbp&asOf=2027-05-01&mode=risk&view=3d&min=9000&max=11000&rent=60&pot=0',
+      '?today=2026-11-15&b=pbp&asOf=2027-05-01&mode=risk&view=stack&min=9000&max=11000&rent=60&pot=0',
     )
   })
 
@@ -110,7 +118,7 @@ describe('serializeUrl', () => {
   it('round-trips through parseUrlState', () => {
     const search = serializeUrl(full, '', true)
     expect(parseUrlState(search, ctx)).toEqual({
-      buildingId: 'pbp', asOf: '2027-05-01', mode: 'risk', view: '3d',
+      buildingId: 'pbp', asOf: '2027-05-01', mode: 'risk', view: 'stack',
       req: { minSf: 9000, maxSf: 11000, maxRentPsf: 60, includePotential: false },
     })
   })

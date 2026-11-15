@@ -12,7 +12,7 @@ describe('initState', () => {
       buildingId: 'odt',
       asOf: CLOCK,
       mode: 'availability',
-      view: 'stack',
+      view: '3d',
       req: { minSf: null, maxSf: null, maxRentPsf: null, includePotential: true },
       selection: null,
       highlight: null,

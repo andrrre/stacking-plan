@@ -16,7 +16,7 @@ test.describe('shortlist, compare, client summary', () => {
       w.__prints = 0
       window.print = () => { w.__prints += 1 }
     })
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await page.getByTestId('req-min-sf').fill('10000')
   })
 
@@ -131,7 +131,7 @@ test.describe('shortlist, compare, client summary', () => {
 
   test('shortlist survives a reload', async ({ page }) => {
     await page.getByTestId('save-match-1').click()
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await expect(page.getByTestId('shortlist-entry-1')).toContainText('Suite 500')
   })
 })

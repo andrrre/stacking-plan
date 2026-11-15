@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BuildingSchema, CandidateSchema, FloorSchema, LeaseSchema, SuiteSchema } from './domain.schema'
+import { BuildingSchema, CandidateSchema, FloorSchema, LeaseSchema, SuiteSchema, noOverlaps } from './domain.schema'
 
 type L = { start: string; end: string | null }
 
@@ -51,21 +51,25 @@ describe('SuiteSchema overlap rule', () => {
     ])).toBe(false)
   })
 
-  it('validates 2,000 disjoint leases in well under 100 ms', () => {
-    const leases = Array.from({ length: 2000 }, (_, i) => {
-      const day = String((i % 28) + 1).padStart(2, '0')
-      const month = String(Math.floor(i / 28) % 12 + 1).padStart(2, '0')
-      const year = 1950 + Math.floor(i / (28 * 12))
-      const d = `${year}-${month}-${day}`
-      return { start: d, end: d }
-    }).reverse()
-    const input = suite(leases)
-    SuiteSchema.safeParse(input) // warm-up
-    const t0 = performance.now()
-    const r = SuiteSchema.safeParse(input)
-    const ms = performance.now() - t0
-    expect(r.success).toBe(true)
-    expect(ms).toBeLessThan(100)
+  it('the overlap check grows near-linearly: 4× the leases costs well under 16× the work', () => {
+    // Counts reads of `start` (one or two per comparison), which a quadratic pairwise check would multiply by 16.
+    const work = (n: number) => {
+      let reads = 0
+      const leases = Array.from({ length: n }, (_, i) => {
+        const d = isoDay(i)
+        return { get start() { reads += 1; return d }, end: d }
+      }).reverse()
+      expect(noOverlaps(leases)).toBe(true)
+      return reads
+    }
+    const ratio = work(8000) / work(2000)
+    expect(ratio).toBeGreaterThan(3.5)
+    expect(ratio).toBeLessThan(6)
+  })
+
+  it('validates a suite with the maximum 2,000 disjoint leases', () => {
+    const leases = Array.from({ length: 2000 }, (_, i) => ({ start: isoDay(i), end: isoDay(i) })).reverse()
+    expect(SuiteSchema.safeParse(suite(leases)).success).toBe(true)
   })
 })
 
@@ -128,3 +132,10 @@ describe('schema bounds', () => {
     })
   })
 })
+
+/** Distinct, ordered ISO days for index i (28 days a month, 12 months a year, from 1950). */
+function isoDay(i: number): string {
+  const day = String((i % 28) + 1).padStart(2, '0')
+  const month = String(Math.floor(i / 28) % 12 + 1).padStart(2, '0')
+  return `${1950 + Math.floor(i / (28 * 12))}-${month}-${day}`
+}

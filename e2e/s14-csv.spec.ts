@@ -24,7 +24,7 @@ function watchForInjection(page: Page): string[] {
 
 test.describe('csv import', () => {
   test('the bad fixture lists every problem by row and column, and imports nothing', async ({ page }) => {
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await importFile(page, BAD)
     const errors = page.getByTestId('import-errors')
     await expect(errors).toBeVisible()
@@ -42,7 +42,7 @@ test.describe('csv import', () => {
 
   test('the valid fixture adds the building, selects it and renders file text literally', async ({ page }) => {
     const problems = watchForInjection(page)
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await importFile(page, VALID)
     const switcher = page.getByTestId('building-switcher')
     await expect(switcher).toHaveValue(IMPORTED_ID)
@@ -60,7 +60,7 @@ test.describe('csv import', () => {
   })
 
   test('an imported building survives a reload and is restored from its URL id', async ({ page }) => {
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await importFile(page, VALID)
     await expect(page.getByTestId('building-switcher')).toHaveValue(IMPORTED_ID)
     await expect.poll(() => new URL(page.url()).searchParams.get('b')).toBe(IMPORTED_ID)
@@ -68,14 +68,14 @@ test.describe('csv import', () => {
     await expect(page.getByTestId('building-switcher')).toHaveValue(IMPORTED_ID)
     await expect(page.getByTestId(`suite-${IMPORTED_ID}-3-300`)).toBeVisible()
 
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(3)
-    await gotoApp(page, { b: IMPORTED_ID })
+    await gotoApp(page, 'stack', { b: IMPORTED_ID })
     await expect(page.getByTestId('building-switcher')).toHaveValue(IMPORTED_ID)
   })
 
   test('the template downloads as a file that imports with no errors', async ({ page }, testInfo) => {
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId('import-template').click()])
     expect(download.suggestedFilename()).toBe('stackmatch-template.csv')
     const saved = testInfo.outputPath('template.csv')
@@ -87,7 +87,7 @@ test.describe('csv import', () => {
   })
 
   test('a non-text file is rejected with a whole-file message', async ({ page }) => {
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await page.getByTestId('import-csv-input').setInputFiles({
       name: 'rent-roll.csv', mimeType: 'text/csv', buffer: Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00, 0xff, 0xfe]),
     })
@@ -100,7 +100,7 @@ test.describe('csv import', () => {
   })
 
   test('an imported building can be removed after a confirm step, and stays gone after reload', async ({ page }) => {
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await importFile(page, VALID)
     const switcher = page.getByTestId('building-switcher')
     await expect(switcher).toHaveValue(IMPORTED_ID)

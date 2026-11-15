@@ -27,6 +27,12 @@ it('renders the shell around a 32-suite stack with no overlay', () => {
   expect(screen.getByTestId('right-empty')).toHaveTextContent('Enter a size to find space · click a suite for details')
 })
 
+it('opens on the 3D building; without WebGL (jsdom) it shows the 2D stack with a note', () => {
+  renderApp()
+  expect(screen.getByTestId('view-3d')).toHaveAttribute('aria-checked', 'true')
+  expect(screen.getByTestId('webgl-fallback')).toContainElement(screen.getByTestId('stack'))
+})
+
 it('selecting a suite replaces the empty right panel', async () => {
   renderApp()
   await userEvent.click(screen.getByTestId('suite-odt-500'))

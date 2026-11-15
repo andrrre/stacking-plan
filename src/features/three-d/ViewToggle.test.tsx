@@ -13,6 +13,11 @@ describe('ViewToggle', () => {
     expect(screen.getByTestId('view-stack')).toHaveAttribute('tabindex', '-1')
   })
 
+  it('offers the 3D building first, then the 2D stack', () => {
+    render(<ViewToggle view="3d" onChange={() => undefined} />)
+    expect(screen.getAllByRole('radio').map((r) => r.textContent)).toEqual(['3D building', '2D stack'])
+  })
+
   it('click and arrow keys choose a view and move focus', async () => {
     const onChange = vi.fn()
     const user = userEvent.setup()

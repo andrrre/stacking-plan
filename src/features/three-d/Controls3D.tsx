@@ -1,0 +1,55 @@
+import type { RefObject } from 'react'
+import type { Rig } from './sceneTypes'
+import styles from './three-d.module.css'
+
+// Camera controls as real buttons (a labelled group, each its own tab stop), so rotate, zoom, reset and
+// separate floors work from the keyboard too.
+
+type Props = { rig: RefObject<Rig | null>; separated: boolean; onSeparate: (on: boolean) => void; onReset: () => void }
+
+function Icon({ d }: { d: string }) {
+  return (
+    <svg className={styles.icon} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+const ROTATE_LEFT = 'M3.5 6.5A5 5 0 1 1 3 9.5M3.5 6.5V3M3.5 6.5H7'
+const ROTATE_RIGHT = 'M12.5 6.5A5 5 0 1 0 13 9.5M12.5 6.5V3M12.5 6.5H9'
+const SEPARATE = 'M2.5 3.5h11M2.5 8h11M2.5 12.5h11'
+
+export function Controls3D({ rig, separated, onSeparate, onReset }: Props) {
+  return (
+    <div className={styles.controls} role="group" aria-label="3D view controls">
+      <span className={styles.hint} aria-hidden="true">Drag to orbit · scroll to zoom</span>
+      <div className={styles.ctlGroup}>
+        <button type="button" className={styles.ctl} aria-label="Rotate left" title="Rotate left" onClick={() => rig.current?.rotate(-15)}>
+          <Icon d={ROTATE_LEFT} />
+        </button>
+        <button type="button" className={styles.ctl} aria-label="Rotate right" title="Rotate right" onClick={() => rig.current?.rotate(15)}>
+          <Icon d={ROTATE_RIGHT} />
+        </button>
+        <button type="button" className={styles.ctl} aria-label="Zoom out" title="Zoom out" onClick={() => rig.current?.zoom(1.18)}>
+          <Icon d="M3.5 8h9" />
+        </button>
+        <button type="button" className={styles.ctl} aria-label="Zoom in" title="Zoom in" onClick={() => rig.current?.zoom(0.85)}>
+          <Icon d="M3.5 8h9M8 3.5v9" />
+        </button>
+      </div>
+      <button
+        type="button"
+        className={styles.ctlText}
+        aria-pressed={separated}
+        data-testid="separate-floors"
+        onClick={() => onSeparate(!separated)}
+      >
+        <Icon d={SEPARATE} />
+        Separate floors
+      </button>
+      <button type="button" className={styles.ctlText} data-testid="reset-view" onClick={onReset}>
+        Reset view
+      </button>
+    </div>
+  )
+}

@@ -3,7 +3,7 @@ import { gotoApp } from './helpers'
 
 // No URL assertions here: the URL spec checks the serialized URL after a jump.
 test.describe('why this works, no-fit, jump to date', () => {
-  test.beforeEach(async ({ page }) => gotoApp(page))
+  test.beforeEach(async ({ page }) => gotoApp(page, 'stack'))
 
   test('selecting match 2 shows why it works; the back button returns to the list', async ({ page }) => {
     await page.getByTestId('req-min-sf').fill('10,000')

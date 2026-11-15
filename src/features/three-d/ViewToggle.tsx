@@ -3,8 +3,8 @@ import type { ViewMode } from '../../app/state/types'
 import styles from '../risk/risk.module.css'
 
 const OPTIONS: ReadonlyArray<{ view: ViewMode; label: string; testId: string }> = [
+  { view: '3d', label: '3D building', testId: 'view-3d' },
   { view: 'stack', label: '2D stack', testId: 'view-stack' },
-  { view: '3d', label: '3D view', testId: 'view-3d' },
 ]
 
 type Props = { view: ViewMode; onChange: (view: ViewMode) => void }

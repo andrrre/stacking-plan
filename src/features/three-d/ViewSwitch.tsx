@@ -1,11 +1,9 @@
 import { useAppState } from '../../app/state/useAppState'
 import { StackView } from '../stack/StackView'
-import { Stack3D } from './Stack3D'
-import { useDragRotate } from './useDragRotate'
+import { Building3D } from './Building3D'
 
-/** The stack area: the 2D plan or its 3D twin, chosen by `state.view`. The angle is held here so it survives a 2D round trip. */
+/** The stack area: the 3D building (the main screen) or the 2D stack, chosen by `state.view`. */
 export function ViewSwitch() {
   const { state } = useAppState()
-  const rotation = useDragRotate()
-  return state.view === '3d' ? <Stack3D rotation={rotation} /> : <StackView />
+  return state.view === '3d' ? <Building3D /> : <StackView />
 }

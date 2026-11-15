@@ -15,7 +15,7 @@ async function expectOthersDimmed(page: Page) {
 }
 
 test.describe('space finder', () => {
-  test.beforeEach(async ({ page }) => gotoApp(page))
+  test.beforeEach(async ({ page }) => gotoApp(page, 'stack'))
 
   for (const text of ['10000', '10,000', '10k']) {
     test(`"${text}" lights #1 Suite 500 and #2 Suites 700+710`, async ({ page }) => {

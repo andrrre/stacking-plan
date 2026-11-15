@@ -1,0 +1,121 @@
+import { useEffect, useLayoutEffect, useMemo, type RefObject } from 'react'
+import { useThree } from '@react-three/fiber'
+import {
+  DataTexture, LineBasicMaterial, LinearFilter, MeshBasicMaterial, SRGBColorSpace, type Group,
+} from 'three'
+import { lookColours, lookKey, type Palette, type SuiteLook } from '../palette'
+import type { Bounds, Layout3D } from '../layout3d'
+import type { Shapes } from './resources'
+import { SuiteMaterial } from './suiteMaterial'
+import type { SuiteMaterials } from './suiteMaterials'
+
+// The meshes: suite boxes with crisp edges, floor slabs, roof caps, a base plinth and a soft contact
+// shadow. Ghosted suites draw no edges (they would show through the translucent boxes). Geometries are
+// shared unit shapes scaled per object; everything created here is disposed here.
+
+function useLineMaterials(p: Palette) {
+  const mats = useMemo(() => ({
+    solid: new LineBasicMaterial({ color: p.text, transparent: true, opacity: 0.3 }),
+    slab: new LineBasicMaterial({ color: p.text, transparent: true, opacity: 0.22 }),
+  }), [p])
+  useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
+  return mats
+}
+
+type SuitesProps = {
+  layout: Layout3D
+  looks: ReadonlyMap<string, SuiteLook>
+  palette: Palette
+  mats: SuiteMaterials
+  shapes: Shapes
+  group: RefObject<Group | null>
+  animateAt: () => number | null
+}
+
+export function Suites({ layout, looks, palette, mats, shapes, group, animateAt }: SuitesProps) {
+  const invalidate = useThree((s) => s.invalidate)
+  const lines = useLineMaterials(palette)
+  useLayoutEffect(() => {
+    const at = animateAt()
+    for (const b of layout.suites) {
+      const look = looks.get(b.id)
+      if (look) mats.apply(b.id, lookColours(look, palette), look.ghost, b, at, lookKey(look))
+    }
+    mats.retain(new Set(layout.suites.map((b) => b.id)))
+    invalidate()
+  }, [layout, looks, palette, mats, animateAt, invalidate])
+  return (
+    <>
+      <group ref={group}>
+        {layout.suites.map((b) => (
+          <mesh key={b.id} dispose={null} geometry={shapes.box} material={mats.get(b.id)} position={[b.x, b.y, b.z]} scale={[b.w, b.h, b.d]} userData={{ suiteId: b.id }} />
+        ))}
+      </group>
+      {layout.suites.map((b) => (
+        <lineSegments
+          key={b.id} dispose={null} geometry={shapes.edges} material={lines.solid} visible={!looks.get(b.id)?.ghost}
+          position={[b.x, b.y, b.z]} scale={[b.w, b.h, b.d]}
+        />
+      ))}
+      <Slabs layout={layout} palette={palette} shapes={shapes} line={lines.slab} />
+    </>
+  )
+}
+
+function neutral(hex: string): SuiteMaterial {
+  const m = new SuiteMaterial()
+  m.color.set(hex)
+  m.transparent = false
+  return m
+}
+
+/** Slabs and roof caps in the light neutral, the plinth a step darker so the base reads as a base. */
+function Slabs({ layout, palette, shapes, line }: { layout: Layout3D; palette: Palette; shapes: Shapes; line: LineBasicMaterial }) {
+  const mats = useMemo(() => ({ slab: neutral(palette.surface2), base: neutral(palette.border) }), [palette])
+  useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
+  const p = layout.plinth
+  return (
+    <>
+      {[...layout.slabs.map((s) => ['slab', s] as const), ...layout.caps.map((s) => ['cap', s] as const)].map(([kind, s]) => (
+        <group key={`${kind}-${s.floor}`} dispose={null} position={[s.x, s.y, s.z]} scale={[s.w, s.h, s.d]}>
+          <mesh geometry={shapes.box} material={mats.slab} />
+          <lineSegments geometry={shapes.edges} material={line} />
+        </group>
+      ))}
+      <group dispose={null} position={[p.x, p.y, p.z]} scale={[p.w, p.h, p.d]}>
+        <mesh geometry={shapes.box} material={mats.base} />
+        <lineSegments geometry={shapes.edges} material={line} />
+      </group>
+    </>
+  )
+}
+
+const SHADOW_PX = 64
+
+/** A radial falloff computed once into a small texture: the soft contact shadow under the building. */
+function shadowTexture(): DataTexture {
+  const data = new Uint8Array(SHADOW_PX * SHADOW_PX * 4)
+  const mid = (SHADOW_PX - 1) / 2
+  for (let i = 0; i < SHADOW_PX * SHADOW_PX; i++) {
+    const r = Math.hypot((i % SHADOW_PX) - mid, Math.floor(i / SHADOW_PX) - mid) / mid
+    const a = Math.max(0, 1 - r) ** 1.6 * 0.3
+    data.set([16, 24, 40, Math.round(a * 255)], i * 4)
+  }
+  const t = new DataTexture(data, SHADOW_PX, SHADOW_PX)
+  t.colorSpace = SRGBColorSpace
+  t.magFilter = LinearFilter
+  t.minFilter = LinearFilter
+  t.needsUpdate = true
+  return t
+}
+
+export function Ground({ bounds, shapes }: { bounds: Bounds; shapes: Shapes }) {
+  const material = useMemo(() => new MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }), [])
+  useEffect(() => () => {
+    material.map?.dispose()
+    material.dispose()
+  }, [material])
+  const w = (bounds.max[0] - bounds.min[0]) * 1.35
+  const d = (bounds.max[2] - bounds.min[2]) * 2.6
+  return <mesh dispose={null} geometry={shapes.plane} material={material} rotation-x={-Math.PI / 2} position={[0, -0.01, 0]} scale={[w, d, 1]} renderOrder={-1} />
+}

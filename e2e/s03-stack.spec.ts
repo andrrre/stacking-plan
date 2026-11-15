@@ -20,7 +20,7 @@ async function numbersWith(page: import('@playwright/test').Page, attr: string, 
 }
 
 test.describe('stack structure', () => {
-  test.beforeEach(async ({ page }) => gotoApp(page))
+  test.beforeEach(async ({ page }) => gotoApp(page, 'stack'))
 
   test('12 floors top-down and 32 suite buttons', async ({ page }) => {
     const floors = page.locator('[data-testid^="floor-"]')
@@ -51,7 +51,7 @@ test.describe('stack structure', () => {
 
 test.describe('the ten-second questions', () => {
   test('Q1: exactly the vacant suites are vacant, and the uncommitted ones read VACANT', async ({ page }) => {
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     expect(await numbersWith(page, 'data-status', 'vacant')).toEqual([...VACANT].sort((x, y) => x - y))
     for (const n of VACANT_UNCOMMITTED) {
       const cell = suite(page, n)
@@ -67,7 +67,7 @@ test.describe('the ten-second questions', () => {
 
   test('Q2: exactly the expiring suites are expiring, and show their MM/YYYY at 1280 px', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     expect(await numbersWith(page, 'data-status', 'expiring')).toEqual([220, 400, 600, 1000])
     for (const [n, mmyyyy] of Object.entries(EXPIRING)) {
       const cell = suite(page, n)
@@ -79,7 +79,7 @@ test.describe('the ten-second questions', () => {
 
   test('committed 1010 shows its start date in the cue at 1280 px', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     const cell = suite(page, 1010)
     const cue = cell.getByText('03/2027', { exact: true })
     await expect(cue).toBeVisible()
@@ -88,7 +88,7 @@ test.describe('the ten-second questions', () => {
 })
 
 test('legend: 4 availability entries, overlay keys and the assumption line', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   const legend = page.getByTestId('legend')
   await expect(legend.getByTestId('legend-entry')).toHaveCount(4)
   await expect(legend.getByTestId('legend-entry')).toHaveText([/Occupied/, /Expiring/, /Vacant/, /Common/])
@@ -99,7 +99,7 @@ test('legend: 4 availability entries, overlay keys and the assumption line', asy
 })
 
 test('keyboard: one tab stop, arrows move focus, Enter selects, Escape clears', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await expect(page.locator('[data-testid^="suite-odt-"][tabindex="0"]')).toHaveCount(1)
   await suite(page, 1200).focus()
   await page.keyboard.press('ArrowDown')
@@ -118,7 +118,7 @@ test('keyboard: one tab stop, arrows move focus, Enter selects, Escape clears', 
 })
 
 test('a dimmed suite drops its dimming while focused or selected, so the ring stays visible', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   // Mark suites dimmed directly rather than through a search or KPI highlight; React leaves the unchanged prop alone.
   const opacity = (n: number) => suite(page, n).evaluate((el) => getComputedStyle(el).opacity)
   // The dimmed opacity is a design token, so assert "dimmed" rather than a literal value.
@@ -138,7 +138,7 @@ test('a dimmed suite drops its dimming while focused or selected, so the ring st
 })
 
 test('clicking a suite selects it and the right panel leaves its empty state', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await expect(page.getByTestId('right-empty')).toHaveText('Enter a size to find space · click a suite for details')
   await suite(page, 500).click()
   await expect(suite(page, 500)).toHaveAttribute('aria-pressed', 'true')
@@ -146,7 +146,7 @@ test('clicking a suite selects it and the right panel leaves its empty state', a
 })
 
 test('shell: header, rails, main landmark and overlay attribute', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await expect(page.getByTestId('building-switcher')).toHaveValue('odt')
   await expect(page.getByRole('button', { name: 'Print', exact: true })).toBeVisible()
   await expect(page.getByRole('main')).toBeVisible()
@@ -156,7 +156,7 @@ test('shell: header, rails, main landmark and overlay attribute', async ({ page 
 
 test('width: no horizontal scroll at 1280 px', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await expect(page.getByTestId('stack')).toBeVisible()
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
   expect(scrollWidth).toBeLessThanOrEqual(1280)

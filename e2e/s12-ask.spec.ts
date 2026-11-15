@@ -16,7 +16,7 @@ async function ask(page: Page, text: string) {
 test.describe('ask box (offline fallback)', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/ask', (route) => route.abort())
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
   })
 
   test('the law-firm query fills the form, sets Jun 2027 and lists 400+410, 500, 700+710', async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe('ask box with an imported building', () => {
   test('parses offline and sends no request to /api/ask', async ({ page }) => {
     const askRequests: string[] = []
     page.on('request', (r) => { if (new URL(r.url()).pathname === '/api/ask') askRequests.push(r.url()) })
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await page.getByTestId('import-csv-input').setInputFiles(IMPORT_FIXTURE)
     await expect(page.getByTestId('building-switcher')).toHaveValue('csv-bayfront-commons')
 

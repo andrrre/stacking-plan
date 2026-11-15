@@ -16,7 +16,7 @@ const HEADLINE = 'Two office options at Ocean Drive Tower'
 
 /** Shortlist Suite 500 (today) and Suite 600 (Jul 2027, whose stored caveat names a tenant). */
 async function shortlistTwo(page: Page) {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await page.getByTestId('req-min-sf').fill('10000')
   await page.getByTestId('save-match-1').click()
   await page.getByTestId('date-slider').fill('8')
@@ -116,7 +116,7 @@ test.describe('client summary intro', () => {
       bodies.push(route.request().postData() ?? '')
       return route.fulfill({ json: AI })
     })
-    await gotoApp(page)
+    await gotoApp(page, 'stack')
     await page.getByTestId('import-csv-input').setInputFiles(path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'csv-valid.csv'))
     await expect(page.getByTestId('building-switcher')).toHaveValue('csv-bayfront-commons')
     await page.getByTestId('req-min-sf').fill('4000')

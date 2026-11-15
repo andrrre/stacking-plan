@@ -1,0 +1,61 @@
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
+import type { Group } from 'three'
+import type { ColourMode } from '../../../app/state/types'
+import type { LabelContent } from '../labels3d'
+import type { Layout3D } from '../layout3d'
+import { readPalette, type SuiteLook } from '../palette'
+import type { Rig, ScreenPoint } from '../sceneTypes'
+import type { SuiteVisual } from '../../stack/suiteVisual'
+import { Ground, Suites } from './Building'
+import { CameraRig } from './CameraRig'
+import { useContextWatch, usePicker, useFrameSync } from './interaction'
+import type { OverlayRefs } from './overlayRefs'
+import { useSharedGeometry } from './resources'
+import { SuiteMaterials } from './suiteMaterials'
+
+// Everything inside the <Canvas>: camera rig, ground, building, picking and the overlay sync.
+
+export type WorldProps = {
+  mode: ColourMode
+  layout: Layout3D
+  visuals: ReadonlyMap<string, SuiteVisual>
+  contents: ReadonlyMap<string, LabelContent>
+  looks: ReadonlyMap<string, SuiteLook>
+  ghosts: ReadonlySet<string>
+  spread: number // 0 floors together … 1 separated
+  focusedId: string | null
+  reduced: boolean
+  refs: OverlayRefs
+  rig: RefObject<Rig | null>
+  onSelect: (id: string) => void
+  onPoints: (p: ReadonlyMap<string, ScreenPoint>) => void
+  onLost: () => void // the WebGL context was lost and did not come back
+}
+
+const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name)
+
+export function World(p: WorldProps) {
+  const { mode, layout, visuals, contents, looks, ghosts, refs, onSelect, onPoints, focusedId, reduced } = p
+  // The tokens are read once, and again when the colour mode changes.
+  const palette = useMemo(() => {
+    void mode
+    return readPalette(cssVar)
+  }, [mode])
+  const shapes = useSharedGeometry()
+  const mats = useMemo(() => new SuiteMaterials(), [])
+  useEffect(() => () => mats.dispose(), [mats])
+  const group = useRef<Group>(null)
+  const hover = useRef<string | null>(null)
+  const animateAt = useCallback(() => (reduced ? null : performance.now()), [reduced])
+  const pick = useMemo(() => ({ group, hover, mats, tooltip: refs.tooltip, visuals, onSelect }), [mats, refs, visuals, onSelect])
+  usePicker(pick)
+  useContextWatch(p.onLost)
+  useFrameSync({ layout, visuals, contents, ghosts, refs, focusedId, hover, mats, group, onPoints })
+  return (
+    <>
+      <CameraRig bounds={layout.bounds} spread={p.spread} reduced={reduced} rig={p.rig} />
+      <Ground bounds={layout.bounds} shapes={shapes} />
+      <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} />
+    </>
+  )
+}

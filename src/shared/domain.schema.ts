@@ -30,7 +30,7 @@ type LeaseDates = { start: string; end: string | null }
  * Sorted by start, a set of intervals is disjoint exactly when each one starts after the previous one ends
  * (each lease ends on or after its start, so the previous end is the running maximum).
  */
-function noOverlaps(leases: readonly LeaseDates[]): boolean {
+export function noOverlaps(leases: readonly LeaseDates[]): boolean {
   const sorted = [...leases].sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0))
   return sorted.every((b, i) => {
     const a = sorted[i - 1]

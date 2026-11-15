@@ -22,7 +22,7 @@ export function initState(search: string, storage: StorageLike | null, clockToda
     buildingId: url.buildingId ?? BUNDLED_BUILDINGS[0].id,
     asOf: url.asOf ?? today,
     mode: url.mode ?? 'availability',
-    view: url.view ?? 'stack',
+    view: url.view ?? '3d',
     req: { minSf: null, maxSf: null, maxRentPsf: null, includePotential: true, ...url.req },
     selection: null,
     highlight: null,

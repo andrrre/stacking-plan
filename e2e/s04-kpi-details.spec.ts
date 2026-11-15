@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { gotoApp, suite } from './helpers'
 
 test('KPI tiles show the A14 values at today', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await expect(page.getByTestId('kpi-occupancy-value')).toHaveText('72%')
   await expect(page.getByTestId('kpi-vacant-value')).toHaveText('38,150 SF')
   await expect(page.getByTestId('kpi-vacant-potential')).toContainText('committed 3,000')
@@ -11,7 +11,7 @@ test('KPI tiles show the A14 values at today', async ({ page }) => {
 })
 
 test('clicking the largest-block tile lights exactly 700 and 710; Esc restores', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   const tile = page.getByTestId('kpi-largest-block')
   await tile.click()
   await expect(tile).toHaveAttribute('aria-pressed', 'true')
@@ -24,7 +24,7 @@ test('clicking the largest-block tile lights exactly 700 and 710; Esc restores',
 })
 
 test('a second click on a tile restores the overlay', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   const tile = page.getByTestId('kpi-vacant')
   await tile.click()
   await tile.click()
@@ -33,7 +33,7 @@ test('a second click on a tile restores the overlay', async ({ page }) => {
 })
 
 test('selecting suite 600 shows its details; Close returns to the empty panel', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await suite(page, 600).click()
   const panel = page.getByTestId('suite-details')
   await expect(panel).toContainText('Flamingo Row Media')
@@ -47,7 +47,7 @@ test('selecting suite 600 shows its details; Close returns to the empty panel', 
 })
 
 test('suite 700 says it can combine with 710', async ({ page }) => {
-  await gotoApp(page)
+  await gotoApp(page, 'stack')
   await suite(page, 700).click()
   await expect(page.getByTestId('suite-details')).toContainText('Can combine with 710')
 })

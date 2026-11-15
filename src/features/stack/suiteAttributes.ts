@@ -2,7 +2,7 @@ import type { SuiteVisual } from './suiteVisual'
 
 /**
  * The state attributes every suite element carries, in 2D and 3D (spec-technical §4). Tests and CSS read
- * these; the element adds its own data-testid (`suite-{id}` or `suite3d-{id}`).
+ * these; the element adds its own data-testid (`suite-{id}` in 2D, `suite3d-{id}` on the 3D mirror).
  */
 export function suiteDataAttributes(v: SuiteVisual, joinsNext: boolean) {
   return {

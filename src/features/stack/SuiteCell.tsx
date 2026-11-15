@@ -52,17 +52,16 @@ type Props = {
   roving: RovingItemProps
   joinsNext: boolean
   onSelect: (suiteId: string) => void
-  testIdPrefix?: 'suite' | 'suite3d'
 }
 
-export function SuiteCell({ visual: v, roving, joinsNext, onSelect, testIdPrefix = 'suite' }: Props) {
+export function SuiteCell({ visual: v, roving, joinsNext, onSelect }: Props) {
   const style: CSSProperties = { flexGrow: v.suite.areaSf }
   return (
     <button
       type="button"
       className={styles.suite}
       style={style}
-      data-testid={`${testIdPrefix}-${v.suite.id}`}
+      data-testid={`suite-${v.suite.id}`}
       {...suiteDataAttributes(v, joinsNext)}
       aria-pressed={v.selected}
       aria-label={v.ariaLabel}

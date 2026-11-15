@@ -1,256 +1,251 @@
-/* The 3D stack (spec-technical §5.6): CSS 3D transforms only, orthographic (no perspective).
-   Every element between the scene and a billboard label keeps `transform-style: preserve-3d` and no
-   opacity or filter, because those would flatten it. Opacity and filter live on leaf elements only. */
-
-/* The rotate controls ride on the stage's top edge (empty sky at every angle), so the 3D view is no taller
-   than the stage itself and fits the centre pane beside the legend and the date slider. */
-.wrap {
-  container-type: inline-size;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
+/* The 3D building: a WebGL canvas filling the stack area, an HTML overlay for the facade labels, floor
+   numbers, rank badges and rings, the camera controls, and the visually hidden DOM mirror. */
 
 .stage {
-  --tilt: 58deg;
-  --w: min(360px, 80cqw); /* footprint width, from the pane */
-  /* Floor-to-floor rise: tall enough that each lower slab's front edge shows below the floor above, and
-     shrinking for tall buildings so the stage height stays bounded. */
-  --step: min(23px, calc(300px / var(--floors)));
-  --t: min(10px, calc(var(--step) * 0.5)); /* slab thickness */
+  container: stage / size;
   position: relative;
-  flex: none; /* never squeezed by a short pane: the stage height is what keeps the building inside it */
-  /* the building's rise, plus the footprint's worst-case projected height (any angle), plus label room */
-  height: calc(var(--floors) * var(--step) * 0.85 + var(--w) * 0.55 + 36px);
+  min-height: 280px;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, var(--c-surface) 0%, var(--c-surface) 55%, var(--c-surface-2) 100%);
   isolation: isolate;
-  overflow: clip; /* the scene can never paint over the toolbar or the controls */
-  cursor: grab;
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
-.stage[data-dragging='true'] { cursor: grabbing; }
+.scene, .canvas, .overlay, .placeholder { position: absolute; inset: 0; }
 
-/* Tall screens (a 1080p demo) have room for a larger building. */
-@media (min-height: 1000px) {
-  .stage { --w: min(440px, 80cqw); --step: min(30px, calc(360px / var(--floors))); }
+.canvas { cursor: grab; touch-action: none; }
+.canvas:active { cursor: grabbing; }
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
 }
 
-.scene {
-  --lean: calc(var(--w) * 0.045);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: var(--w);
-  height: calc(var(--w) * 0.15);
-  transform-style: preserve-3d;
-  /* screen-space nudge down by half the building's projected height, then the axonometric turn */
-  transform:
-    translateY(calc(var(--floors) * var(--step) * 0.42))
-    translate(-50%, -50%)
-    rotateX(var(--tilt))
-    rotateZ(var(--rot, -35deg));
-}
-
-/* ---------- slab ---------- */
-
-.slab {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transform: translateX(-50%) translateZ(calc(var(--level) * var(--step) + var(--t)));
-}
-
-.top {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  gap: var(--suite-gap);
-  padding: var(--suite-gap);
-  background: var(--c-surface);
-  box-shadow: 0 0 0 1px var(--c-border-strong);
-  transform-style: preserve-3d;
-}
-
-.cell {
-  position: relative;
-  flex: 1 1 0px; /* flex-grow = areaSf, set inline */
-  min-width: 0;
-  transform-style: preserve-3d;
-}
-
-.run {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex: 1 1 0px; /* flex-grow = combined areaSf, set inline */
-  gap: var(--suite-gap);
-  min-width: 0;
-  border-radius: var(--r-sm);
-  box-shadow: var(--match-ring);
-  transform-style: preserve-3d;
-}
-
-/* The suite is the top face: same classes as 2D give it the fill, edges, dimming and selection ring. */
-.cell > .suite {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  min-width: 0;
-  cursor: pointer;
-  transform: translateZ(1px); /* off the slab's plane: hit-testing is then unambiguous */
-}
-
-/* The projected outline is a secondary cue; the chip carries the visible focus indicator. */
-.cell > .suite:focus-visible { outline: 3px solid var(--c-focus); outline-offset: 1px; }
-
-/* ---------- side faces ---------- */
-
-.face {
-  position: absolute;
-  display: flex;
-  gap: var(--suite-gap);
-  background: var(--c-border-strong);
-  backface-visibility: hidden;
+.overlay {
+  overflow: hidden;
   pointer-events: none;
-}
-
-.front, .back {
-  left: 0;
-  width: 100%;
-  height: var(--t);
-  padding: 0 var(--suite-gap);
-  filter: brightness(0.8);
-}
-
-.front { top: 100%; transform-origin: top; transform: rotateX(-90deg); }
-.back { top: calc(-1 * var(--t)); transform-origin: bottom; transform: rotateX(90deg); }
-
-.left, .right {
-  top: 0;
-  width: var(--t);
-  height: 100%;
-  filter: brightness(0.62);
-}
-
-.left { left: calc(-1 * var(--t)); transform-origin: right; transform: rotateY(-90deg); }
-.right { left: 100%; transform-origin: left; transform: rotateY(90deg); }
-
-.stripCell {
-  min-width: 0;
-  border-radius: 0;
-  transition: none;
-}
-
-/* ---------- labels: upright chips standing on the top face ---------- */
-
-.chip {
-  position: absolute;
-  transform-origin: 0 0;
-  pointer-events: none;
-  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.chip {
-  top: 50%;
-  left: 50%;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 5px;
-  border-radius: 8px;
-  background: rgba(17, 24, 39, 0.86);
-  color: #fff;
+/* ---------- rings (SVG polygons following the projected faces) ---------- */
+
+.rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.ring { fill: none; stroke-linejoin: round; }
+.ring[data-on='false'] { display: none; }
+.ring[data-kind='run'] { stroke: var(--c-accent); stroke-width: 3px; }
+.ring[data-kind='run-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
+.ring[data-kind='selected'] { stroke: var(--c-text); stroke-width: 3px; }
+.ring[data-kind='selected-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
+.ring[data-kind='focus'] { stroke: var(--c-focus); stroke-width: 3px; }
+.ring[data-kind='hover'] { stroke: var(--c-text); stroke-opacity: .35; stroke-width: 1.5px; }
+
+/* ---------- floor numbers and rank badges ---------- */
+
+.floorTag {
+  position: absolute;
+  padding: 2px 4px;
+  transform: translate(calc(-100% - 4px), -50%);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--c-surface) 85%, transparent);
+  color: var(--c-text-muted);
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
-  line-height: 14px;
-  /* lean toward the edge facing the viewer: that is the part of a lower floor the floor above does not cover */
-  transform:
-    translate(calc(sin(var(--rot, -35deg)) * var(--lean)), calc(cos(var(--rot, -35deg)) * var(--lean)))
-    rotateZ(calc(-1 * var(--rot, -35deg)))
-    rotateX(calc(-1 * var(--tilt)))
-    translate(-50%, -85%)
-    translateZ(200px); /* along the view axis: no shift on screen, but drawn in front of the floor above */
-}
-
-.chip[data-dimmed='true'] { opacity: 0.4; }
-
-/* A dimmed suite lights up while focused or selected, label included. */
-.suite:focus-visible + .chip,
-.chip[data-selected='true'] { opacity: 1; }
-
-.chip[data-narrow='true'] { display: none; }
-.suite:focus-visible + .chip[data-narrow='true'] { display: inline-flex; }
-
-.suite:focus-visible + .chip {
-  box-shadow: 0 0 0 2px var(--c-surface), 0 0 0 5px var(--c-focus);
-  background: var(--c-focus);
-  color: #fff;
-}
-
-.chip[data-selected='true'] {
-  background: var(--c-surface);
-  color: var(--c-text);
-  box-shadow: 0 0 0 2px var(--c-text);
+  line-height: 1;
 }
 
 .badge {
-  display: inline-grid;
+  position: absolute;
+  z-index: 3;
+  display: grid;
   place-items: center;
-  width: 15px;
-  height: 15px;
+  width: 20px;
+  height: 20px;
+  transform: translate(-35%, -65%);
   border-radius: 50%;
   background: var(--c-accent);
   color: var(--c-accent-ink);
-  font-size: var(--fs-2xs);
+  box-shadow: 0 0 0 2px var(--c-surface), 0 1px 3px rgba(16, 24, 40, .3);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   line-height: 1;
+}
+
+/* ---------- facade labels ---------- */
+
+/* A label covers its suite's projected front face; the frame loop sets the box and which parts show. */
+.label {
+  --ink: var(--c-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-content: center;
+  align-items: center;
+  column-gap: 5px;
+  padding: 0 5px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--fs-xs);
+  line-height: 14px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+
+.label[data-lines='2'] { flex-wrap: wrap; }
+.label[data-hidden='true'] { visibility: hidden; }
+.label[data-forced='true'] { z-index: 1; overflow: visible; }
+
+.lCue { order: 1; display: inline-flex; align-items: center; gap: 3px; font-weight: var(--fw-semibold); }
+.lCue[data-kind='word'] { letter-spacing: .05em; font-weight: 700; }
+.lNumber { order: 2; font-weight: var(--fw-semibold); }
+.lTenant { order: 3; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-sm); font-weight: var(--fw-semibold); }
+.lSf { order: 4; opacity: .85; }
+
+.label[data-lines='2'] .lSf { order: 3; }
+.label[data-lines='2'] .lTenant { order: 4; flex-basis: 100%; }
+
+.label:not([data-parts~='cue']) .lCue,
+.label:not([data-parts~='number']) .lNumber,
+.label:not([data-parts~='tenant']) .lTenant,
+.label:not([data-parts~='sf']) .lSf { display: none; }
+
+/* A forced label on a suite too narrow for it gets a chip in the suite's own colour, so it stays legible. */
+.label[data-forced='true'] .lCue,
+.label[data-forced='true'] .lNumber { text-shadow: 0 0 3px var(--fill), 0 0 3px var(--fill); }
+
+.label[data-fill='occupied'] { --ink: var(--c-occupied-ink); --fill: var(--c-occupied); }
+.label[data-fill='expiring'] { --ink: var(--c-expiring-ink); --fill: var(--c-expiring); }
+.label[data-fill='vacant'] { --ink: var(--c-vacant-ink); --fill: var(--c-vacant); }
+.label[data-fill='potential'] { --ink: var(--c-potential-ink); --fill: var(--c-potential); }
+.label[data-fill='committed'] { --ink: var(--c-committed-ink); --fill: var(--c-committed); }
+.label[data-fill='common'] { --ink: var(--c-common-ink); --fill: var(--c-common); }
+.label[data-fill='risk-le6'] { --ink: var(--c-risk-le6-ink); --fill: var(--c-risk-le6); }
+.label[data-fill='risk-le12'] { --ink: var(--c-risk-le12-ink); --fill: var(--c-risk-le12); }
+.label[data-fill='risk-le24'] { --ink: var(--c-risk-le24-ink); --fill: var(--c-risk-le24); }
+.label[data-fill='risk-le36'] { --ink: var(--c-risk-le36-ink); --fill: var(--c-risk-le36); }
+.label[data-fill='risk-gt36'] { --ink: var(--c-risk-gt36-ink); --fill: var(--c-risk-gt36); }
+.label[data-fill='risk-open'] { --ink: var(--c-risk-open-ink); --fill: var(--c-risk-open); }
+.label[data-ghost='true'] { --ink: var(--c-text-muted); --fill: transparent; opacity: .42; }
+/* A ghosted suite keeps only its cue and number: findable if you look, never competing with the matches. */
+.label[data-ghost='true'] .lTenant,
+.label[data-ghost='true'] .lSf { display: none; }
+
+.modifiedDot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-modified);
+  box-shadow: 0 0 0 1.5px var(--c-surface);
+  visibility: visible;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 5;
+  max-width: 260px;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  background: var(--c-text);
+  color: var(--c-surface);
+  box-shadow: var(--shadow-1);
+  font-size: var(--fs-xs);
+  line-height: 16px;
+  white-space: pre-line;
 }
 
 /* ---------- controls ---------- */
 
 .controls {
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 1;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  z-index: 4;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--sp-2);
-  padding-left: var(--floor-label-w);
-  pointer-events: none;
+  gap: 6px;
 }
 
-.controls > * { pointer-events: auto; }
+.hint { margin-right: var(--sp-1); padding: 2px 6px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--c-surface) 85%, transparent); color: var(--c-text-muted); font-size: var(--fs-xs); }
 
-.hint {
-  margin-right: auto;
-  color: var(--c-text-muted);
-  font-size: var(--fs-xs);
+/* A wide stage (see WIDE_STAGE in camera.ts) has room beside the building: the controls stack down the right. */
+@container stage (aspect-ratio >= 3 / 2) {
+  .controls { flex-direction: column; align-items: stretch; width: 142px; }
+  .ctlGroup > .ctl { flex: 1 1 0px; }
+  .hint { order: 1; margin: 2px 0 0; text-align: center; white-space: normal; }
 }
 
-.ctl {
-  padding: 2px var(--sp-3);
+.ctlGroup {
+  display: inline-flex;
+  overflow: hidden;
   border: 1px solid var(--c-border);
-  border-radius: var(--r-sm);
-  background: var(--c-surface-2);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.ctl, .ctlText {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  margin: 0;
+  border: 0;
+  background: var(--c-surface);
   color: var(--c-text);
   font: inherit;
   font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   cursor: pointer;
 }
 
-.ctl[aria-disabled='true'] { color: var(--c-text-muted); cursor: default; opacity: 0.6; }
-.ctl:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+.ctl { width: 30px; }
+.ctl + .ctl { border-left: 1px solid var(--c-border); }
 
-/* No CSS trig: skip the lean toward the viewer and keep the chip upright over the centre. */
-@supports not (transform: rotate(calc(sin(1deg) * 1deg))) {
-  .chip {
-    transform: rotateZ(calc(-1 * var(--rot, -35deg))) rotateX(calc(-1 * var(--tilt))) translate(-50%, -85%) translateZ(200px);
-  }
+.ctlText {
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+}
+
+.ctl:hover, .ctlText:hover { background: var(--c-surface-2); }
+.ctlText[aria-pressed='true'] { border-color: var(--c-text); background: var(--c-text); color: var(--c-surface); }
+.ctl:focus-visible, .ctlText:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--c-focus); outline-offset: 1px; }
+
+.icon { width: 16px; height: 16px; flex: none; }
+
+/* ---------- DOM mirror (visually hidden, keyboard and screen reader only) ---------- */
+
+.mirror {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mirrorButton { width: 1px; height: 1px; padding: 0; border: 0; }
+
+/* ---------- fallback and print ---------- */
+
+.fallback { display: flex; flex-direction: column; gap: var(--sp-2); }
+.note { margin: 0; color: var(--c-text-muted); font-size: var(--fs-xs); }
+.retry { margin-left: var(--sp-2); padding: 0; border: 0; background: none; color: var(--c-accent); font: inherit; font-weight: var(--fw-semibold); text-decoration: underline; cursor: pointer; }
+.retry:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+
+.printOnly { display: none; }
+
+@media print {
+  .stage { display: none; }
+  .printOnly { display: block; }
 }

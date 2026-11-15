@@ -20,7 +20,7 @@ async function openSuiteAction(page: Page, number: number, action: 'renew' | 'va
 }
 
 test.describe('scenario simulator', () => {
-  test.beforeEach(async ({ page }) => gotoApp(page))
+  test.beforeEach(async ({ page }) => gotoApp(page, 'stack'))
 
   test('no scenario bar until a change is added', async ({ page }) => {
     await expect(page.getByTestId('kpi-occupancy-value')).toHaveText('72%')
