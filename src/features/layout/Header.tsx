@@ -1,6 +1,8 @@
 import { selectBuilding } from '../../app/state/selectBuilding'
+import { BUNDLED_BUILDINGS } from '../../data'
 import { useAppState } from '../../app/state/useAppState'
 import { BuildingSwitcher } from '../building/BuildingSwitcher'
+import { ImportCsv } from '../import/ImportCsv'
 import { SummaryButton } from '../shortlist/SummaryButton'
 import styles from './Header.module.css'
 
@@ -18,6 +20,7 @@ function BrandMark() {
 export function Header() {
   const { state } = useAppState()
   const building = selectBuilding(state)
+  const isDemo = BUNDLED_BUILDINGS.some((b) => b.id === building.id) // imported buildings are the broker's own data
   return (
     <header className={styles.header} data-testid="app-header">
       <div className={styles.brand}>
@@ -28,9 +31,9 @@ export function Header() {
         <BuildingSwitcher />
         <span className={styles.address}>{building.address}</span>
       </div>
-      <span className={styles.badge} data-testid="demo-badge">Demo data</span>
+      {isDemo && <span className={styles.badge} data-testid="demo-badge">Demo data</span>}
       <div className={styles.actions} data-print="hide">
-        {/* slot:import (S14) */}
+        <ImportCsv buttonClassName={styles.button} />
         <SummaryButton className={styles.button} />
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
       </div>

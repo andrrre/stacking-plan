@@ -1,0 +1,7 @@
+building,floor,suite,area_sf,kind,asking_rent_psf,joins_next,tenant,lease_start,lease_end,rent_psf,vacating
+Bayfront Commons,3,300,5200,leasable,44,yes,<img src=x onerror=alert(1)>,2023-01-01,2028-12-31,42,no
+Bayfront Commons,3,310,4100,leasable,44,no,,,,,
+Bayfront Commons,2,200,6000,leasable,41,no,"=HYPERLINK(""http://example.com"",""Click"")",2022-04-01,2027-03-31,39,no
+Bayfront Commons,2,200,6000,leasable,41,no,Sandpiper Health,2027-06-01,,43,no
+Bayfront Commons,1,100,2400,common,,no,,,,,
+Bayfront Commons,1,110,3000,leasable,46,no,Marlin Books,2021-02-01,2030-01-31,44,yes

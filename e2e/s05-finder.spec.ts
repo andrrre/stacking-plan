@@ -57,7 +57,7 @@ test.describe('space finder', () => {
   test('max below min shows a validation error and keeps the matches', async ({ page }) => {
     await page.getByTestId('req-min-sf').fill('10000')
     await page.getByTestId('req-max-sf').fill('9000')
-    await expect(page.getByRole('status')).toContainText(/at least the minimum/i)
+    await expect(page.getByTestId('left-rail').getByRole('status')).toContainText(/at least the minimum/i)
     await expect(page.getByTestId('req-max-sf')).toHaveAttribute('aria-invalid', 'true')
     await expect(page.getByTestId('match-1')).toHaveAttribute('data-key', 'odt-500')
     await expect(page.getByTestId('match-2')).toHaveAttribute('data-key', 'odt-700+odt-710')
