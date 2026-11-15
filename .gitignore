@@ -1,0 +1,11 @@
+/.claude
+/.omc
+node_modules
+dist
+.pw
+.env*
+!.env.example
+test-results
+playwright-report
+.vercel
+context/
