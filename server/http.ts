@@ -6,9 +6,9 @@ const MESSAGES: Record<number, string> = {
   413: 'Request too large',
   415: 'Unsupported media type',
   429: 'Too many requests',
-  502: 'AI parsing failed',
-  503: 'AI parsing is not available',
-  504: 'AI parsing timed out',
+  502: 'AI request failed',
+  503: 'AI unavailable',
+  504: 'AI request timed out',
 }
 
 export function jsonError(status: number): Response {
@@ -30,6 +30,28 @@ function isTimeout(error: unknown): boolean {
   const name = error instanceof Error ? error.name : undefined
   const cause = error instanceof Error && error.cause instanceof Error ? error.cause.name : undefined
   return names.includes(name ?? '') || names.includes(cause ?? '')
+}
+
+/** The parsed JSON body, or undefined when it is over `maxChars`, unreadable or not JSON. */
+export async function readJsonBody(request: Request, maxChars: number): Promise<unknown> {
+  try {
+    const text = await request.text()
+    return text.length > maxChars ? undefined : (JSON.parse(text) as unknown)
+  } catch {
+    // An unreadable stream or text that is not JSON.
+    return undefined
+  }
+}
+
+/**
+ * Status for a request refused before its body is read, or null. A cross-site no-cors POST arrives as text/plain
+ * with no preflight, so only JSON from this site is accepted: nobody else can spend model calls.
+ */
+export function refusal(request: Request, maxChars: number): number | null {
+  if (request.headers.get('sec-fetch-site') === 'cross-site') return 403
+  const type = request.headers.get('content-type')?.toLowerCase() ?? ''
+  if (!type.startsWith('application/json')) return 415
+  return Number(request.headers.get('content-length') ?? 0) > maxChars ? 413 : null
 }
 
 export type AiResult<T> = { ok: true; value: T } | { ok: false; response: Response }

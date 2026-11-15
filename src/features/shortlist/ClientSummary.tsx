@@ -1,6 +1,7 @@
 import { selectBaseBuilding } from '../../app/state/selectors'
 import { useAppState } from '../../app/state/useAppState'
 import { formatLongDate } from '../../domain/format'
+import { SummaryIntro } from '../summary-ai/SummaryIntro'
 import { ClientTable } from './ClientTable'
 import { clientOptions } from './clientOptions'
 import { DialogFrame } from './DialogFrame'
@@ -32,7 +33,7 @@ export function ClientSummary() {
             {building.address && <p className={styles.address}>{building.address}</p>}
             <p className={styles.prepared}>Prepared {formatLongDate(state.today)}</p>
           </header>
-          {/* slot:summary-intro (S15) */}
+          <SummaryIntro buildingId={building.id} buildingName={building.name} asOf={state.today} options={options} />
           <section className={styles.section} aria-labelledby="summary-stack-title">
             <h3 id="summary-stack-title" className={styles.sub}>Where the options sit</h3>
             <MiniStack building={building} options={options} />

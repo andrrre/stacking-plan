@@ -147,7 +147,7 @@ describe('api/ask.ts POST (C3)', () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '')
     const res = await POST(askRequest(validBody()))
     expect(res.status).toBe(503)
-    expect(await errorOf(res)).toBe('AI parsing is not available')
+    expect(await errorOf(res)).toBe('AI unavailable')
     vi.unstubAllEnvs()
   })
 })

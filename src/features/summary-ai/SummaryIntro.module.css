@@ -1,0 +1,23 @@
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-left: var(--sp-4);
+  border-left: 3px solid var(--c-accent);
+  break-inside: avoid;
+}
+
+.headline {
+  margin: 0;
+  font-size: var(--fs-xl, 20px);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+}
+
+.paragraph {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--c-text);
+  font-size: var(--fs-lg);
+  line-height: 1.55;
+}

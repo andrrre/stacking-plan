@@ -1,6 +1,6 @@
 import { generateObject } from 'ai'
 import { AskRequestSchema, ParsedQuerySchema } from '../src/shared/ask.schema.js'
-import { clientIp, jsonError, runAi } from './http.js'
+import { clientIp, jsonError, readJsonBody, refusal, runAi } from './http.js'
 import { getModel, type ServerEnv } from './model.js'
 import { allow } from './rateLimit.js'
 
@@ -24,33 +24,12 @@ function promptFor(query: string, today: string): string {
   return `Today is ${today}.\nThe broker's query, as a JSON string:\n${JSON.stringify(query)}`
 }
 
-async function readBody(request: Request): Promise<unknown> {
-  try {
-    const text = await request.text()
-    return text.length > MAX_BODY_CHARS ? undefined : (JSON.parse(text) as unknown)
-  } catch {
-    // An unreadable stream or text that is not JSON.
-    return undefined
-  }
-}
-
-/**
- * Status for a request refused before its body is read, or null. A cross-site no-cors POST arrives as text/plain
- * with no preflight, so only JSON from this site is accepted: nobody else can spend model calls.
- */
-function refusal(request: Request): number | null {
-  if (request.headers.get('sec-fetch-site') === 'cross-site') return 403
-  const type = request.headers.get('content-type')?.toLowerCase() ?? ''
-  if (!type.startsWith('application/json')) return 415
-  return Number(request.headers.get('content-length') ?? 0) > MAX_BODY_CHARS ? 413 : null
-}
-
 /** POST /api/ask: plain-words query → ParsedQuery. The model only extracts fields; it never picks suites. */
 export async function handleAsk(request: Request, env: ServerEnv, nowMs: number = Date.now()): Promise<Response> {
-  const refused = refusal(request)
+  const refused = refusal(request, MAX_BODY_CHARS)
   if (refused !== null) return jsonError(refused)
   if (!allow(clientIp(request), nowMs)) return jsonError(429)
-  const body = AskRequestSchema.safeParse(await readBody(request))
+  const body = AskRequestSchema.safeParse(await readJsonBody(request, MAX_BODY_CHARS))
   if (!body.success) return jsonError(400)
   const model = getModel(env)
   if (!model) return jsonError(503)
