@@ -19,6 +19,7 @@ How the StackMatch prototype could become a real Ascendix feature or product. Fo
 | Matches can be trusted | Combined suites must be marked combinable. The finder was checked on 100,000 randomised cases in review. |
 | A dead end can explain itself | The no-fit result gives the largest block and the earliest date a fit appears. |
 | The output can leave the building | The client summary has no tenant names or lease rents. |
+| A building can be read and searched in 3D | The app opens on a WebGL building (three.js) drawn from the same data model as the 2D stack, in the browser with no native plugin. `e2e/s13-3d.spec.ts` covers it. |
 | The logic is portable | `src/domain/` has no React and takes `today` as an argument. |
 
 What it does **not** prove: that real xRE data is clean enough to drive it, that brokers want it inside xRE, or that the matching rules fit how brokers actually combine space. Those are the first things to test.
@@ -86,15 +87,15 @@ The prototype already has keyboard-focusable suites, arrow-key navigation, text 
 
 - Run an accessibility audit and fix findings before release.
 - Lease-risk mode shows the bucket by colour only on narrow suites; the words are in the tooltip. Revisit this.
-- The 3D view is a showpiece. Its suites are keyboard-focusable and it has rotate and reset buttons, but suites behind upper floors cannot be clicked at some angles and it has not been tested with assistive technology. The 2D stack remains the accessible view.
+- The 3D building's canvas is mirrored by one focusable button per suite, with the same accessible names as the 2D stack and arrow-key navigation. The 2D stack is the detailed, most accessible view and is the fallback. Neither has been audited with assistive technology.
 - Desktop-first at 1280 px. A property-page component may be narrower; layout needs a pass.
 
 ### Testing
 
-The prototype has 980 unit and component tests and 92 end-to-end tests, all on fictional data in one browser.
+The prototype has 1,034 unit and component tests and 103 end-to-end tests, all passing in `npm run test:all`, all on fictional data in one browser.
 
 - Add a contract test suite for the xRE adapter, using anonymised real records.
-- Run end-to-end tests on more than Chromium and at the component's real width.
+- Run end-to-end tests on more than Chromium and at the component's real width. WebGL is only exercised with software rendering in headless Chromium; real-GPU, Safari and Firefox behaviour is untested.
 - Test with real-sized buildings. The hero has 12 floors and 32 suites; the performance of the finder and the 3D view on 60 floors is untested.
 - Time zones: dates are handled as `YYYY-MM-DD` strings on purpose. Keep that through the adapter.
 
@@ -116,6 +117,8 @@ Each phase is shippable alone. A phase's dependencies must be met before it star
 
 **Depends on:** the xRE adapter; confirmation of the Salesforce component platform and its limits (the prototype is React, so it is either re-built as an LWC or wrapped; **not decided here**); permission rules.
 
+**Open question:** whether WebGL and a three.js bundle of this size (969 kB, 259 kB gzipped, from `npm run build`) are acceptable inside the Salesforce component platform. Lightning Web Security or Locker constraints may apply; that is an assumption to validate, not a known fact. The 2D stack needs neither.
+
 **Why first:** it uses data the customer already keeps and gives the clearest value, vacant and expiring on first paint.
 
 ### Phase 2: finder, shortlist and client summary in the component
@@ -135,6 +138,8 @@ Each phase is shippable alone. A phase's dependencies must be met before it star
 **Delivers:** floor plates drawn from real geometry instead of proportional bars, and recorded combinability of neighbouring suites.
 
 **Depends on:** a source of floor-plate geometry (CAD, BIM or a floor-plan service; **not identified**); a way for users to record which suites can join, if xRE has no such field.
+
+**3D:** the 3D building is where real floor-plate geometry would land. Today its plates are rectangles sized by area. Real geometry would replace those rectangles and the area-proportional suite widths in both views. It would not answer whether neighbouring suites can be combined; that stays a contractual question.
 
 **Note:** the prototype's `joinsNext` flag was chosen because drawing adjacency is cheaper than knowing it. Real geometry replaces the drawing but not the contractual question of whether space can be combined.
 
@@ -166,6 +171,7 @@ From DESIGN.md section 11. Not built, not sequenced:
 | Lease data is stale or has gaps (missing end dates, overlaps) | Wrong statuses and KPIs | Validate on load as the CSV import does; show data problems instead of hiding them |
 | Real data goes to an AI provider | Customer confidentiality | Keep AI optional and limited to field extraction on client-safe data; get a security and legal decision first |
 | Prototype stack (React) does not fit the host platform | Rework in Phase 1 | Settle the component approach in Phase 0; keep `src/domain/` framework-free |
+| 3D bundle size (969 kB, 259 kB gzipped) and WebGL availability on managed corporate machines | The 3D building may load slowly or not draw | The 2D stack is the automatic fallback; measure on real machines and networks in Phase 0 |
 | Scale: larger buildings and portfolios | Untested performance | Test with real-sized data early in Phase 1 |
 | Per-instance rate limit and unverified serverless deploy | The AI paths may fail or be abused | Shared rate limit, provider budget cap, and a real deploy test before relying on them |
 
