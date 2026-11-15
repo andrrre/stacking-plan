@@ -1,18 +1,18 @@
 import { useMemo } from 'react'
 import { kpis } from '../../domain/kpis'
 import { selectBuilding } from '../../app/state/selectBuilding'
+import { selectBaseBuilding } from '../../app/state/selectors'
+import { modifiedSuiteIds } from '../../domain/scenario'
 import { useAppState } from '../../app/state/useAppState'
 import { useMatches } from '../finder/useMatches'
 import { buildStackModel, type StackModel } from './suiteVisual'
-
-// S11 replaces NO_MODIFIED with modifiedSuiteIds(...).
-const NO_MODIFIED: ReadonlySet<string> = new Set()
 
 export function useStackModel(): StackModel {
   const { state } = useAppState()
   const { matches } = useMatches()
   const building = selectBuilding(state)
-  const { asOf, today, mode, highlight, selection } = state
+  const base = selectBaseBuilding(state)
+  const { asOf, today, mode, highlight, selection, changes } = state
   const includePotential = state.req.includePotential
   const selectedSuiteId = selection?.kind === 'suite' ? selection.suiteId : null
 
@@ -21,11 +21,12 @@ export function useStackModel(): StackModel {
     [building, asOf, today, includePotential, highlight],
   )
 
+  const modifiedIds = useMemo(() => modifiedSuiteIds(base, changes), [base, changes])
+
   return useMemo(
     () => buildStackModel({
-      building, asOf, today, mode, matches, highlightIds, modifiedIds: NO_MODIFIED, selectedSuiteId,
+      building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId,
     }),
-    // S11: add `modifiedIds` here when you replace NO_MODIFIED.
-    [building, asOf, today, mode, matches, highlightIds, selectedSuiteId],
+    [building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId],
   )
 }

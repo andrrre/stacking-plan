@@ -3,6 +3,7 @@ import { useAppState } from '../../app/state/useAppState'
 import { caveatText } from '../../domain/caveats'
 import { formatLongDate, formatNumber, formatPsf, formatSf } from '../../domain/format'
 import type { Candidate } from '../../domain/types'
+import { PlaceTenant } from '../scenario/PlaceTenant'
 import styles from './MatchWhy.module.css'
 
 type Props = { candidate: Candidate; rank: number }
@@ -58,7 +59,7 @@ export function MatchWhy({ candidate: c, rank }: Props) {
             </ul>
           )}
       </div>
-      {/* slot:place-tenant (S11) */}
+      <PlaceTenant candidate={c} />
     </section>
   )
 }

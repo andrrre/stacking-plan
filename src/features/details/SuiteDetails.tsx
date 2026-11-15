@@ -1,9 +1,12 @@
+import { useEffect, useRef } from 'react'
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { useAppState } from '../../app/state/useAppState'
 import { monthsBetweenIso } from '../../domain/dates'
 import { formatLongDate, formatPsf, formatSf } from '../../domain/format'
 import { statusAt } from '../../domain/status'
 import type { ISODate, Lease, StatusResult, Suite } from '../../domain/types'
+import { takeDetailsFocus } from '../scenario/detailsFocus'
+import { SuiteActions } from '../scenario/SuiteActions'
 import { combineText, locate, monthsText, shownLease, statusText } from './suiteFacts'
 import styles from './details.module.css'
 
@@ -48,6 +51,10 @@ function FactRows({ suite, st, neighbours, asOf }: FactProps) {
 
 export function SuiteDetails({ suiteId }: Props) {
   const { state, dispatch } = useAppState()
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    if (takeDetailsFocus(suiteId)) headingRef.current?.focus()
+  }, [suiteId])
   const found = locate(selectBuilding(state), suiteId)
   if (!found) return null
   const { suite, floor, neighbours } = found
@@ -59,7 +66,7 @@ export function SuiteDetails({ suiteId }: Props) {
     <section className={styles.details} data-testid="suite-details" data-status={st.status} aria-label={`Suite ${suite.number} details`}>
       <header className={styles.head}>
         <div>
-          <h2 className={styles.title}>Suite {suite.number}</h2>
+          <h2 ref={headingRef} className={styles.title} tabIndex={-1}>Suite {suite.number}</h2>
           <p className={styles.where}>Floor {floor}{suite.name ? ` · ${suite.name}` : ''}</p>
         </div>
         <button type="button" className={styles.close} aria-label="Close details" onClick={() => dispatch({ type: 'select', selection: null })}>×</button>
@@ -81,7 +88,7 @@ export function SuiteDetails({ suiteId }: Props) {
           </ul>
         </div>
       )}
-      {/* slot:suite-actions (S11) */}
+      <SuiteActions suite={suite} st={st} asOf={asOf} />
     </section>
   )
 }

@@ -1,0 +1,35 @@
+/* Openers for the change dialog: suite actions (details panel) and Place tenant here (match panel). */
+.actions { display: flex; flex-direction: column; gap: var(--sp-2); }
+.sub {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.buttons { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.action, .place {
+  padding: 6px var(--sp-3);
+  border-radius: var(--r-md);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.action { background: var(--c-surface); border: 1px solid var(--c-border-strong); color: var(--c-text); }
+.action:hover:not(:disabled) { background: var(--c-surface-2); }
+.action:disabled { color: var(--c-text-muted); border-style: dashed; cursor: not-allowed; }
+
+/* The demo's next beat: the one filled button in the match panel. */
+.place {
+  align-self: stretch;
+  padding: 9px var(--sp-4);
+  background: var(--c-accent);
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent-ink);
+  font-weight: var(--fw-semibold);
+}
+.place:hover { filter: brightness(.94); }
+.action:focus-visible, .place:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }

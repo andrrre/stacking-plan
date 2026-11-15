@@ -1,5 +1,6 @@
 import { LegendSwitch } from '../risk/LegendSwitch'
 import { StackToolbar } from '../risk/StackToolbar'
+import { ScenarioBar } from '../scenario/ScenarioBar'
 import { StackView } from '../stack/StackView'
 import { DateSlider } from '../timeline/DateSlider'
 import styles from './CenterPane.module.css'
@@ -15,7 +16,7 @@ export function CenterPane() {
         </div>
       </div>
       <DateSlider />
-      {/* slot:scenario-bar (S11) */}
+      <ScenarioBar />
     </section>
   )
 }
