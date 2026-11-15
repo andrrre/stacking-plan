@@ -1,0 +1,469 @@
+{
+  "id": "pbp",
+  "name": "Palm Bay Plaza",
+  "address": "250 Bayshore Boulevard, Palm Bay",
+  "floors": [
+    {
+      "number": 7,
+      "suites": [
+        {
+          "id": "pbp-701",
+          "number": "701",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-701-l1",
+              "tenant": "Osprey Landing Ventures",
+              "start": "2027-04-01",
+              "end": "2032-03-31",
+              "rentPsf": 57
+            }
+          ]
+        },
+        {
+          "id": "pbp-702",
+          "number": "702",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-702-l1",
+              "tenant": "Bayshore Biotech",
+              "start": "2025-01-01",
+              "end": "2032-12-31",
+              "rentPsf": 55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "suites": [
+        {
+          "id": "pbp-601",
+          "number": "601",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-601-l1",
+              "tenant": "Ibis Lane Consulting",
+              "start": "2024-01-01",
+              "end": "2029-12-31",
+              "rentPsf": 53
+            }
+          ]
+        },
+        {
+          "id": "pbp-602",
+          "number": "602",
+          "areaSf": 2500,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-602-l1",
+              "tenant": "Reef Light Design",
+              "start": "2022-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 52
+            }
+          ]
+        },
+        {
+          "id": "pbp-603",
+          "number": "603",
+          "areaSf": 2500,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "suites": [
+        {
+          "id": "pbp-501",
+          "number": "501",
+          "areaSf": 2500,
+          "kind": "leasable",
+          "askingRentPsf": 52,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "pbp-502",
+          "number": "502",
+          "areaSf": 2500,
+          "kind": "leasable",
+          "askingRentPsf": 52,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-502-l1",
+              "tenant": "Spoonbill Research",
+              "start": "2019-10-01",
+              "end": "2026-09-30",
+              "rentPsf": 49
+            }
+          ]
+        },
+        {
+          "id": "pbp-503",
+          "number": "503",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 52,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-503-l1",
+              "tenant": "Palmetto Pediatrics",
+              "start": "2022-05-01",
+              "end": "2027-04-30",
+              "rentPsf": 50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "suites": [
+        {
+          "id": "pbp-401",
+          "number": "401",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 50,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-401-l1",
+              "tenant": "Tarpon Bridge Partners",
+              "start": "2023-07-01",
+              "end": "2028-06-30",
+              "rentPsf": 48
+            }
+          ]
+        },
+        {
+          "id": "pbp-402",
+          "number": "402",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 50,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "suites": [
+        {
+          "id": "pbp-301",
+          "number": "301",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-301-l1",
+              "tenant": "Bonefish Capital",
+              "start": "2023-01-01",
+              "end": "2031-12-31",
+              "rentPsf": 45
+            }
+          ]
+        },
+        {
+          "id": "pbp-302",
+          "number": "302",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-302-l1",
+              "tenant": "Anhinga Architects",
+              "start": "2022-09-01",
+              "end": "2027-08-31",
+              "rentPsf": 44
+            }
+          ]
+        },
+        {
+          "id": "pbp-303",
+          "number": "303",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-303-l1",
+              "tenant": "Whelk Street Legal",
+              "start": "2025-04-01",
+              "end": "2030-03-31",
+              "rentPsf": 46
+            }
+          ]
+        },
+        {
+          "id": "pbp-304",
+          "number": "304",
+          "areaSf": 2000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "pbp-305",
+          "number": "305",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-305-l1",
+              "tenant": "Egret Point Energy",
+              "start": "2024-06-01",
+              "end": "2029-05-31",
+              "rentPsf": 45
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "suites": [
+        {
+          "id": "pbp-201",
+          "number": "201",
+          "areaSf": 2000,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-201-l1",
+              "tenant": "Hibiscus Health Group",
+              "start": "2024-02-01",
+              "end": "2029-01-31",
+              "rentPsf": 41
+            }
+          ]
+        },
+        {
+          "id": "pbp-202",
+          "number": "202",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-202-l1",
+              "tenant": "Cuttlefish Row Staffing",
+              "start": "2018-05-01",
+              "end": "2026-05-31",
+              "rentPsf": 39
+            }
+          ]
+        },
+        {
+          "id": "pbp-203",
+          "number": "203",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "pbp-204",
+          "number": "204",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-204-l1",
+              "tenant": "Gull Harbor Insurance",
+              "start": "2020-03-01",
+              "end": "2026-08-31",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "pbp-205",
+          "number": "205",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-205-l1",
+              "tenant": "Conch Row Travel",
+              "start": "2022-02-01",
+              "end": "2027-01-31",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "pbp-206",
+          "number": "206",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-206-l1",
+              "tenant": "Mullet Creek Media",
+              "start": "2021-03-01",
+              "end": "2026-08-31",
+              "rentPsf": 40
+            },
+            {
+              "id": "pbp-206-l2",
+              "tenant": "Sawgrass Software",
+              "start": "2027-03-01",
+              "end": "2032-02-29",
+              "rentPsf": 43
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 1,
+      "suites": [
+        {
+          "id": "pbp-100",
+          "number": "100",
+          "areaSf": 3000,
+          "kind": "common",
+          "name": "Main Lobby",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "pbp-101",
+          "number": "101",
+          "areaSf": 2500,
+          "kind": "leasable",
+          "askingRentPsf": 38,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "pbp-101-l1",
+              "tenant": "Marlin Bay Dental",
+              "start": "2022-04-01",
+              "end": "2030-03-31",
+              "rentPsf": 36
+            }
+          ]
+        },
+        {
+          "id": "pbp-102",
+          "number": "102",
+          "areaSf": 2000,
+          "kind": "leasable",
+          "askingRentPsf": 38,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-102-l1",
+              "tenant": "Coral Reef Accounting",
+              "start": "2023-09-01",
+              "end": "2028-08-31",
+              "rentPsf": 37
+            }
+          ]
+        },
+        {
+          "id": "pbp-103",
+          "number": "103",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 38,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-103-l1",
+              "tenant": "Sandpiper Logistics",
+              "start": "2021-07-01",
+              "end": "2027-06-30",
+              "rentPsf": 34
+            }
+          ]
+        },
+        {
+          "id": "pbp-104",
+          "number": "104",
+          "areaSf": 2500,
+          "kind": "leasable",
+          "askingRentPsf": 38,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-104-l1",
+              "tenant": "Heron Cay Imports",
+              "start": "2019-01-01",
+              "end": "2026-03-31",
+              "rentPsf": 33
+            }
+          ]
+        },
+        {
+          "id": "pbp-105",
+          "number": "105",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 38,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "pbp-105-l1",
+              "tenant": "Pompano Wellness",
+              "start": "2027-02-01",
+              "end": "2032-01-31",
+              "rentPsf": 38
+            }
+          ]
+        },
+        {
+          "id": "pbp-106",
+          "number": "106",
+          "areaSf": 2000,
+          "kind": "leasable",
+          "askingRentPsf": 38,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    }
+  ]
+}

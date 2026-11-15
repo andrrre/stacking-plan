@@ -4,13 +4,14 @@ import { LeftRail } from '../features/layout/LeftRail'
 import { RightPanel } from '../features/layout/RightPanel'
 import { KpiBar } from '../features/kpi/KpiBar'
 import { useAppState } from './state/useAppState'
+import { useUrlSync } from './state/useUrlSync'
 import styles from './App.module.css'
 
 // The shell (data-print="shell") holds the whole working screen. Overlays such as the client summary
 // sit outside it, so printing the summary can hide the shell (global.css).
 export function App() {
   const { state } = useAppState()
-  // slot:url-sync (S10)
+  useUrlSync()
   return (
     <div className={styles.app} data-overlay={state.overlay}>
       <div className={styles.shell} data-print="shell">

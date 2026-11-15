@@ -145,7 +145,7 @@ test('clicking a suite selects it and the right panel leaves its empty state', a
 
 test('shell: header, rails, main landmark and overlay attribute', async ({ page }) => {
   await gotoApp(page)
-  await expect(page.getByTestId('app-header')).toContainText('Ocean Drive Tower')
+  await expect(page.getByTestId('building-switcher')).toHaveValue('odt')
   await expect(page.getByRole('button', { name: 'Print', exact: true })).toBeVisible()
   await expect(page.getByRole('main')).toBeVisible()
   for (const id of ['left-rail', 'center-pane', 'right-panel']) await expect(page.getByTestId(id)).toBeVisible()

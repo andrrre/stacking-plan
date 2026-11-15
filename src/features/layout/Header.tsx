@@ -1,5 +1,6 @@
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { useAppState } from '../../app/state/useAppState'
+import { BuildingSwitcher } from '../building/BuildingSwitcher'
 import styles from './Header.module.css'
 
 function BrandMark() {
@@ -23,9 +24,8 @@ export function Header() {
         <h1 className={styles.title}>StackMatch</h1>
       </div>
       <div className={styles.building}>
-        <span className={styles.buildingName}>{building.name}</span>
+        <BuildingSwitcher />
         <span className={styles.address}>{building.address}</span>
-        {/* slot:building-switcher (S10) */}
       </div>
       <span className={styles.badge} data-testid="demo-badge">Demo data</span>
       <div className={styles.actions} data-print="hide">

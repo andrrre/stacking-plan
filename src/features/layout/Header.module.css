@@ -34,11 +34,6 @@
   white-space: nowrap;
 }
 
-.buildingName {
-  font-size: var(--fs-md);
-  font-weight: var(--fw-semibold);
-}
-
 .address {
   overflow: hidden;
   color: var(--c-text-muted);
