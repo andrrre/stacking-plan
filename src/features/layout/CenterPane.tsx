@@ -1,5 +1,6 @@
 import { Legend } from '../stack/Legend'
 import { StackView } from '../stack/StackView'
+import { DateSlider } from '../timeline/DateSlider'
 import styles from './CenterPane.module.css'
 
 export function CenterPane() {
@@ -12,7 +13,7 @@ export function CenterPane() {
           {/* slot:legend-switch (S8) */}<Legend />
         </div>
       </div>
-      {/* slot:slider (S6) */}
+      <DateSlider />
       {/* slot:scenario-bar (S11) */}
     </section>
   )
