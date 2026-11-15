@@ -2,23 +2,26 @@
    Every element between the scene and a billboard label keeps `transform-style: preserve-3d` and no
    opacity or filter, because those would flatten it. Opacity and filter live on leaf elements only. */
 
+/* The rotate controls ride on the stage's top edge (empty sky at every angle), so the 3D view is no taller
+   than the stage itself and fits the centre pane beside the legend and the date slider. */
 .wrap {
   container-type: inline-size;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
 }
 
 .stage {
   --tilt: 58deg;
-  --w: min(400px, 84cqw); /* footprint width, from the pane */
+  --w: min(360px, 80cqw); /* footprint width, from the pane */
   /* Floor-to-floor rise. The --floor-3d-h token (22px) leaves the lower slabs hidden behind the floor above, so
      3D uses its own step; it shrinks for tall buildings so the stage height stays bounded. */
-  --step: min(36px, calc(360px / var(--floors)));
+  --step: min(23px, calc(300px / var(--floors)));
   --t: min(10px, calc(var(--step) * 0.5)); /* slab thickness */
   position: relative;
+  flex: none; /* never squeezed by a short pane: the stage height is what keeps the building inside it */
   /* the building's rise, plus the footprint's worst-case projected height (any angle), plus label room */
-  height: calc(var(--floors) * var(--step) * 0.85 + var(--w) * 0.55 + 28px);
+  height: calc(var(--floors) * var(--step) * 0.85 + var(--w) * 0.55 + 36px);
   isolation: isolate;
   overflow: clip; /* the scene can never paint over the toolbar or the controls */
   cursor: grab;
@@ -28,6 +31,11 @@
 }
 
 .stage[data-dragging='true'] { cursor: grabbing; }
+
+/* Tall screens (a 1080p demo) have room for a larger building. */
+@media (min-height: 1000px) {
+  .stage { --w: min(440px, 80cqw); --step: min(30px, calc(360px / var(--floors))); }
+}
 
 .scene {
   --lean: calc(var(--w) * 0.045);
@@ -205,12 +213,20 @@
 /* ---------- controls ---------- */
 
 .controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: var(--sp-2);
   padding-left: var(--floor-label-w);
+  pointer-events: none;
 }
+
+.controls > * { pointer-events: auto; }
 
 .hint {
   margin-right: auto;

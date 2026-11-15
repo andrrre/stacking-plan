@@ -1,37 +1,36 @@
 /* Teal is the "modified" colour: the same dot marks changed suites in the stack.
-   Sticky to the bottom of the scrolling centre pane, so the before → after stays in view beside the stack. */
+   The bar sits in the centre pane's column below the date slider; the pane keeps both on screen,
+   so the before → after stays in view beside the stack without covering anything. */
 .bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
+  container: scenario / inline-size;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-3) var(--sp-4);
-  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-2) var(--sp-5);
+  padding: var(--sp-2) var(--sp-4);
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-left: 4px solid var(--c-modified);
   border-radius: var(--r-lg);
-  box-shadow: 0 -4px 16px rgba(16, 24, 40, .10), var(--shadow-1);
+  box-shadow: var(--shadow-1);
 }
 
 .head { display: grid; grid-template-columns: auto auto; align-items: center; gap: 2px var(--sp-2); margin: 0; }
 .head .count { grid-column: 2; justify-self: start; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-modified); }
-.title { font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
+.title { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
 .count {
-  padding: 1px 8px;
+  padding: 0 6px;
   border-radius: 999px;
   background: var(--c-surface-2);
   color: var(--c-text-muted);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-medium);
   font-variant-numeric: tabular-nums;
 }
 
-.metrics { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin: 0; }
-.metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.metrics { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: var(--sp-1) var(--sp-6); margin: 0; }
+.metric { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 .metric dt {
   color: var(--c-text-muted);
   font-size: var(--fs-xs);
@@ -59,15 +58,22 @@
 
 .reset {
   margin-left: auto;
-  padding: 6px var(--sp-3);
+  padding: 5px var(--sp-3);
   background: var(--c-surface);
   border: 1px solid var(--c-border-strong);
   border-radius: var(--r-md);
   color: var(--c-text);
   font: inherit;
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   cursor: pointer;
 }
 .reset:hover { background: var(--c-surface-2); }
 .reset:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+
+/* Narrow centre pane (1280 px window): title and Reset share the first row, the three figures the second. */
+@container scenario (max-width: 720px) {
+  .head { display: flex; align-items: center; gap: var(--sp-2); }
+  .reset { order: 1; }
+  .metrics { flex-basis: 100%; order: 2; }
+}

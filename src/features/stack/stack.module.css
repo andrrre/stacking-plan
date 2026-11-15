@@ -8,10 +8,13 @@
   gap: var(--floor-gap);
 }
 
+/* A floor is --floor-h tall and may tighten to 30px (the two label lines) when the window is short. */
 .floorRow {
   display: grid;
+  flex: 0 1 var(--floor-h);
   grid-template-columns: var(--floor-label-w) minmax(0, 1fr);
   height: var(--floor-h);
+  min-height: 30px;
 }
 
 .floorLabel {
@@ -44,6 +47,7 @@
   --fill: var(--c-occupied);
   --ink: var(--c-occupied-ink);
   position: relative;
+  container-type: inline-size; /* same width as .label: lets the narrow-cue rules restyle .label itself */
   flex: 1 1 0px; /* flex-grow = areaSf, set inline */
   min-width: var(--suite-min-w);
   height: 100%;
@@ -142,6 +146,8 @@
 .suite[data-fill='risk-le24'], .swatch[data-fill='risk-le24'] { --fill: var(--c-risk-le24); --ink: var(--c-risk-le24-ink); }
 .suite[data-fill='risk-le36'], .swatch[data-fill='risk-le36'] { --fill: var(--c-risk-le36); --ink: var(--c-risk-le36-ink); }
 .suite[data-fill='risk-gt36'], .swatch[data-fill='risk-gt36'] { --fill: var(--c-risk-gt36); --ink: var(--c-risk-gt36-ink); }
+/* The palest step keeps an edge so it reads as a filled suite on the white card. */
+.suite[data-fill='risk-gt36']::before, .swatch[data-fill='risk-gt36']::before { border: 1px solid var(--c-risk-gt36-edge); }
 .suite[data-fill='risk-open'], .swatch[data-fill='risk-open'] { --fill: var(--c-risk-open); --ink: var(--c-risk-open-ink); }
 
 /* ---------- label ---------- */
@@ -217,6 +223,49 @@
   .sf { display: none; }
 }
 
+/*
+  Narrow cells with a cue (expiring: clock + end date; committed: lock + start date). On one line the cue
+  date pushed the suite number out of sight and the second line cut "Leased from 04/2…" mid-date. Here the
+  meta line is flattened into the label so the cue gets a full first line and the number leads the second,
+  which keeps the §5.6 priority (cue → number → tenant). A committed cell's primary only repeats the cue
+  date ("Leased from MM/YYYY"), so the number and SF take its place; the words stay in the tooltip and
+  aria-label, and the lock glyph and pattern stay on the cell.
+*/
+@container (min-width: 72px) and (max-width: 109px) {
+  .suite[data-has-cue='true'] .label {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: baseline;
+    justify-content: flex-start;
+    column-gap: 5px;
+    row-gap: 1px;
+    padding: 0 6px;
+  }
+  .suite[data-has-cue='true'] .meta { display: contents; }
+  .suite[data-has-cue='true'] .cue { flex-basis: 100%; line-height: 14px; }
+  .suite[data-has-cue='true'] .number { line-height: 15px; }
+  .suite[data-has-cue='true'] .primary { flex: 1 1 0px; min-width: 0; padding: 0; }
+}
+
+@container (min-width: 72px) and (max-width: 139px) {
+  .suite[data-overlay='committed'] .label {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: center;
+    align-items: baseline;
+    justify-content: flex-start;
+    column-gap: 5px;
+    row-gap: 1px;
+    padding: 0 6px;
+  }
+  .suite[data-overlay='committed'] .meta { display: contents; }
+  .suite[data-overlay='committed'] .cue { flex-basis: 100%; line-height: 14px; }
+  .suite[data-overlay='committed'] .number { line-height: 15px; }
+  .suite[data-overlay='committed'] .sf { flex: 1 1 0px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .suite[data-overlay='committed'] .primary { display: none; }
+}
+
 @container (max-width: 71px) {
   .primary { display: none; }
   .meta { height: auto; max-height: 28px; padding: 0 4px; }
@@ -242,8 +291,8 @@
 
 .runBadge {
   position: absolute;
-  top: -7px;
-  left: -7px;
+  top: -8px;
+  left: -10px; /* clear of the first suite's number, which starts 6px in */
   z-index: 4;
   display: grid;
   place-items: center;
@@ -265,15 +314,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-2) var(--sp-5);
+  gap: 6px var(--sp-4);
   color: var(--c-text);
   font-size: var(--fs-sm);
+  line-height: 16px;
 }
 
 .legendGroup {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-2) var(--sp-4);
+  gap: 6px var(--sp-3);
 }
 
 .legendItem {
@@ -289,8 +339,8 @@
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 26px;
-  height: 16px;
+  width: 22px;
+  height: 14px;
   border-radius: var(--r-sm);
   background-color: var(--fill);
   color: var(--ink);
@@ -304,7 +354,6 @@
 }
 
 .legendNote {
-  flex-basis: 100%;
   color: var(--c-text-muted);
   font-size: var(--fs-xs);
 }

@@ -121,18 +121,20 @@ test('a dimmed suite drops its dimming while focused or selected, so the ring st
   await gotoApp(page)
   // Nothing dims the stack before S4/S5, so mark suites dimmed directly; React leaves the unchanged prop alone.
   const opacity = (n: number) => suite(page, n).evaluate((el) => getComputedStyle(el).opacity)
+  // The dimmed opacity is a design token, so assert "dimmed" rather than a literal value.
+  const dimmed = async (n: number) => Number(await opacity(n)) < 1
   await suite(page, 1200).focus()
   await page.keyboard.press('ArrowDown')
   await expect(suite(page, 1100)).toBeFocused()
   for (const n of [1100, 1110, 1200]) await suite(page, n).evaluate((el) => el.setAttribute('data-dimmed', 'true'))
   await expect.poll(() => opacity(1100)).toBe('1')
-  await expect.poll(() => opacity(1110)).toBe('0.28')
+  await expect.poll(() => dimmed(1110)).toBe(true)
   await page.keyboard.press('Enter')
   await page.keyboard.press('ArrowRight')
   await expect(suite(page, 1100)).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(() => opacity(1100)).toBe('1')
   await expect.poll(() => opacity(1110)).toBe('1')
-  await expect.poll(() => opacity(1200)).toBe('0.28')
+  await expect.poll(() => dimmed(1200)).toBe(true)
 })
 
 test('clicking a suite selects it and the right panel leaves its empty state', async ({ page }) => {

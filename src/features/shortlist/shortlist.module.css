@@ -48,8 +48,8 @@
 }
 
 .body { flex: 1; min-width: 0; }
-.line { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); margin: 0; }
-.name { font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+.line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--sp-2); margin: 0; }
+.name { font-size: var(--fs-md); font-weight: var(--fw-semibold); white-space: nowrap; } /* "Suites 700 + 710" stays on one line; the size wraps instead */
 .num { font-size: var(--fs-md); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .meta { margin: 1px 0 0; color: var(--c-text-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
 

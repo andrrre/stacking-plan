@@ -1,31 +1,57 @@
+/*
+  The centre pane is a column sized to the viewport: toolbar, stack card, date slider, scenario bar.
+  The toolbar, slider and scenario bar never shrink, so the time machine and the before → after figures
+  are always on screen. Only the stack card gives way when the window is short: its floors first tighten
+  (FloorRow min-height), then the stack area scrolls inside the card while the legend stays put.
+*/
 .pane {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--sp-4) var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
 }
 
+.pane > * { flex: none; }
+
 /* Suites sit on the white surface: the 2px gaps between them read as walls (spec-technical §7). */
-.card {
+.pane > .card {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-5) var(--sp-4) var(--sp-3);
+  gap: var(--sp-2);
+  min-height: 0;
+  padding: var(--sp-1) var(--sp-4) var(--sp-2) var(--sp-2);
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-1);
 }
 
+/* The scroll box for the stack. Its padding is room for the match rings (4px) and rank badges (-7px),
+   which a scroll box would otherwise clip. */
+.stackArea {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-2) var(--sp-1) var(--sp-1) 0;
+  scrollbar-width: thin;
+}
+
+.stackArea > * { flex: 0 1 auto; min-height: 0; }
+
 .legendRow {
-  padding: var(--sp-3) 0 0 var(--floor-label-w);
+  flex: none;
+  padding: var(--sp-2) 0 0 var(--floor-label-w);
   border-top: 1px solid var(--c-border);
 }
 
 @media print {
-  .pane { overflow: visible; }
-  .card { box-shadow: none; }
+  .pane, .stackArea { overflow: visible; }
+  .pane > .card { box-shadow: none; }
 }

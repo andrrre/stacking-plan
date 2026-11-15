@@ -54,7 +54,12 @@
   font-weight: var(--fw-medium);
   cursor: pointer;
 }
-.submit:disabled { opacity: .55; cursor: default; }
+.submit:disabled {
+  background: var(--c-surface-2);
+  border-color: var(--c-border);
+  color: var(--c-text-muted); /* 5.2:1 on surface-2; the faded pink it replaces was ~2.5:1 */
+  cursor: default;
+}
 .submit:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
 
 .outcome {

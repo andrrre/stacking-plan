@@ -10,7 +10,9 @@ export function CenterPane() {
     <section className={styles.pane} data-testid="center-pane" aria-label="Stacking plan">
       <StackToolbar />
       <div className={styles.card}>
-        <ViewSwitch />
+        <div className={styles.stackArea}>
+          <ViewSwitch />
+        </div>
         <div className={styles.legendRow}>
           <LegendSwitch />
         </div>
