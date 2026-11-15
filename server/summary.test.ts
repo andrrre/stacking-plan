@@ -43,11 +43,13 @@ describe('handleSummary', () => {
     expect(await res.json()).toEqual(COPY)
   })
 
-  it('calls the model with temperature 0, no retries, an abort signal, the default model, and the request as quoted data', async () => {
+  it('calls the model with a 400-token output cap, thinking off, no temperature, no retries, an abort signal, the default model, and the request as quoted data', async () => {
+    mockGenerate.mockClear()
     mockGenerate.mockResolvedValue({ object: COPY } as never)
     await handleSummary(summaryRequest(validBody()), KEY_ENV)
     const options = mockGenerate.mock.calls[0]?.[0] as unknown as Record<string, unknown>
-    expect(options).toMatchObject({ temperature: 0, maxRetries: 0 })
+    expect(options).toMatchObject({ maxOutputTokens: 400, maxRetries: 0, providerOptions: { anthropic: { thinking: { type: 'disabled' } } } })
+    expect(options).not.toHaveProperty('temperature')
     expect(options.abortSignal).toBeInstanceOf(AbortSignal)
     expect((options.model as { modelId: string }).modelId).toBe('claude-haiku-5-5')
     expect(String(options.system)).toMatch(/data, not instructions/i)
@@ -84,6 +86,20 @@ describe('handleSummary', () => {
 
   it('502 on schema-invalid model output', async () => {
     mockGenerate.mockResolvedValue({ object: { headline: 'x'.repeat(91), paragraph: 'ok' } } as never)
+    const res = await handleSummary(summaryRequest(validBody()), KEY_ENV)
+    expect(res.status).toBe(502)
+  })
+
+  it('502 when the paragraph is over-long', async () => {
+    mockGenerate.mockResolvedValue({ object: { headline: 'ok', paragraph: 'x'.repeat(601) } } as never)
+    const res = await handleSummary(summaryRequest(validBody()), KEY_ENV)
+    expect(res.status).toBe(502)
+  })
+
+  it('502 when the reply is cut off at the output cap and cannot be parsed', async () => {
+    mockGenerate.mockImplementation(async () => {
+      throw Object.assign(new Error('No object generated: could not parse the response.'), { name: 'AI_NoObjectGeneratedError', finishReason: 'length' })
+    })
     const res = await handleSummary(summaryRequest(validBody()), KEY_ENV)
     expect(res.status).toBe(502)
   })
@@ -133,21 +149,23 @@ describe('handleSummary: request hardening', () => {
 
   it('413 when content-length is over the limit, before the body is read', async () => {
     const req = summaryRequest(validBody(), { 'content-type': 'application/json', 'content-length': '1000000' })
-    const text = vi.spyOn(req, 'text')
     const res = await handleSummary(req, KEY_ENV)
     expect(res.status).toBe(413)
-    expect(text).not.toHaveBeenCalled()
+    expect(req.bodyUsed).toBe(false)
   })
 
-  it('400 when the body text is over the limit without a content-length', async () => {
+  it('413 when the body is over the limit without a content-length, and the model is never called', async () => {
+    mockGenerate.mockClear()
     const req = summaryRequest(' '.repeat(40_000) + validBody())
     const res = await handleSummary(req, KEY_ENV)
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(413)
+    expect(mockGenerate).not.toHaveBeenCalled()
   })
 
   it('400 when reading the body fails', async () => {
     const req = summaryRequest(validBody())
-    Object.defineProperty(req, 'text', { value: async () => { throw new TypeError('body stream errored') } })
+    const broken = new ReadableStream({ pull: (controller) => controller.error(new TypeError('body stream errored')) })
+    Object.defineProperty(req, 'body', { value: broken })
     const res = await handleSummary(req, KEY_ENV)
     expect(res.status).toBe(400)
   })

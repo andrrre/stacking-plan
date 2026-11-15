@@ -16,13 +16,15 @@ export function jsonError(status: number): Response {
 }
 
 /**
- * The caller's IP from the platform's forwarding headers, or 'unknown'.
+ * The caller's IP from the platform's forwarding headers, or 'unknown'. Order: x-vercel-forwarded-for, then x-real-ip,
+ * then the first x-forwarded-for entry only as a last resort (its first entry is the one a client can prepend).
  * Trusted-proxy assumption: on Vercel the platform overwrites these headers. Behind any other proxy, or with none,
  * the caller controls them, so the rate limit is best-effort; real spend control is a provider-side budget cap.
+ * /api/ask and /api/summary deploy as separate functions, so each route has its own in-memory budget per instance.
  */
 export function clientIp(request: Request): string {
   const first = (name: string) => request.headers.get(name)?.split(',')[0]?.trim()
-  return first('x-vercel-forwarded-for') || first('x-forwarded-for') || first('x-real-ip') || 'unknown'
+  return first('x-vercel-forwarded-for') || first('x-real-ip') || first('x-forwarded-for') || 'unknown'
 }
 
 function isTimeout(error: unknown): boolean {
@@ -32,14 +34,31 @@ function isTimeout(error: unknown): boolean {
   return names.includes(name ?? '') || names.includes(cause ?? '')
 }
 
-/** The parsed JSON body, or undefined when it is over `maxChars`, unreadable or not JSON. */
-export async function readJsonBody(request: Request, maxChars: number): Promise<unknown> {
+export type BodyResult = { ok: true; value: unknown } | { ok: false; status: 400 | 413 }
+
+/**
+ * The parsed JSON body, read as a stream so that reading stops (413) as soon as it passes `maxBytes`, whatever
+ * content-length claimed. 400 for a missing or unreadable body, invalid UTF-8, or text that is not JSON.
+ */
+export async function readJsonBody(request: Request, maxBytes: number): Promise<BodyResult> {
+  if (request.body === null) return { ok: false, status: 400 }
+  const reader = request.body.getReader()
+  const decoder = new TextDecoder('utf-8', { fatal: true })
+  let size = 0
+  let text = ''
   try {
-    const text = await request.text()
-    return text.length > maxChars ? undefined : (JSON.parse(text) as unknown)
+    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+      size += chunk.value.byteLength
+      if (size > maxBytes) {
+        await reader.cancel().catch(() => undefined)
+        return { ok: false, status: 413 }
+      }
+      text += decoder.decode(chunk.value, { stream: true })
+    }
+    return { ok: true, value: JSON.parse(text + decoder.decode()) as unknown }
   } catch {
-    // An unreadable stream or text that is not JSON.
-    return undefined
+    // An unreadable stream, invalid UTF-8, or text that is not JSON.
+    return { ok: false, status: 400 }
   }
 }
 
@@ -47,11 +66,11 @@ export async function readJsonBody(request: Request, maxChars: number): Promise<
  * Status for a request refused before its body is read, or null. A cross-site no-cors POST arrives as text/plain
  * with no preflight, so only JSON from this site is accepted: nobody else can spend model calls.
  */
-export function refusal(request: Request, maxChars: number): number | null {
+export function refusal(request: Request, maxBytes: number): number | null {
   if (request.headers.get('sec-fetch-site') === 'cross-site') return 403
   const type = request.headers.get('content-type')?.toLowerCase() ?? ''
   if (!type.startsWith('application/json')) return 415
-  return Number(request.headers.get('content-length') ?? 0) > maxChars ? 413 : null
+  return Number(request.headers.get('content-length') ?? 0) > maxBytes ? 413 : null
 }
 
 export type AiResult<T> = { ok: true; value: T } | { ok: false; response: Response }

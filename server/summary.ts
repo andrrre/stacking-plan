@@ -1,12 +1,14 @@
 import { generateObject } from 'ai'
 import { SummaryCopySchema, SummaryRequestSchema, type SummaryRequest } from '../src/shared/summary.schema.js'
 import { clientIp, jsonError, readJsonBody, refusal, runAi } from './http.js'
-import { getModel, type ServerEnv } from './model.js'
+import { getModel, NO_THINKING, type ServerEnv } from './model.js'
 import { allow } from './rateLimit.js'
 
 const TIMEOUT_MS = 8000
 // Five options with a few 200-character notes each stay well under this; anything larger is rejected before parsing.
-const MAX_BODY_CHARS = 16_000
+const MAX_BODY_BYTES = 16_000
+// A headline of at most 90 characters and a paragraph of at most 600; the provider default would be the model's full maximum output.
+const MAX_OUTPUT_TOKENS = 400
 
 const SYSTEM = [
   'You write the short introduction of a leasing summary that a broker sends to a tenant who is considering office space.',
@@ -23,10 +25,12 @@ const promptFor = (req: SummaryRequest) => `The leasing options, as JSON data:\n
 
 /** POST /api/summary: client-safe shortlist options → headline and paragraph. The model only words what it is given. */
 export async function handleSummary(request: Request, env: ServerEnv, nowMs: number = Date.now()): Promise<Response> {
-  const refused = refusal(request, MAX_BODY_CHARS)
+  const refused = refusal(request, MAX_BODY_BYTES)
   if (refused !== null) return jsonError(refused)
   if (!allow(clientIp(request), nowMs)) return jsonError(429)
-  const body = SummaryRequestSchema.safeParse(await readJsonBody(request, MAX_BODY_CHARS))
+  const read = await readJsonBody(request, MAX_BODY_BYTES)
+  if (!read.ok) return jsonError(read.status)
+  const body = SummaryRequestSchema.safeParse(read.value)
   if (!body.success) return jsonError(400)
   const model = getModel(env)
   if (!model) return jsonError(503)
@@ -37,7 +41,8 @@ export async function handleSummary(request: Request, env: ServerEnv, nowMs: num
       schema: SummaryCopySchema,
       system: SYSTEM,
       prompt: promptFor(body.data),
-      temperature: 0,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      providerOptions: NO_THINKING,
       maxRetries: 0,
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
     }),

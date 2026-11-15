@@ -9,12 +9,12 @@ describe('clientIp', () => {
     expect(clientIp(req({ 'x-vercel-forwarded-for': '203.0.113.9', 'x-forwarded-for': '198.51.100.1', 'x-real-ip': '192.0.2.1' }))).toBe('203.0.113.9')
   })
 
-  it('then the first x-forwarded-for entry', () => {
-    expect(clientIp(req({ 'x-forwarded-for': ' 198.51.100.1 , 10.0.0.1', 'x-real-ip': '192.0.2.1' }))).toBe('198.51.100.1')
+  it('then x-real-ip, ahead of x-forwarded-for', () => {
+    expect(clientIp(req({ 'x-forwarded-for': '198.51.100.1, 10.0.0.1', 'x-real-ip': '192.0.2.1' }))).toBe('192.0.2.1')
   })
 
-  it('then x-real-ip, then "unknown"', () => {
-    expect(clientIp(req({ 'x-real-ip': '192.0.2.1' }))).toBe('192.0.2.1')
+  it('then the first x-forwarded-for entry as a last resort, then "unknown"', () => {
+    expect(clientIp(req({ 'x-forwarded-for': ' 198.51.100.1 , 10.0.0.1' }))).toBe('198.51.100.1')
     expect(clientIp(req({}))).toBe('unknown')
   })
 })
@@ -37,16 +37,75 @@ describe('refusal', () => {
   })
 })
 
+/** A body of `chunks` chunks of `size` bytes each, recording how many were pulled and whether the reader cancelled. */
+function countingStream(chunks: number, size: number) {
+  const seen = { pulled: 0, cancelled: false }
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (seen.pulled === chunks) return controller.close()
+      seen.pulled += 1
+      controller.enqueue(new TextEncoder().encode(' '.repeat(size)))
+    },
+    cancel() {
+      seen.cancelled = true
+    },
+  })
+  return { stream, seen }
+}
+
+const streamed = (stream: ReadableStream<Uint8Array>, headers: Record<string, string> = {}) =>
+  new Request('http://localhost/x', { method: 'POST', headers, body: stream, duplex: 'half' } as RequestInit)
+
 describe('readJsonBody', () => {
   it('parses JSON within the cap', async () => {
-    expect(await readJsonBody(post({}), 100)).toEqual({ a: 1 })
+    expect(await readJsonBody(post({}), 100)).toEqual({ ok: true, value: { a: 1 } })
   })
-  it('undefined when over the cap, not JSON, or unreadable', async () => {
-    expect(await readJsonBody(post({}, ' '.repeat(101) + '{}'), 100)).toBeUndefined()
-    expect(await readJsonBody(post({}, '{nope'), 100)).toBeUndefined()
-    const broken = post({})
-    Object.defineProperty(broken, 'text', { value: async () => { throw new TypeError('stream errored') } })
-    expect(await readJsonBody(broken, 100)).toBeUndefined()
+
+  it('parses a multi-byte UTF-8 body split across chunks', async () => {
+    const bytes = new TextEncoder().encode(JSON.stringify({ q: 'Zürich €' }))
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const b of bytes) controller.enqueue(Uint8Array.of(b))
+        controller.close()
+      },
+    })
+    expect(await readJsonBody(streamed(stream), 100)).toEqual({ ok: true, value: { q: 'Zürich €' } })
+  })
+
+  it('413 when the body is over the cap in bytes', async () => {
+    expect(await readJsonBody(post({}, ' '.repeat(101) + '{}'), 100)).toEqual({ ok: false, status: 413 })
+    expect(await readJsonBody(post({}, `"${'é'.repeat(50)}"`), 100)).toEqual({ ok: false, status: 413 })
+  })
+
+  it.each([['missing', {}], ['too small', { 'content-length': '10' }]])(
+    '413 for a large streamed body with content-length %s, cancelling the reader without buffering it all',
+    async (_name, headers: Record<string, string>) => {
+      const { stream, seen } = countingStream(1000, 1000)
+      expect(await readJsonBody(streamed(stream, headers), 4000)).toEqual({ ok: false, status: 413 })
+      expect(seen.cancelled).toBe(true)
+      expect(seen.pulled).toBeLessThan(10)
+    },
+  )
+
+  it('400 when not JSON, not valid UTF-8, missing, or unreadable', async () => {
+    expect(await readJsonBody(post({}, '{nope'), 100)).toEqual({ ok: false, status: 400 })
+    const invalidUtf8 = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(Uint8Array.of(0x22, 0xff, 0xfe, 0x22))
+        controller.close()
+      },
+    })
+    expect(await readJsonBody(streamed(invalidUtf8), 100)).toEqual({ ok: false, status: 400 })
+    const truncatedUtf8 = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(Uint8Array.of(0x22, 0xc3))
+        controller.close()
+      },
+    })
+    expect(await readJsonBody(streamed(truncatedUtf8), 100)).toEqual({ ok: false, status: 400 })
+    expect(await readJsonBody(new Request('http://localhost/x', { method: 'POST' }), 100)).toEqual({ ok: false, status: 400 })
+    const broken = new ReadableStream<Uint8Array>({ pull: (controller) => controller.error(new TypeError('stream errored')) })
+    expect(await readJsonBody(streamed(broken), 100)).toEqual({ ok: false, status: 400 })
   })
 })
 

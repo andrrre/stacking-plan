@@ -1,12 +1,14 @@
 import { generateObject } from 'ai'
 import { AskRequestSchema, ParsedQuerySchema } from '../src/shared/ask.schema.js'
 import { clientIp, jsonError, readJsonBody, refusal, runAi } from './http.js'
-import { getModel, type ServerEnv } from './model.js'
+import { getModel, NO_THINKING, type ServerEnv } from './model.js'
 import { allow } from './rateLimit.js'
 
 const TIMEOUT_MS = 8000
 // A valid body is a 500-character query plus a date; anything far larger is rejected before parsing.
-const MAX_BODY_CHARS = 4000
+const MAX_BODY_BYTES = 4000
+// Four small fields; the provider default would be the model's full maximum output.
+const MAX_OUTPUT_TOKENS = 200
 
 const SYSTEM = [
   'You extract a commercial office space requirement from a broker\'s query.',
@@ -26,10 +28,12 @@ function promptFor(query: string, today: string): string {
 
 /** POST /api/ask: plain-words query → ParsedQuery. The model only extracts fields; it never picks suites. */
 export async function handleAsk(request: Request, env: ServerEnv, nowMs: number = Date.now()): Promise<Response> {
-  const refused = refusal(request, MAX_BODY_CHARS)
+  const refused = refusal(request, MAX_BODY_BYTES)
   if (refused !== null) return jsonError(refused)
   if (!allow(clientIp(request), nowMs)) return jsonError(429)
-  const body = AskRequestSchema.safeParse(await readJsonBody(request, MAX_BODY_CHARS))
+  const read = await readJsonBody(request, MAX_BODY_BYTES)
+  if (!read.ok) return jsonError(read.status)
+  const body = AskRequestSchema.safeParse(read.value)
   if (!body.success) return jsonError(400)
   const model = getModel(env)
   if (!model) return jsonError(503)
@@ -40,7 +44,8 @@ export async function handleAsk(request: Request, env: ServerEnv, nowMs: number 
       schema: ParsedQuerySchema,
       system: SYSTEM,
       prompt: promptFor(body.data.query, body.data.today),
-      temperature: 0,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      providerOptions: NO_THINKING,
       maxRetries: 0,
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
     }),
