@@ -1,0 +1,101 @@
+.why { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 4px var(--sp-2);
+  margin-left: calc(-1 * var(--sp-2));
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--c-text-muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.back:hover { background: var(--c-surface-2); color: var(--c-text); }
+.back:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+
+.head { display: flex; align-items: flex-start; gap: var(--sp-3); }
+
+/* Same badge as the match card and the stack outline. */
+.rank {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.kicker {
+  margin: 0 0 2px;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.title { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-semibold); line-height: var(--lh-tight); }
+.where { margin: 2px 0 0; color: var(--c-text-muted); font-size: var(--fs-sm); }
+
+.rows { display: flex; flex-direction: column; margin: 0; }
+.row {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: var(--sp-2);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--c-border);
+  font-size: var(--fs-md);
+}
+.row dt { color: var(--c-text-muted); }
+.row dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: var(--fw-medium); overflow-wrap: anywhere; }
+.unit { color: var(--c-text-muted); font-size: var(--fs-xs); font-weight: var(--fw-regular); }
+
+.potential {
+  margin-left: var(--sp-2);
+  padding: 1px 7px;
+  border: 1px dashed var(--c-potential-edge);
+  border-radius: 999px;
+  background: var(--c-potential);
+  color: var(--c-potential-ink);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.sub {
+  margin: 0 0 var(--sp-2);
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.caveats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.caveats li {
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--c-surface-2);
+  border-left: 3px solid var(--c-potential-edge);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+}
+
+.clear { margin: 0; color: var(--c-text-muted); font-size: var(--fs-md); }

@@ -1,0 +1,66 @@
+.noFit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--r-md);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+}
+
+.reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--c-text);
+  font-size: var(--fs-md);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh);
+}
+
+/* The way out: the earliest fit, set apart from the reasons. */
+.way {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--c-surface-2);
+  border-left: 3px solid var(--c-accent);
+  border-radius: var(--r-md);
+}
+
+.earliest {
+  margin: 0;
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+}
+.earliest strong { font-weight: var(--fw-semibold); }
+
+.jump {
+  padding: 6px var(--sp-3);
+  background: var(--c-accent);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--r-md);
+  color: var(--c-accent-ink);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+.jump:hover { filter: brightness(1.08); }
+.jump:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+
+.horizon {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+}

@@ -19,7 +19,7 @@ export function MatchCard({ candidate: c, rank }: Props) {
   return (
     <li className={styles.card} data-testid={`match-${rank}`} data-key={c.key} data-availability={c.availability}>
       <button
-        type="button" className={styles.main} aria-pressed={selected}
+        type="button" className={styles.main} aria-pressed={selected} data-focus-next="why"
         onClick={() => dispatch({ type: 'select', selection: { kind: 'match', key: c.key } })}
       >
         <span className={styles.rank} aria-hidden="true">{rank}</span>
