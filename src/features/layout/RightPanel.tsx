@@ -1,6 +1,7 @@
 import { activeRequirement } from '../../app/state/selectors'
 import type { AppState } from '../../app/state/types'
 import { useAppState } from '../../app/state/useAppState'
+import { SuiteDetails } from '../details/SuiteDetails'
 import styles from './RightPanel.module.css'
 
 type PanelView =
@@ -30,7 +31,7 @@ export function RightPanel() {
       )}
       {view.kind === 'suite' && (
         <>
-          {/* slot:suite-details (S4) */}
+          <SuiteDetails suiteId={view.suiteId} />
         </>
       )}
       {view.kind === 'list' && (

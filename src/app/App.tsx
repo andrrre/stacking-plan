@@ -2,6 +2,7 @@ import { CenterPane } from '../features/layout/CenterPane'
 import { Header } from '../features/layout/Header'
 import { LeftRail } from '../features/layout/LeftRail'
 import { RightPanel } from '../features/layout/RightPanel'
+import { KpiBar } from '../features/kpi/KpiBar'
 import { useAppState } from './state/useAppState'
 import styles from './App.module.css'
 
@@ -14,7 +15,7 @@ export function App() {
     <div className={styles.app} data-overlay={state.overlay}>
       <div className={styles.shell} data-print="shell">
         <Header />
-        {/* slot:kpi-bar (S4) */}
+        <KpiBar />
         <main className={styles.body}>
           <LeftRail />
           <CenterPane />
