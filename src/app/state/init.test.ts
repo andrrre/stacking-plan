@@ -1,0 +1,43 @@
+import { describe, it, expect } from 'vitest'
+import { initState } from './init'
+import { SHORTLIST_KEY, type StorageLike } from './storage'
+
+const CLOCK = '2026-11-15'
+const empty: StorageLike = { getItem: () => null, setItem: () => undefined }
+
+describe('initState', () => {
+  it('uses the clock date by default, with defaults for everything else', () => {
+    expect(initState('', empty, CLOCK)).toEqual({
+      today: CLOCK,
+      buildingId: 'odt',
+      asOf: CLOCK,
+      mode: 'availability',
+      view: 'stack',
+      req: { minSf: null, maxSf: null, maxRentPsf: null, includePotential: true },
+      selection: null,
+      highlight: null,
+      changes: [],
+      shortlist: [],
+      importedBuildings: [],
+      overlay: 'none',
+    })
+  })
+
+  it('?today= overrides the clock', () => {
+    const s = initState('?today=2027-01-10', empty, CLOCK)
+    expect(s.today).toBe('2027-01-10')
+    expect(s.asOf).toBe('2027-01-10')
+  })
+
+  it('ignores an invalid today value', () => {
+    for (const bad of ['garbage', '2027-02-30', '2027-1-10', '']) {
+      expect(initState(`?today=${bad}`, empty, CLOCK).today).toBe(CLOCK)
+    }
+  })
+
+  it('reads the shortlist from storage and survives bad storage', () => {
+    const bad: StorageLike = { getItem: (k) => (k === SHORTLIST_KEY ? '[[' : null), setItem: () => undefined }
+    expect(initState('', bad, CLOCK).shortlist).toEqual([])
+    expect(initState('', null, CLOCK).importedBuildings).toEqual([])
+  })
+})

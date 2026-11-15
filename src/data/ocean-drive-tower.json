@@ -1,0 +1,556 @@
+{
+  "id": "odt",
+  "name": "Ocean Drive Tower",
+  "address": "1 Ocean Drive, Vice City",
+  "floors": [
+    {
+      "number": 12,
+      "suites": [
+        {
+          "id": "odt-1200",
+          "number": "1200",
+          "areaSf": 10800,
+          "kind": "leasable",
+          "askingRentPsf": 62,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-1200-l1",
+              "tenant": "Pelican Point Partners",
+              "start": "2021-07-01",
+              "end": "2031-06-30",
+              "rentPsf": 60
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "suites": [
+        {
+          "id": "odt-1100",
+          "number": "1100",
+          "areaSf": 3600,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-1100-l1",
+              "tenant": "Tidewater Legal LLP",
+              "start": "2023-10-01",
+              "end": "2028-09-30",
+              "rentPsf": 56
+            }
+          ]
+        },
+        {
+          "id": "odt-1110",
+          "number": "1110",
+          "areaSf": 2900,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-1110-l1",
+              "tenant": "Seagrape Studio",
+              "start": "2024-06-01",
+              "end": "2029-05-31",
+              "rentPsf": 57
+            }
+          ]
+        },
+        {
+          "id": "odt-1120",
+          "number": "1120",
+          "areaSf": 3100,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-1120-l1",
+              "tenant": "Driftwood Architects",
+              "start": "2025-02-01",
+              "end": "2030-01-31",
+              "rentPsf": 58
+            }
+          ]
+        },
+        {
+          "id": "odt-1130",
+          "number": "1130",
+          "areaSf": 2800,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-1130-l1",
+              "tenant": "Seaglass Recruiting",
+              "start": "2023-03-01",
+              "end": "2028-02-29",
+              "rentPsf": 55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "suites": [
+        {
+          "id": "odt-1000",
+          "number": "1000",
+          "areaSf": 5400,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-1000-l1",
+              "tenant": "Mangrove Analytics",
+              "start": "2022-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 54
+            }
+          ]
+        },
+        {
+          "id": "odt-1010",
+          "number": "1010",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-1010-l1",
+              "tenant": "Bayfront Dental Group",
+              "start": "2027-03-01",
+              "end": "2032-02-29",
+              "rentPsf": 56
+            }
+          ]
+        },
+        {
+          "id": "odt-1020",
+          "number": "1020",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-1020-l1",
+              "tenant": "Lantern Cove Software",
+              "start": "2024-09-01",
+              "end": "2029-08-31",
+              "rentPsf": 55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "suites": [
+        {
+          "id": "odt-900",
+          "number": "900",
+          "areaSf": 12400,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-900-l1",
+              "tenant": "Coralstone Insurance",
+              "start": "2020-01-01",
+              "end": "2029-12-31",
+              "rentPsf": 53
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "suites": [
+        {
+          "id": "odt-800",
+          "number": "800",
+          "areaSf": 7900,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-800-l1",
+              "tenant": "Marlin & Gray LLP",
+              "start": "2023-07-01",
+              "end": "2028-06-30",
+              "rentPsf": 52
+            }
+          ]
+        },
+        {
+          "id": "odt-810",
+          "number": "810",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-810-l1",
+              "tenant": "Blue Heron Health",
+              "start": "2024-11-01",
+              "end": "2029-10-31",
+              "rentPsf": 53
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "suites": [
+        {
+          "id": "odt-700",
+          "number": "700",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 51,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-700-l1",
+              "tenant": "Harbor Lane Advisors",
+              "start": "2020-01-01",
+              "end": "2025-12-31",
+              "rentPsf": 49
+            }
+          ]
+        },
+        {
+          "id": "odt-710",
+          "number": "710",
+          "areaSf": 6200,
+          "kind": "leasable",
+          "askingRentPsf": 53,
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "odt-720",
+          "number": "720",
+          "areaSf": 1900,
+          "kind": "leasable",
+          "askingRentPsf": 52,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-720-l1",
+              "tenant": "Halcyon Tide Realty",
+              "start": "2025-04-01",
+              "end": "2030-03-31",
+              "rentPsf": 50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "suites": [
+        {
+          "id": "odt-600",
+          "number": "600",
+          "areaSf": 12400,
+          "kind": "leasable",
+          "askingRentPsf": 50,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-600-l1",
+              "tenant": "Flamingo Row Media",
+              "start": "2017-05-01",
+              "end": "2027-04-30",
+              "rentPsf": 48
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "suites": [
+        {
+          "id": "odt-500",
+          "number": "500",
+          "areaSf": 10250,
+          "kind": "leasable",
+          "askingRentPsf": 48,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-500-l1",
+              "tenant": "Causeway Mutual",
+              "start": "2019-07-01",
+              "end": "2026-06-30",
+              "rentPsf": 46
+            }
+          ]
+        },
+        {
+          "id": "odt-510",
+          "number": "510",
+          "areaSf": 2150,
+          "kind": "leasable",
+          "askingRentPsf": 48,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-510-l1",
+              "tenant": "Northpier Engineering",
+              "start": "2025-09-01",
+              "end": "2030-08-31",
+              "rentPsf": 47
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "suites": [
+        {
+          "id": "odt-400",
+          "number": "400",
+          "areaSf": 6100,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-400-l1",
+              "tenant": "Sunquay Logistics",
+              "start": "2022-06-01",
+              "end": "2027-05-31",
+              "rentPsf": 44,
+              "vacating": true
+            }
+          ]
+        },
+        {
+          "id": "odt-410",
+          "number": "410",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "odt-420",
+          "number": "420",
+          "areaSf": 1300,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-420-l1",
+              "tenant": "Saltwind Ventures",
+              "start": "2023-11-01",
+              "end": "2028-10-31",
+              "rentPsf": 45
+            }
+          ]
+        },
+        {
+          "id": "odt-430",
+          "number": "430",
+          "areaSf": 1000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-430-l1",
+              "tenant": "Keystone Reef Labs",
+              "start": "2026-04-01",
+              "end": "2031-03-31",
+              "rentPsf": 46
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "suites": [
+        {
+          "id": "odt-300",
+          "number": "300",
+          "areaSf": 5600,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "odt-310",
+          "number": "310",
+          "areaSf": 4800,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "odt-320",
+          "number": "320",
+          "areaSf": 1200,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-320-l1",
+              "tenant": "Breakwater Consulting",
+              "start": "2024-04-01",
+              "end": "2029-03-31",
+              "rentPsf": 43
+            }
+          ]
+        },
+        {
+          "id": "odt-330",
+          "number": "330",
+          "areaSf": 800,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-330-l1",
+              "tenant": "Palmhaven Wealth",
+              "start": "2025-12-01",
+              "end": "2030-11-30",
+              "rentPsf": 44
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "suites": [
+        {
+          "id": "odt-200",
+          "number": "200",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-200-l1",
+              "tenant": "Citrus Lane Capital",
+              "start": "2023-02-01",
+              "end": "2028-01-31",
+              "rentPsf": 41
+            }
+          ]
+        },
+        {
+          "id": "odt-210",
+          "number": "210",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-210-l1",
+              "tenant": "Starboard Staffing",
+              "start": "2023-05-01",
+              "end": "2028-04-30",
+              "rentPsf": 41
+            }
+          ]
+        },
+        {
+          "id": "odt-220",
+          "number": "220",
+          "areaSf": 2600,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "odt-220-l1",
+              "tenant": "Kite Beach Travel",
+              "start": "2024-09-01",
+              "end": "2027-08-31",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "odt-230",
+          "number": "230",
+          "areaSf": 3300,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "odt-230-l1",
+              "tenant": "Gullwing Print Co",
+              "start": "2019-01-01",
+              "end": null,
+              "rentPsf": 38
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 1,
+      "suites": [
+        {
+          "id": "odt-100",
+          "number": "100",
+          "areaSf": 7200,
+          "kind": "common",
+          "name": "Lobby",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "odt-110",
+          "number": "110",
+          "areaSf": 3000,
+          "kind": "common",
+          "name": "Fitness centre",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "odt-120",
+          "number": "120",
+          "areaSf": 2200,
+          "kind": "common",
+          "name": "Conference centre",
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    }
+  ]
+}
