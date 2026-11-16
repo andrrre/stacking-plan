@@ -14,6 +14,16 @@ function Chevron() {
   )
 }
 
+/** The sign that the panel behind the handle has the AI requirement box: a large four-point spark and a small one. */
+function Spark() {
+  return (
+    <svg className={styles.spark} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path className={styles.sparkBig} d="M6.5 2.5c.4 2.6 1.4 3.6 4 4-2.6.4-3.6 1.4-4 4-.4-2.6-1.4-3.6-4-4 2.6-.4 3.6-1.4 4-4Z" fill="currentColor" />
+      <path className={styles.sparkSmall} d="M12 9.5c.2 1.3.7 1.8 2 2-1.3.2-1.8.7-2 2-.2-1.3-.7-1.8-2-2 1.3-.2 1.8-.7 2-2Z" fill="currentColor" />
+    </svg>
+  )
+}
+
 function toggleName(open: boolean, count: number): string {
   if (open) return 'Hide search panel'
   return count > 0 ? `Show search panel (${count} in shortlist)` : 'Show search panel'
@@ -21,7 +31,8 @@ function toggleName(open: boolean, count: number): string {
 
 /**
  * The left drawer: requirement and shortlist. Its handle stays on the stage's left edge when it is closed; the
- * closed content is inert (out of the tab order and the accessibility tree). The badge counts the shortlist.
+ * closed content is inert (out of the tab order and the accessibility tree). The spark marks the AI box inside;
+ * the badge counts the shortlist.
  */
 export function LeftRail({ open, count, onToggle, onFocusWithin }: LeftDrawer) {
   return (
@@ -38,6 +49,7 @@ export function LeftRail({ open, count, onToggle, onFocusWithin }: LeftDrawer) {
         type="button" className={styles.handle} data-testid="left-drawer-toggle" onClick={onToggle}
         aria-expanded={open} aria-controls={RAIL_ID} aria-label={toggleName(open, count)} title={toggleName(open, count)}
       >
+        <Spark />
         <Chevron />
         {!open && count > 0 && <span className={styles.badge} data-testid="left-drawer-badge" aria-hidden="true">{count}</span>}
       </button>
