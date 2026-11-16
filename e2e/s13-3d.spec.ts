@@ -425,20 +425,20 @@ test.describe('3D building', () => {
   for (const reduced of [false, true]) {
     test(`Show move frees 500 + 510 as match 1 and puts Northpier Engineering in 410${reduced ? ', under reduced motion' : ''}`, async ({ page }) => {
       const problems: string[] = []
-      page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
-      page.on('pageerror', (e) => problems.push(e.message))
+      page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) }).on('pageerror', (e) => problems.push(e.message))
       if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
       await gotoApp(page, '3d')
       await page.getByTestId('req-min-sf').fill('12000')
       await page.getByTestId('show-move').click()
-      for (const n of ['500', '510']) await expect(suite3d(page, n)).toHaveAttribute('aria-label', /match 1/)
-      await expect(suite3d(page, '410')).toHaveAttribute('aria-label', /Northpier Engineering/)
-      await expect(suite3d(page, '410')).toHaveAttribute('data-move', 'in')
-      await expect(suite3d(page, '510')).toHaveAttribute('data-move', 'out')
-      // The block lands (or, under reduced motion, never flies): 410's label shows the tenant.
+      for (const [n, aria] of [['500', /match 1/], ['510', /match 1/], ['410', /Northpier Engineering/]] as const) await expect(suite3d(page, n)).toHaveAttribute('aria-label', aria)
+      for (const [n, m] of [['410', 'in'], ['510', 'out']] as const) await expect(suite3d(page, n)).toHaveAttribute('data-move', m)
       await expect(label(page, '410')).toHaveAttribute('data-hidden', 'false')
-      await expect(label(page, '410')).toContainText('Northpier Engineering')
+      await expect(label(page, '410')).toContainText('Northpier Engineering · Moves in')
+      await expect(label(page, '410')).toHaveAttribute('data-forced', 'true')
       await expect(page.getByTestId('badge3d-1')).toBeVisible()
+      await expect(page.locator('polygon[data-kind="move"]')).toHaveAttribute('data-on', 'true')
+      await page.getByTestId('show-move').click()
+      await expect(page.locator('polygon[data-kind="move"]')).toHaveAttribute('data-on', 'false')
       expect(problems).toEqual([])
     })
   }

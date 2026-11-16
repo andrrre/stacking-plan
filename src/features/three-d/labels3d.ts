@@ -11,11 +11,18 @@ import type { SuiteVisual } from '../stack/suiteVisual'
  */
 export type LabelContent = { number: string; sf: string; text: string; compact: boolean; notable: boolean }
 
+/** The cue after line 2 on the previewed move's destination (the 2D cell's tag says the same). */
+const MOVES_IN = 'Moves in'
+
 export function labelContent(v: SuiteVisual): LabelContent {
   const { number, sf, line2, compact } = v.label
   const notable = v.status.status === 'vacant' || v.status.status === 'expiring'
-  return { number, sf, text: line2, compact, notable }
+  return { number, sf, text: v.move === 'in' ? `${line2} · ${MOVES_IN}` : line2, compact, notable }
 }
+
+/** A label that always keeps its number and wins collisions: a match, the selection, hovered, focused, or in a previewed move. */
+export const labelForced = (v: SuiteVisual, hovered: boolean, focused: boolean): boolean =>
+  v.matchRank !== null || v.selected || v.move !== null || hovered || focused
 
 /** Which parts show: the number, the SF after it on line 1, the line-2 text ('tenant'); lines used. */
 export type Parts = { number: boolean; sf: boolean; tenant: boolean; lines: 0 | 1 | 2 }

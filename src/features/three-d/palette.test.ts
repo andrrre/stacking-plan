@@ -78,6 +78,13 @@ describe('readPalette', () => {
     expect(p.surface).toBe('#ffffff')
   })
 
+  it('reads the match accent and its ink (the previewed move\'s block and its edges) in both themes', () => {
+    expect(p.match).toBe('#1d4ed8')
+    expect(p.matchInk).toBe('#ffffff')
+    expect(d.match).toBe('#6ea8fe')
+    expect(d.matchInk).toBe('#0b1220')
+  })
+
   it('reads the contact shadow from --c-shadow, so the dark theme gets its own', () => {
     expect(p.shadow).toEqual({ hex: '#101828', alpha: 0.12 })
     expect(d.shadow).toEqual({ hex: '#000000', alpha: 0.45 })

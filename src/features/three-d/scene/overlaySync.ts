@@ -1,6 +1,6 @@
 import { Vector3, type Camera } from 'three'
 import {
-  chooseParts, fitLabel, hideCollisions, innerRect, labelPriority, labelSize, turnLabel, type Fit, type LabelContent, type Placed, type Rect,
+  chooseParts, fitLabel, hideCollisions, innerRect, labelForced, labelPriority, labelSize, turnLabel, type Fit, type LabelContent, type Placed, type Rect,
   type Size,
 } from '../labels3d'
 import { labelDepth, labelFace, suiteRect, type Corner, type FaceRect, type Layout3D, type SuiteBox } from '../layout3d'
@@ -97,7 +97,7 @@ function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Pla
   if (!v || !c) return null
   const strip = stripOf(s, b)
   const pts = faceQuad(s, suiteRect(b), 0, ringDepth(strip)) as [Pt, Pt, Pt, Pt]
-  const forced = v.matchRank !== null || v.selected || b.id === s.hoverId || b.id === s.focusedId
+  const forced = labelForced(v, b.id === s.hoverId, b.id === s.focusedId)
   const fit = pts.some((q) => q.behind) || strip === 0 ? null : fitOnFace(s, b, c, pts, forced)
   const face = fit?.box ?? EMPTY
   const turned = fit?.turned ?? false
@@ -173,8 +173,12 @@ function syncStateRings(s: OverlayState): void {
   const box = (id: string | null) => (id === null ? undefined : s.layout.suites.find((b) => b.id === id))
   const selected = s.layout.suites.find((b) => s.visuals.get(b.id)?.selected)
   const focused = box(s.focusedId)
+  // The previewed move's destination: ringed from take-off (around the empty slot) and after the block lands.
+  const arrival = s.layout.suites.find((b) => s.visuals.get(b.id)?.move === 'in')
   setRing(s, 'selected', selected ? suiteQuad(s, selected, RING_GAP * 2.2) : null)
   setRing(s, 'selected-inner', selected ? suiteQuad(s, selected, RING_GAP) : null)
+  setRing(s, 'move', arrival ? suiteQuad(s, arrival, RING_GAP * 2.2) : null)
+  setRing(s, 'move-inner', arrival ? suiteQuad(s, arrival, RING_GAP) : null)
   setRing(s, 'focus', focused ? suiteQuad(s, focused, RING_GAP * 3.6) : null)
 }
 

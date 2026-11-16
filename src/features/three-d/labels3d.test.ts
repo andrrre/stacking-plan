@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { buildStackModel, type SuiteVisual } from '../stack/suiteVisual'
 import {
-  LINE_H, MIN_FACE_H, ONE_LINE_H, TWO_LINES_H, WRAPPED_H, chooseParts, convexOverlap, fitLabel, hideCollisions, innerRect, labelContent, labelPriority, labelSize, line1Text, textWidth, turnLabel,
+  LINE_H, MIN_FACE_H, ONE_LINE_H, TWO_LINES_H, WRAPPED_H, chooseParts, convexOverlap, fitLabel, hideCollisions, innerRect, labelContent, labelForced, labelPriority, labelSize, line1Text, textWidth, turnLabel,
   uprightBox,
   type LabelContent, type Pt2,
 } from './labels3d'
@@ -35,6 +35,25 @@ describe('labelContent', () => {
 
   it('line 1 reads "number · SF"', () => {
     expect(line1Text(content('700'))).toBe('700 · 4,300 SF')
+  })
+
+  it('the previewed move\'s destination says the tenant moves in; the suite it leaves gets no cue', () => {
+    const v = visuals().find((x) => x.suite.number === '900') as SuiteVisual
+    expect(labelContent({ ...v, move: 'in' }).text).toBe('Coralstone Insurance · Moves in')
+    expect(labelContent({ ...v, move: 'out' }).text).toBe('Coralstone Insurance')
+  })
+})
+
+describe('labelForced', () => {
+  const v = visuals().find((x) => x.suite.number === '900') as SuiteVisual
+  it('forces a match, the selection, the hovered or focused suite, and both suites of a previewed move', () => {
+    expect(labelForced(v, false, false)).toBe(false)
+    expect(labelForced({ ...v, matchRank: 1 }, false, false)).toBe(true)
+    expect(labelForced({ ...v, selected: true }, false, false)).toBe(true)
+    expect(labelForced(v, true, false)).toBe(true)
+    expect(labelForced(v, false, true)).toBe(true)
+    expect(labelForced({ ...v, move: 'in' }, false, false)).toBe(true)
+    expect(labelForced({ ...v, move: 'out' }, false, false)).toBe(true)
   })
 })
 

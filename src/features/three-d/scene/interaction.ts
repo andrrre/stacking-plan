@@ -19,9 +19,12 @@ const suiteIdOf = (o: Object3D | undefined): string | null => {
   return typeof id === 'string' ? id : null
 }
 
+/** The nearest suite hit, passing over hidden ones (the previewed move's destination while its block flies). */
+export const suiteHit = (hits: readonly { object: Object3D }[]): string | null => suiteIdOf(hits.find((h) => h.object.visible)?.object)
+
 function raycastAt(ray: Raycaster, camera: Camera, group: Group, x: number, y: number, w: number, h: number): string | null {
   ray.setFromCamera(new Vector2((x / w) * 2 - 1, -(y / h) * 2 + 1), camera)
-  return suiteIdOf(ray.intersectObjects(group.children, false)[0]?.object)
+  return suiteHit(ray.intersectObjects(group.children, false))
 }
 
 /** Each suite's front-face centre on the canvas, and whether a click there would land on that suite. */

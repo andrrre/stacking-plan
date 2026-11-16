@@ -90,7 +90,7 @@ export function World(p: WorldProps) {
       {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
       <Ground bounds={layout.bounds} shapes={shapes} shadow={palette.shadow} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} hidden={hidden} />
-      <MoveFlight flight={flight} layout={layout} looks={looks} palette={palette} shapes={shapes} />
+      <MoveFlight flight={flight} layout={layout} palette={palette} shapes={shapes} />
     </>
   )
 }

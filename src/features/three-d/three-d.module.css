@@ -42,6 +42,9 @@
 .ring[data-kind='run-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
 .ring[data-kind='selected'] { stroke: var(--c-outline-selected); stroke-width: 3px; }
 .ring[data-kind='selected-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
+/* The previewed move's destination, in the match accent on the same card-colour halo as a match ring. */
+.ring[data-kind='move'] { stroke: var(--c-match); stroke-width: 3px; }
+.ring[data-kind='move-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
 /* Dashed, so keyboard focus never reads as the solid selection ring. */
 .ring[data-kind='focus'] { stroke: var(--c-focus); stroke-width: 3px; stroke-dasharray: 6 4; }
 

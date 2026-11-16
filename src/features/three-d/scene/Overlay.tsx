@@ -48,6 +48,8 @@ function Rings({ layout, refs }: Pick<Props, 'layout' | 'refs'>) {
       {layout.runs.flatMap((r) => [ring(`run-${r.rank}`, 'run'), ring(`run-${r.rank}-inner`, 'run-inner')])}
       {ring('selected', 'selected')}
       {ring('selected-inner', 'selected-inner')}
+      {ring('move', 'move')}
+      {ring('move-inner', 'move-inner')}
       {ring('focus', 'focus')}
     </svg>
   )
@@ -65,7 +67,9 @@ export function Overlay({ layout, visuals, contents, ghosts, refs }: Props) {
       {layout.suites.map((b) => {
         const v = visuals.get(b.id)
         const c = contents.get(b.id)
-        return v && c ? <Label key={b.id} v={v} c={c} ghost={ghosts.has(b.id)} refs={refs} /> : null
+        // Keyed by the move too: a label joining or leaving a previewed move mounts afresh, hidden until the frame
+        // loop places it, so the destination's new text never shows before its block has landed.
+        return v && c ? <Label key={`${b.id}:${v.move ?? ''}`} v={v} c={c} ghost={ghosts.has(b.id)} refs={refs} /> : null
       })}
       {layout.runs.map((r) => (
         <span key={r.rank} ref={register(refs.badges, r.rank)} className={styles.badge} data-testid={`badge3d-${r.rank}`}>

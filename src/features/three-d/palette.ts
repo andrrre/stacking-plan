@@ -22,6 +22,8 @@ export type Palette = {
   roof: string // slabs, roof caps and the sketched city
   roofEdge: string
   shadow: Rgba // the contact shadow under the building
+  match: string // the match accent (rings, rank badges): the previewed move's flying block
+  matchInk: string // ink on the match accent: the flying block's edges
 }
 
 export type PatternKind = 'hatch' | 'none'
@@ -112,6 +114,8 @@ export function readPalette(read: (name: string) => string): Palette {
     roof: hex('--c-roof'),
     roofEdge: hex('--c-roof-edge'),
     shadow: parseRgba(read('--c-shadow'), { hex: '#000000', alpha: 0.12 }),
+    match: hex('--c-match'),
+    matchInk: hex('--c-match-ink'),
   }
 }
 
