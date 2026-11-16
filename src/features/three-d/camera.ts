@@ -23,12 +23,14 @@ export function insetsFor(width: number, height: number, wide = width >= height 
 }
 /** Floor view: the floor slider takes this much more of the stage's left edge (CSS px; .floorPanel in three-d.module.css). */
 export const FLOOR_PANEL_W = 92
-/** The floor caption's band across the top-left, under the control bar when that runs across the top (CSS px). */
+/** The floor caption's band across the top-left, under the city switch and the control bar's row (CSS px). */
 const FLOOR_CAPTION_H = 34
+/** Where the floor panel starts: under the city switch (CSS px; .floorPanel's top in three-d.module.css). */
+const FLOOR_PANEL_TOP = 48
 /** The floor view's insets: the usual ones, plus the floor slider on the left and its caption at the top. */
 export function floorInsets(width: number, height: number, wide = width >= height * WIDE_STAGE): Insets {
   const base = insetsFor(width, height, wide)
-  return { ...base, top: base.top + FLOOR_CAPTION_H, left: base.left + FLOOR_PANEL_W }
+  return { ...base, top: Math.max(base.top, FLOOR_PANEL_TOP) + FLOOR_CAPTION_H, left: base.left + FLOOR_PANEL_W }
 }
 export const DEFAULT_VIEW: View = { azimuth: 16, elevation: 14.5 }
 /** Floor view: high above the front, looking down onto one plate. */

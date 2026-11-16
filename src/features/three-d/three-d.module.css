@@ -242,12 +242,14 @@
   cursor: pointer;
 }
 
+/* The switch's place: the stage's top-left corner, above the floor slider in floor view. */
+.cityCorner { position: absolute; top: var(--sp-2); left: var(--sp-2); z-index: 4; }
+
 .switchTrack {
   position: relative;
   flex: none;
   width: 30px;
   height: 18px;
-  margin-left: auto;
   border-radius: 9px;
   background: var(--c-border-strong);
   transition: background-color 160ms ease;
@@ -280,9 +282,14 @@
 
 .icon { width: 16px; height: 16px; flex: none; }
 
-/* On a narrow stage the control bar has no room for the City switch's word: it keeps its icon (and its name). */
+/* On a narrow stage the control bar leaves no room for the City switch's word: it keeps its icon (and its name). */
 @container stage (width < 720px) {
   .stage[data-wide='false'] .ctlLabel { display: none; }
+}
+
+/* The control bar across the top would reach the switch in the corner: the orbit hint gives way first. */
+@container stage (width < 800px) {
+  .stage[data-wide='false'] .hint { display: none; }
 }
 
 /* Narrow screens: the details drawer overlays the stage's right side (panel width, less the 16px pane gutter
@@ -294,7 +301,7 @@
 /* ---------- floor view: the vertical floor slider down the left edge ---------- */
 
 /* 84px wide at 8px from the edge: FLOOR_PANEL_W (camera.ts) keeps the building clear of it. Below the
-   control bar, which runs across the top unless the stage is wide (floorInsets in camera.ts). */
+   city switch in the corner (and the control bar, where that runs across the top; floorInsets in camera.ts). */
 .floorPanel {
   position: absolute;
   top: 44px;
@@ -307,8 +314,6 @@
   width: 84px;
   pointer-events: none;
 }
-
-.stage[data-wide='true'] .floorPanel { top: var(--sp-2); }
 
 .floorCaption {
   width: max-content;

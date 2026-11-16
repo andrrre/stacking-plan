@@ -3,7 +3,7 @@ import type { Rig } from './sceneTypes'
 import styles from './three-d.module.css'
 
 // Camera controls as real buttons (a labelled group, each its own tab stop), so rotate, zoom, reset,
-// separate floors, floor view and the city switch work from the keyboard too.
+// separate floors and floor view work from the keyboard too. The city switch sits apart, in the stage's top-left corner.
 
 type Props = {
   rig: RefObject<Rig | null>
@@ -35,7 +35,7 @@ function CityToggle({ city, onCity }: Pick<Props, 'city' | 'onCity'>) {
   return (
     <button
       type="button"
-      className={styles.ctlSwitch}
+      className={`${styles.ctlSwitch} ${styles.cityCorner}`}
       role="switch"
       aria-checked={city}
       aria-label="City"
@@ -50,7 +50,7 @@ function CityToggle({ city, onCity }: Pick<Props, 'city' | 'onCity'>) {
   )
 }
 
-export function Controls3D({ rig, separated, onSeparate, floorView, onFloorView, city, onCity, onReset }: Props) {
+function ViewControls({ rig, separated, onSeparate, floorView, onFloorView, onReset }: Omit<Props, 'city' | 'onCity'>) {
   return (
     <div className={styles.controls} role="group" aria-label="3D view controls">
       <span className={styles.hint} aria-hidden="true">Drag to orbit · scroll to zoom</span>
@@ -88,10 +88,18 @@ export function Controls3D({ rig, separated, onSeparate, floorView, onFloorView,
         <Icon d={FLOOR} />
         Floor view
       </button>
-      <CityToggle city={city} onCity={onCity} />
       <button type="button" className={styles.ctlText} data-testid="reset-view" onClick={onReset}>
         Reset view
       </button>
     </div>
+  )
+}
+
+export function Controls3D({ city, onCity, ...view }: Props) {
+  return (
+    <>
+      <CityToggle city={city} onCity={onCity} />
+      <ViewControls {...view} />
+    </>
   )
 }
