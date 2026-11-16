@@ -152,9 +152,15 @@
 .suite[data-move='out'] .moveTag { border: 1px dashed var(--c-match); }
 .suite[data-move='in'] .moveTag { border: 1px solid var(--c-match); }
 
-/* A narrow cell drops the tag (data-move stays on the cell, the aria-label and tooltip carry the words). */
+/* The label stops short of the tag, so the tag never covers the number or the tenant (line 2 ellipsises instead). */
+.suite[data-move] .label { padding-right: 72px; }
+.moveShort { display: none; }
+
+/* A narrow cell shows the short form, "Out" / "In" (the aria-label and tooltip carry the full words). */
 @container (max-width: 120px) {
-  .moveTag { display: none; }
+  .moveLong { display: none; }
+  .moveShort { display: inline; }
+  .suite[data-move] .label { padding-right: 36px; }
 }
 
 /* ---------- fills (shared by suites and legend swatches) ---------- */

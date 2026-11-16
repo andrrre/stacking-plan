@@ -53,4 +53,12 @@ describe('useStackModel', () => {
     expect(suites.find((v) => v.suite.number === '500')?.matchRank).toBe(1)
     expect(suites.filter((v) => v.matchRank !== null)).toHaveLength(2)
   })
+
+  it('during a preview a KPI tile lights the scenario suites its figure counts, plus the two moved suites', () => {
+    const [option] = makeRoom(BUNDLED_BUILDINGS[0], { minSf: 12_000, includePotential: false }, TODAY, TODAY)
+    if (!option) throw new Error('expected a move option')
+    // The tile shows the scenario's largest block (700 + 710); the previewed building's would be 500 + 510.
+    const lit = renderModel({ movePreview: option, highlight: 'largestBlock' }).filter((v) => !v.dimmed)
+    expect(lit.map((v) => v.suite.number)).toEqual(['700', '710', '510', '410'])
+  })
 })

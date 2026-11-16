@@ -27,9 +27,10 @@ export function useStackModel(): StackModel {
   const includePotential = state.req.includePotential
   const selectedSuiteId = selection?.kind === 'suite' ? selection.suiteId : null
 
+  // From the scenario, as the KPI tiles are: a pressed tile lights the suites its figure counts, preview or not.
   const highlightIds = useMemo(
-    () => (highlight === null ? null : new Set(kpis(building, asOf, today, includePotential).ids[highlight])),
-    [building, asOf, today, includePotential, highlight],
+    () => (highlight === null ? null : new Set(kpis(scenario, asOf, today, includePotential).ids[highlight])),
+    [scenario, asOf, today, includePotential, highlight],
   )
 
   const modifiedIds = useMemo(() => modifiedSuiteIds(base, changes), [base, changes])

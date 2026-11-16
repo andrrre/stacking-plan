@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { SuiteCell } from './SuiteCell'
 import { suiteDataAttributes } from './suiteAttributes'
@@ -62,6 +62,18 @@ describe('SuiteCell', () => {
     const arrival = screen.getByTestId('suite-odt-410')
     expect(arrival).toHaveAttribute('data-move', 'in')
     expect(arrival).toHaveTextContent('Moves in')
+  })
+
+  it('the tag carries a short form for narrow cells (the CSS picks one by cell width)', () => {
+    const { unmount } = render(<SuiteCell visual={visual('510', 'out')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const out = screen.getByTestId('suite-odt-510')
+    expect(within(out).getByText('Moves out')).toBeInTheDocument()
+    expect(within(out).getByText('Out')).toBeInTheDocument()
+    unmount()
+    render(<SuiteCell visual={visual('410', 'in')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const arrival = screen.getByTestId('suite-odt-410')
+    expect(within(arrival).getByText('Moves in')).toBeInTheDocument()
+    expect(within(arrival).getByText('In')).toBeInTheDocument()
   })
 
   it('a suite without a move has no tag and no data-move', () => {

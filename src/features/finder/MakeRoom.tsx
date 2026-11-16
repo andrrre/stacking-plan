@@ -18,7 +18,7 @@ function MoveItem({ option }: { option: MoveOption }) {
       <p className={styles.move}>
         Move <strong>{lease.tenant}</strong> ({formatSf(from.areaSf)}) from Suite {from.number} to Suite {to.number} ({formatSf(to.areaSf)}).
       </p>
-      <p className={styles.freed}>Frees {suitesLabel(freed.suiteNumbers)}: {formatSf(freed.totalSf)} on floor {freed.floor}.</p>
+      <p>Frees {suitesLabel(freed.suiteNumbers)}: {formatSf(freed.totalSf)} on floor {freed.floor}.</p>
       <p className={styles.assumes}>Assumes {lease.tenant} agrees to relocate.</p>
       <div className={styles.actions}>
         <button

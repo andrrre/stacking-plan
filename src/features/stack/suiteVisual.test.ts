@@ -358,6 +358,13 @@ describe('buildStackModel: a previewed move', () => {
     expect(visual(m, '410').ariaLabel.endsWith(', moves in in the previewed move')).toBe(true)
   })
 
+  it('the move line ends the tooltip, for a sighted user on a cell too narrow for the tag', () => {
+    const m = moved()
+    expect(visual(m, '510').tooltip.endsWith('\nMoves out in the previewed move')).toBe(true)
+    expect(visual(m, '410').tooltip.endsWith('\nMoves in in the previewed move')).toBe(true)
+    expect(visual(m, '500').tooltip).not.toContain('previewed move')
+  })
+
   it('stays undimmed under a KPI highlight and unfiltered under a legend pill', () => {
     const lit = moved()
     const highlighted = model({

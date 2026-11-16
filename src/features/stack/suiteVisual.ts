@@ -125,6 +125,7 @@ type Marks = {
 }
 
 const MOVE_WORDS = { out: 'moves out', in: 'moves in' } as const
+const MOVE_LINES = { out: 'Moves out', in: 'Moves in' } as const
 
 function moveOf(id: string, move: StackModelInput['move']): SuiteVisual['move'] {
   if (!move) return null
@@ -166,6 +167,7 @@ function tooltipFor(s: Suite, floorNumber: number, st: StatusResult, m: Marks): 
   if (risk) lines.push(`Lease risk: ${risk}`)
   if (m.matchRank !== null) lines.push(`Match ${m.matchRank}`)
   if (m.modified) lines.push('Modified')
+  if (m.move) lines.push(`${MOVE_LINES[m.move]} in the previewed move`)
   return lines.join('\n')
 }
 

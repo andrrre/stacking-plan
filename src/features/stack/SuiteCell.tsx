@@ -21,6 +21,7 @@ function Label({ label }: { label: SuiteLabel }) {
 }
 
 const MOVE_TAGS = { out: 'Moves out', in: 'Moves in' } as const
+const MOVE_TAGS_SHORT = { out: 'Out', in: 'In' } as const // narrow cells
 
 type Props = {
   visual: SuiteVisual
@@ -46,7 +47,12 @@ export function SuiteCell({ visual: v, roving, joinsNext, onSelect }: Props) {
       {...roving}
     >
       <Label label={v.label} />
-      {v.move && <span className={styles.moveTag}>{MOVE_TAGS[v.move]}</span>}
+      {v.move && (
+        <span className={styles.moveTag}>
+          <span className={styles.moveLong}>{MOVE_TAGS[v.move]}</span>
+          <span className={styles.moveShort}>{MOVE_TAGS_SHORT[v.move]}</span>
+        </span>
+      )}
       {v.modified && <span className={styles.modifiedDot} aria-hidden="true" />}
     </button>
   )
