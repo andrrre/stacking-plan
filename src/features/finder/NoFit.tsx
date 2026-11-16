@@ -1,6 +1,7 @@
 import { useAppState } from '../../app/state/useAppState'
 import { formatMonthYear, formatNumber, formatSf, suitesLabel } from '../../domain/format'
 import type { NoFit as NoFitResult, NoFitReason } from '../../domain/types'
+import { MakeRoom } from './MakeRoom'
 import styles from './NoFit.module.css'
 
 type Props = { noFit: NoFitResult }
@@ -65,6 +66,7 @@ export function NoFit({ noFit }: Props) {
       {earliestFit
         ? <WayOut fit={earliestFit} onDate={earliestFit.date === state.asOf} />
         : <p className={styles.horizon}>No fit in the next 5 years.</p>}
+      <MakeRoom />
     </div>
   )
 }
