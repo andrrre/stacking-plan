@@ -33,5 +33,7 @@ export function initState(search: string, storage: StorageLike | null, clockToda
     importedBuildings,
     overlay: 'none',
     floor: url.floor !== undefined && shown?.floors.some((f) => f.number === url.floor) ? url.floor : null,
+    legend: url.legend ?? null,
+    presenting: false,
   }
 }

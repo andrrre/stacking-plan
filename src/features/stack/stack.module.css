@@ -47,7 +47,7 @@
   --fill: var(--c-occupied);
   --ink: var(--c-occupied-ink);
   position: relative;
-  container-type: inline-size; /* same width as .label: lets the narrow-cue rules restyle .label itself */
+  container-type: inline-size; /* the cell's width: lets the narrowest tier restyle .label itself */
   flex: 1 1 0px; /* flex-grow = areaSf, set inline */
   min-width: var(--suite-min-w);
   height: 100%;
@@ -88,9 +88,15 @@
   filter: var(--dim-filter);
 }
 
+/* A suite the legend filter leaves out fades further. Dimmed by both a search and the filter, it keeps the
+   ghost's greyscale and the filter's lower opacity: never brighter than its dimmest reason. */
+.suite[data-filtered='true'] { opacity: var(--filter-opacity); }
+
 /* Opacity would fade the focus and selection rings too, so a dimmed suite lights up while focused or selected. */
 .suite[data-dimmed='true']:focus-visible,
-.suite[data-dimmed='true'][aria-pressed='true'] {
+.suite[data-dimmed='true'][aria-pressed='true'],
+.suite[data-filtered='true']:focus-visible,
+.suite[data-filtered='true'][aria-pressed='true'] {
   opacity: 1;
   filter: none;
 }
@@ -147,7 +153,7 @@
 
 /* ---------- label ---------- */
 
-/* The container whose width drives the label tiers; it spans the whole cell. */
+/* Two lines, left-aligned and centred in the cell: "number · SF" (11px semibold) over the tenant or status (12px). */
 .label {
   container-type: inline-size;
   display: flex;
@@ -157,127 +163,38 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  padding: 0 8px;
   border-radius: inherit;
 }
 
-/* Cue · number · SF · end · tag, in priority order. One line; whatever does not fit wraps out of sight. */
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 6px;
-  height: 14px;
-  overflow: hidden;
-  padding: 0 6px;
-  font-size: var(--fs-xs);
-  line-height: 14px;
-  font-weight: var(--fw-medium);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.cue {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: var(--fw-semibold);
-}
-
-.glyph {
-  width: 11px;
-  height: 11px;
-  flex: none;
-}
-
-.number { font-weight: var(--fw-semibold); }
-.sf, .end, .tag { opacity: .85; }
-
-.primary {
+.line1, .line2 {
   display: block;
-  padding: 0 6px;
   overflow: hidden;
-  font-size: var(--fs-sm);
-  line-height: 15px;
-  font-weight: var(--fw-semibold);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* A potential suite's reason ("Tenant lease ends 04/2027") trails the word "Potential" and is the first thing
-   cut: the ellipsis eats it on a mid-width cell, and it goes entirely where it would leave only a stub. */
-.reason { font-weight: var(--fw-medium); opacity: .85; }
-
-/* Plain vacant space shouts its status: "VACANT" (the model says "Vacant"). */
-.suite[data-status='vacant'][data-overlay='none'] .primary {
-  text-transform: uppercase;
-  letter-spacing: .06em;
+.line1 {
+  font-size: var(--fs-xs);
+  line-height: 14px;
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Label tiers by cell width (literal px: custom properties do not work in @container conditions). */
-@container (max-width: 179px) {
-  .reason { display: none; }
+.line2 {
+  font-size: var(--fs-sm);
+  line-height: 15px;
+  font-weight: var(--fw-regular);
 }
 
-@container (max-width: 139px) {
-  .end, .tag { display: none; }
-}
-
-@container (max-width: 103px) {
-  .sf { display: none; }
-}
-
-/*
-  Narrow cells with a cue (expiring: clock + end date; committed: lock + start date). On one line the cue
-  date pushed the suite number out of sight and the second line cut "Leased from 04/2…" mid-date. Here the
-  meta line is flattened into the label so the cue gets a full first line and the number leads the second,
-  which keeps the §5.6 priority (cue → number → tenant). A committed cell's primary only repeats the cue
-  date ("Leased from MM/YYYY"), so the number and SF take its place; the words stay in the tooltip and
-  aria-label, and the lock glyph and pattern stay on the cell.
-*/
-@container (min-width: 72px) and (max-width: 109px) {
-  .suite[data-has-cue='true'] .label {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-content: center;
-    align-items: baseline;
-    justify-content: flex-start;
-    column-gap: 5px;
-    row-gap: 1px;
-    padding: 0 6px;
-  }
-  .suite[data-has-cue='true'] .meta { display: contents; }
-  .suite[data-has-cue='true'] .cue { flex-basis: 100%; line-height: 14px; }
-  .suite[data-has-cue='true'] .number { line-height: 15px; }
-  .suite[data-has-cue='true'] .primary { flex: 1 1 0px; min-width: 0; padding: 0; }
-}
-
-@container (min-width: 72px) and (max-width: 139px) {
-  .suite[data-overlay='committed'] .label {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-content: center;
-    align-items: baseline;
-    justify-content: flex-start;
-    column-gap: 5px;
-    row-gap: 1px;
-    padding: 0 6px;
-  }
-  .suite[data-overlay='committed'] .meta { display: contents; }
-  .suite[data-overlay='committed'] .cue { flex-basis: 100%; line-height: 14px; }
-  .suite[data-overlay='committed'] .number { line-height: 15px; }
-  .suite[data-overlay='committed'] .sf { flex: 1 1 0px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  .suite[data-overlay='committed'] .primary { display: none; }
-}
-
-@container (max-width: 71px) {
-  .primary { display: none; }
-  .meta { height: auto; max-height: 28px; padding: 0 4px; }
+/* Label tiers by the label's content width (literal px: custom properties do not work in @container conditions).
+   What does not fit goes in order: line 2 first, then the SF, never the number. "1130 · 2,800 SF" needs ~84px. */
+@container (max-width: 85px) {
+  .line2, .sf { display: none; }
 }
 
 @container (max-width: 43px) {
-  .suite[data-has-cue='true'] .number { display: none; }
-  .meta { justify-content: center; padding: 0 2px; }
-  .cueText { display: none; }
+  .label { padding: 0 2px; align-items: center; }
 }
 
 /* ---------- match outline ---------- */
@@ -311,7 +228,7 @@
   pointer-events: none;
 }
 
-/* ---------- legend ---------- */
+/* ---------- legend: filter pills ---------- */
 
 .legend {
   display: flex;
@@ -323,30 +240,49 @@
   line-height: 16px;
 }
 
-.legendGroup {
+.pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px var(--sp-3);
-}
-
-.legendItem {
-  display: inline-flex;
   align-items: center;
   gap: 6px;
-  white-space: nowrap;
 }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid var(--c-btn-border);
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.pill:hover:not(:disabled) { background: var(--c-surface-2); }
+.pill[aria-pressed='true'] { border-color: var(--c-text); background: var(--c-btn); box-shadow: inset 0 0 0 1px var(--c-text); }
+.pill:disabled { cursor: default; opacity: .6; }
+.pill:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
+
+.pillName { font-weight: var(--fw-medium); }
+.pillMeta { color: var(--c-text-muted); }
 
 .swatch {
   --fill: var(--c-occupied);
   --ink: var(--c-occupied-ink);
   position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
+  flex: none;
+  width: 14px;
   height: 14px;
   border-radius: var(--r-sm);
   background-color: var(--fill);
-  color: var(--ink);
 }
 
 .swatch::before {
@@ -357,6 +293,7 @@
 }
 
 .legendNote {
+  margin: 0 0 0 var(--sp-2);
   color: var(--c-text-muted);
   font-size: var(--fs-xs);
 }

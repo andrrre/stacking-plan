@@ -21,6 +21,8 @@ describe('initState', () => {
       importedBuildings: [],
       overlay: 'none',
       floor: null,
+      legend: null,
+      presenting: false,
     })
   })
 

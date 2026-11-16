@@ -72,6 +72,8 @@ function useViewModes(model: StackModel, selectedId: string | null) {
   const { state, dispatch } = useAppState()
   const [separated, setSeparated] = useState(false)
   const floor = state.floor
+  // Floor view opened from elsewhere (the details panel's Floor plan) ends separated floors too.
+  if (floor !== null && separated) setSeparated(false)
   const setFloor = useCallback((n: number | null) => dispatch({ type: 'floor/set', floor: n }), [dispatch])
   const shown = useMemo(() => (floor === null ? model : { floors: model.floors.filter((f) => f.number === floor) }), [model, floor])
   return {

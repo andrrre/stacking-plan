@@ -5,8 +5,9 @@ import { Color, MeshBasicMaterial, Vector3 } from 'three'
 // hold), so the boxes read as solids while the colours stay true to the legend. The vacant hatch (135° stripes,
 // two crimson bands of 7px at the 2D stack's scale) is drawn in the fragment shader in world units, the same
 // density on every box, on the front and top; the potential/committed outline in screen pixels (crisp at any
-// zoom). Ghosting (desaturated, translucent, towards the stage colour) is a 0..1 uniform so it can fade. No
-// textures, so nothing to load.
+// zoom). Ghosting (desaturated, translucent, towards the stage colour) is a 0..1 uniform so it can fade, and so
+// is the legend filter's opacity (uFade); a suite under both is as faint as the fainter. No textures, so
+// nothing to load.
 
 const VERTEX_DECL = /* glsl */ `
 varying vec3 vSmPos;
@@ -21,7 +22,7 @@ const FRAGMENT_DECL = /* glsl */ `
 uniform vec3 uPatColor; uniform float uPatKind; uniform float uPatPeriod;
 uniform vec3 uEdgeColor; uniform float uEdgeAlpha; uniform float uEdgePx;
 uniform vec3 uSide; uniform vec3 uGhostTone;
-uniform vec3 uBoxMin; uniform vec3 uBoxMax; uniform float uGhost; uniform float uHover; uniform float uShade;
+uniform vec3 uBoxMin; uniform vec3 uBoxMax; uniform float uGhost; uniform float uFade; uniform float uHover; uniform float uShade;
 varying vec3 vSmPos;
 varying vec3 vSmNormal;
 
@@ -69,7 +70,7 @@ const FRAGMENT_BODY = /* glsl */ `#include <color_fragment>
   }
   c = mix(c, vec3(1.0), 0.16 * uHover);
   diffuseColor.rgb = pow(c, vec3(2.2));
-  diffuseColor.a *= mix(1.0, 0.5, uGhost);
+  diffuseColor.a *= min(mix(1.0, 0.5, uGhost), uFade);
 }`
 
 export class SuiteMaterial extends MeshBasicMaterial {
@@ -85,6 +86,7 @@ export class SuiteMaterial extends MeshBasicMaterial {
     uBoxMin: { value: new Vector3() },
     uBoxMax: { value: new Vector3(1, 1, 1) },
     uGhost: { value: 0 },
+    uFade: { value: 1 }, // 1 opaque … FILTER_ALPHA (left out by the legend filter)
     uHover: { value: 0 },
     uShade: { value: 1 },
   }
@@ -104,6 +106,6 @@ export class SuiteMaterial extends MeshBasicMaterial {
 
   // Every instance compiles to the same program, so 600 suites share one shader.
   customProgramCacheKey(): string {
-    return 'stackmatch-suite-v3'
+    return 'stackmatch-suite-v4'
   }
 }

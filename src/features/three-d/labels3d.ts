@@ -1,90 +1,67 @@
 import type { SuiteVisual } from '../stack/suiteVisual'
 
-// What a suite's facade label says, which parts fit on its face at the current zoom, and which labels
-// give way when they would overlap. Pure: the scene feeds it projected face rectangles in CSS pixels.
-
-export type LabelCue = { kind: 'clock' | 'lock' | 'word'; text: string }
-export type LabelContent = { cue: LabelCue | null; number: string; tenant: string | null; sf: string }
+// What a suite's facade label says, which parts fit on its face at the current zoom, where it sits (upright,
+// inside the projected face) and which labels give way when they would overlap. Pure: the scene feeds it
+// projected face corners in CSS pixels.
 
 /**
- * The model's label in facade priority order: status cue → number → tenant → SF.
- * The cue is the clock or lock date from the model, or the status word for vacant and potential space.
- * Words that would only repeat the cue ("Vacant", "Leased from 03/2027") are dropped.
+ * The model's two-line label: "number · SF" over the tenant or status in words (the label's non-colour status
+ * cue). A compact (small) suite shows its number alone. `notable` labels (vacant, potential, committed,
+ * expiring) win collisions over plain occupied and common space.
  */
+export type LabelContent = { number: string; sf: string; text: string; compact: boolean; notable: boolean }
+
 export function labelContent(v: SuiteVisual): LabelContent {
-  const { label, status } = v
-  const base = { number: label.number, sf: label.sf }
-  if (label.cue) {
-    const tenant = status.status === 'vacant' ? null : label.primary
-    return { ...base, cue: { kind: label.cue.glyph, text: label.cue.text }, tenant }
-  }
-  if (status.status === 'vacant' && status.overlay === 'potential') {
-    return { ...base, cue: { kind: 'word', text: 'Potential' }, tenant: label.reason ?? null }
-  }
-  if (status.status === 'vacant') return { ...base, cue: { kind: 'word', text: 'VACANT' }, tenant: label.tag ?? null }
-  return { ...base, cue: null, tenant: label.primary }
+  const { number, sf, line2, compact } = v.label
+  const notable = v.status.status === 'vacant' || v.status.status === 'expiring'
+  return { number, sf, text: line2, compact, notable }
 }
 
-export type Parts = { cue: boolean; number: boolean; tenant: boolean; sf: boolean; lines: 0 | 1 | 2 }
+/** Which parts show: the number, the SF after it on line 1, the line-2 text ('tenant'); lines used. */
+export type Parts = { number: boolean; sf: boolean; tenant: boolean; lines: 0 | 1 | 2 }
 export type Size = { w: number; h: number }
 
 export const LINE_H = 14
+/** Two lines: line 1's 12px line box (digits and capitals) over line 2's 14px (the overlay CSS sets the same). */
+export const TWO_LINES_H = 26
+/**
+ * The least height a single line's box needs. Line 1 is digits and capitals, ~8px tall in the middle of its
+ * 14px line box, so the box may lose 2px a side to a sloping face without clipping a glyph.
+ */
+export const ONE_LINE_H = LINE_H - 4
+/** A face thinner than this where its label would start carries none (unless forced): it would read as noise. */
+export const MIN_FACE_H = LINE_H - 1
 const PAD_X = 5
-const GAP = 5
-const GLYPH = 14 // glyph + its gap
-const CHAR = 6.3 // average advance at 11–12px Inter
-const MIN_TENANT = 44 // below this a truncated tenant is noise
+const CHAR = 6 // average advance at 11–12px Inter (tabular digits measure ~5.8)
+const MIN_TENANT = 44 // below this a truncated line 2 is noise
 
 /** Estimated text width in CSS px (the overlay uses Inter at 11–12px). */
 export const textWidth = (s: string) => Math.ceil(s.length * CHAR)
 
-export function cueWidth(c: LabelCue | null): number {
-  if (!c) return 0
-  return (c.kind === 'word' ? 0 : GLYPH) + textWidth(c.text)
-}
+/** Line 1 in full: "700 · 4,300 SF". */
+export const line1Text = (c: LabelContent) => `${c.number} · ${c.sf}`
 
-type Line = { used: number; free: number }
-
-/** Adds an item of width `w` to a line if it fits; returns the new line or null. */
-function fit(line: Line, w: number): Line | null {
-  const need = line.used === 0 ? w : w + GAP
-  return need <= line.free ? { used: line.used + need, free: line.free - need } : null
-}
-
-const NONE: Parts = { cue: false, number: false, tenant: false, sf: false, lines: 0 }
+const NONE: Parts = { number: false, sf: false, tenant: false, lines: 0 }
 
 /**
- * Which parts fit on a face of `box` px. Two lines when the face is tall enough (cue · number · SF over
- * the tenant), otherwise one (cue · number · tenant · SF). Parts are taken in priority order and a part
- * that does not fit is dropped. A forced label (matched, selected, hovered, focused) always keeps its cue
- * and number, even when they overflow the face.
+ * Which parts fit on a face of `box` px. Parts go in the handoff's order: line 2 first, then the SF, and the
+ * number last; line 2 needs a face tall enough for two lines and never shows without the SF. A compact suite
+ * keeps its number alone. A forced label (matched, selected, hovered, focused) always keeps its number, even
+ * when it overflows the face.
  */
 export function chooseParts(c: LabelContent, box: Size, forced: boolean): Parts {
-  const lines: 0 | 1 | 2 = box.h >= 2 * LINE_H + 2 ? 2 : box.h >= LINE_H - 1 || forced ? 1 : 0
-  if (lines === 0) return NONE
+  const room = box.h >= TWO_LINES_H ? 2 : box.h >= ONE_LINE_H || forced ? 1 : 0
   const width = box.w - 2 * PAD_X
-  const empty: Line = { used: 0, free: forced ? Number.MAX_SAFE_INTEGER : width }
-  const withCue = c.cue ? fit(empty, cueWidth(c.cue)) : null
-  const withNumber = fit(withCue ?? empty, textWidth(c.number))
-  if (!withCue && !withNumber) return NONE
-  const used = (withNumber ?? withCue ?? empty).used
-  const head: Line = { used, free: width - used }
-  const tenant = tenantFits(c, head, width, lines)
-  const sfLine = lines === 1 && tenant ? fit(head, Math.min(textWidth(c.tenant ?? ''), head.free - GAP)) : head
-  const sf = sfLine !== null && fit(sfLine, textWidth(c.sf)) !== null
-  return { cue: withCue !== null, number: withNumber !== null, tenant, sf, lines }
+  if (room === 0 || (!forced && textWidth(c.number) > width)) return NONE
+  const sf = !c.compact && textWidth(line1Text(c)) <= width
+  const tenant = room === 2 && sf && Math.min(textWidth(c.text), MIN_TENANT) <= width
+  return { number: true, sf, tenant, lines: tenant ? 2 : 1 }
 }
 
-function tenantFits(c: LabelContent, head: Line, width: number, lines: 1 | 2): boolean {
-  if (c.tenant === null) return false
-  const need = Math.min(textWidth(c.tenant), MIN_TENANT)
-  return lines === 2 ? need <= width : need + GAP <= head.free
-}
-
-/** How much of a label shows with `p`: one per part, and a half more when the whole tenant name fits a line. */
+/** How much of a label shows with `p`: one per part, and a half more when the whole line 2 fits. */
 function shown(c: LabelContent, p: Parts, w: number): number {
-  const parts = [p.cue, p.number, p.tenant, p.sf].filter(Boolean).length
-  return parts + (p.tenant && textWidth(c.tenant ?? '') <= w - 2 * PAD_X ? 0.5 : 0)
+  const parts = [p.number, p.sf, p.tenant].filter(Boolean).length
+  return parts + (p.tenant && textWidth(c.text) <= w - 2 * PAD_X ? 0.5 : 0)
 }
 
 /**
@@ -97,32 +74,20 @@ export function turnLabel(c: LabelContent, face: Size, forced: boolean): boolean
   return shown(c, chooseParts(c, turned, forced), turned.w) > shown(c, chooseParts(c, face, forced), face.w)
 }
 
-/** A face's corners [top-left, top-right, bottom-right, bottom-left] as a turned label lies on them: from the front-left corner towards the back. */
-export function turnQuad<T>(q: readonly [T, T, T, T]): [T, T, T, T] {
-  const [tl, tr, br, bl] = q
-  return [bl, tl, tr, br]
-}
-
-const sumWidths = (ws: readonly number[]) => {
-  const shown = ws.filter((w) => w > 0)
-  return shown.reduce((s, w) => s + w, 0) + GAP * Math.max(shown.length - 1, 0)
-}
-
 /**
  * Estimated size of a label showing `parts`, in px. It is clipped to the face, except that a forced label's
- * cue and number may overflow it (they are never truncated).
+ * number may overflow it (it is never truncated).
  */
 export function labelSize(c: LabelContent, parts: Parts, faceW: number): Size {
   if (parts.lines === 0) return { w: 0, h: 0 }
-  const core = sumWidths([parts.cue ? cueWidth(c.cue) : 0, parts.number ? textWidth(c.number) : 0])
-  const tenant = parts.tenant ? textWidth(c.tenant ?? '') : 0
-  const sf = parts.sf ? textWidth(c.sf) : 0
-  const full = parts.lines === 1 ? sumWidths([core, tenant, sf]) : Math.max(sumWidths([core, sf]), tenant)
-  return { w: Math.min(full, Math.max(faceW - 2 * PAD_X, core)) + 2 * PAD_X, h: parts.lines * LINE_H + 2 }
+  const head = textWidth(c.number)
+  const line1 = parts.sf ? textWidth(line1Text(c)) : head
+  const full = Math.max(line1, parts.tenant ? textWidth(c.text) : 0)
+  return { w: Math.min(full, Math.max(faceW - 2 * PAD_X, head)) + 2 * PAD_X, h: parts.lines === 2 ? TWO_LINES_H : LINE_H }
 }
 
 export type Rect = { x: number; y: number; w: number; h: number }
-/** A label's outline on screen: a convex quad (labels lie on faces, so they are rarely axis-aligned). */
+/** A label's outline on screen as a convex polygon (an upright rectangle's four corners). */
 export type Placed = { id: string; quad: readonly Pt2[]; priority: number }
 
 /** Separating-axis test for two convex polygons; touching edges do not count as overlap. */
@@ -170,45 +135,81 @@ export function hideCollisions(items: readonly Placed[]): Set<string> {
   return hidden
 }
 
-/** Collision priority: forced labels first, then labels with a status cue, then the rest; ghosts last. */
-export function labelPriority(c: LabelContent, forced: boolean, ghost: boolean): number {
+/** Collision priority: forced labels first, then notable status (vacant, expiring), then the rest; dimmed last. */
+export function labelPriority(c: LabelContent, forced: boolean, dimmed: boolean): number {
   if (forced) return 4
-  if (ghost) return 1
-  return c.cue ? 3 : 2
+  if (dimmed) return 1
+  return c.notable ? 3 : 2
 }
 
 export type Pt2 = { x: number; y: number }
 
-/** A 2D projective map, X = (a·u + b·v + c) / (g·u + h·v + 1), Y = (d·u + e·v + f) / (g·u + h·v + 1). */
-export type Homography = { a: number; b: number; c: number; d: number; e: number; f: number; g: number; h: number }
+/**
+ * The upright rectangle a label fills on a projected face [top-left, top-right, bottom-right, bottom-left]: the
+ * face's inner bounds (right of both left corners, left of both right corners, below both top corners, above
+ * both bottom corners). It lies inside any face whose sides are not turned past the diagonal, which covers the
+ * facade and the top faces seen from the app's viewpoints. A face too slanted for one gives an empty rectangle
+ * at its centre.
+ */
+export function innerRect(q: readonly [Pt2, Pt2, Pt2, Pt2]): Rect {
+  const [tl, tr, br, bl] = q
+  const x0 = Math.max(tl.x, bl.x)
+  const x1 = Math.min(tr.x, br.x)
+  const y0 = Math.max(tl.y, tr.y)
+  const y1 = Math.min(bl.y, br.y)
+  const w = Math.max(x1 - x0, 0)
+  const h = Math.max(y1 - y0, 0)
+  return { x: w > 0 ? x0 : (x0 + x1) / 2, y: h > 0 ? y0 : (y0 + y1) / 2, w, h }
+}
+
+/** y on the straight edge from `p` to `q` at `x` (clamped to the edge's ends). */
+function edgeY(p: Pt2, q: Pt2, x: number): number {
+  if (q.x === p.x) return (p.y + q.y) / 2
+  const t = Math.min(Math.max((x - p.x) / (q.x - p.x), 0), 1)
+  return p.y + (q.y - p.y) * t
+}
+
+/** The upright box over [a, b] inside the face: below the top edge and above the bottom edge at both ends. */
+function spanBox(q: readonly [Pt2, Pt2, Pt2, Pt2], a: number, b: number): Rect {
+  const [tl, tr, br, bl] = q
+  const top = Math.max(edgeY(tl, tr, a), edgeY(tl, tr, b))
+  const bottom = Math.min(edgeY(bl, br, a), edgeY(bl, br, b))
+  return { x: a, y: top, w: b - a, h: Math.max(bottom - top, 0) }
+}
 
 /**
- * The map from a w × h box (origin top-left) onto the quad [top-left, top-right, bottom-right, bottom-left],
- * so a label can be laid on a face exactly as the face is drawn, perspective included.
+ * The widest upright box at least `h` tall inside the face, from its left side; null when none is. A face
+ * seen at an angle slopes on screen, so the full-width inner bounds can be too thin for a line even where a
+ * shorter box (all a label needs) fits easily.
  */
-export function rectToQuad(q: readonly [Pt2, Pt2, Pt2, Pt2], w: number, h: number): Homography {
-  const [p0, p1, p2, p3] = q
-  const dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dx3 = p0.x - p1.x + p2.x - p3.x
-  const dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, dy3 = p0.y - p1.y + p2.y - p3.y
-  const det = dx1 * dy2 - dx2 * dy1
-  const g = det === 0 ? 0 : (dx3 * dy2 - dx2 * dy3) / det
-  const hh = det === 0 ? 0 : (dx1 * dy3 - dx3 * dy1) / det
-  const sw = w > 0 ? w : 1
-  const sh = h > 0 ? h : 1
-  return {
-    a: (p1.x - p0.x + g * p1.x) / sw, b: (p3.x - p0.x + hh * p3.x) / sh, c: p0.x,
-    d: (p1.y - p0.y + g * p1.y) / sw, e: (p3.y - p0.y + hh * p3.y) / sh, f: p0.y,
-    g: g / sw, h: hh / sh,
+export function uprightBox(q: readonly [Pt2, Pt2, Pt2, Pt2], h: number): Rect | null {
+  const [tl, tr, br, bl] = q
+  const a = Math.max(tl.x, bl.x)
+  const right = Math.min(tr.x, br.x)
+  if (right <= a || spanBox(q, a, a).h < h) return null
+  if (spanBox(q, a, right).h >= h) return spanBox(q, a, right)
+  let lo = a
+  let hi = right
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2
+    if (spanBox(q, a, mid).h >= h) lo = mid
+    else hi = mid
   }
+  return spanBox(q, a, lo)
 }
 
-export function mapPoint(m: Homography, u: number, v: number): Pt2 {
-  const z = m.g * u + m.h * v + 1
-  return { x: (m.a * u + m.b * v + m.c) / z, y: (m.d * u + m.e * v + m.f) / z }
-}
+export type Fit = { box: Rect; parts: Parts }
 
-/** The homography as a CSS transform (with transform-origin 0 0). */
-export function toMatrix3d(m: Homography): string {
-  const n = (x: number) => (Math.abs(x) < 1e-9 ? '0' : String(Math.round(x * 1e6) / 1e6))
-  return `matrix3d(${[m.a, m.d, 0, m.g, m.b, m.e, 0, m.h, 0, 0, 1, 0, m.c, m.f, 0, 1].map(n).join(',')})`
+/**
+ * The upright box and parts that show the most of a label on a face: a box tall enough for two lines, one
+ * for a single line, or the face's inner bounds, whichever shows more (the first on a tie). A face thinner
+ * than MIN_FACE_H gets only its inner bounds, so it shows a label only when forced.
+ */
+export function fitLabel(c: LabelContent, q: readonly [Pt2, Pt2, Pt2, Pt2], forced: boolean): Fit {
+  const thick = uprightBox(q, MIN_FACE_H) !== null
+  if (!thick && !forced) return { box: innerRect(q), parts: NONE }
+  const boxes = [...(thick ? [uprightBox(q, TWO_LINES_H), uprightBox(q, ONE_LINE_H)] : []), innerRect(q)].filter((b): b is Rect => b !== null)
+  return boxes
+    .map((box) => ({ box, parts: chooseParts(c, box, forced) }))
+    .reduce((best, f) => (shown(c, f.parts, f.box.w) > shown(c, best.parts, best.box.w) ? f : best))
 }

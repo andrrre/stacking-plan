@@ -1,12 +1,24 @@
-.details { display: flex; flex-direction: column; gap: var(--sp-3); }
+.details { display: flex; flex-direction: column; gap: var(--sp-4); }
 
-.head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2); }
+/* A card per block, as in the handoff's panel: the suite, then its floor at a glance. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+}
+
+.head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
 .title { margin: 0; font-family: var(--font-display); font-size: var(--fs-display-md); font-weight: var(--fw-regular); line-height: var(--lh-tight); }
-.where { margin: 2px 0 0; color: var(--c-text-muted); font-size: var(--fs-sm); }
+.tenant { margin: 0; color: var(--c-text-muted); font-size: var(--fs-md); overflow-wrap: anywhere; }
 
+/* The status chip, in the suite's own colours (ink on fill ≥ 4.5:1 in both themes, see tokens.css). */
 .status {
   --s-bg: var(--c-surface-2); --s-ink: var(--c-text); --s-edge: var(--c-border-strong);
-  align-self: flex-start;
+  flex: none;
   margin: 0;
   padding: 4px 10px;
   background: var(--s-bg);
@@ -15,6 +27,7 @@
   color: var(--s-ink);
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
+  white-space: nowrap;
 }
 .status[data-status='occupied'] { --s-bg: var(--c-occupied); --s-ink: var(--c-occupied-ink); --s-edge: var(--c-occupied); }
 .status[data-status='expiring'] { --s-bg: var(--c-expiring); --s-ink: var(--c-expiring-ink); --s-edge: var(--c-expiring); }
@@ -23,7 +36,36 @@
 .status[data-overlay='potential'] { --s-bg: var(--c-potential); --s-ink: var(--c-potential-ink); border: var(--edge-potential); background-image: none; }
 .status[data-overlay='committed'] { --s-bg: var(--c-committed); --s-ink: var(--c-committed-ink); border: var(--edge-committed); background-image: none; }
 
-.rows { display: flex; flex-direction: column; margin: 0; }
+/* Floor / Size / Lease / Contiguous on floor. */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px var(--sp-4); margin: 0; }
+.cell dt { color: var(--c-text-muted); font-size: var(--fs-sm); }
+.cell dd { margin: 2px 0 0; font-size: 16px; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.buttons { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.primary, .secondary {
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--c-btn-border);
+  border-radius: var(--r-md);
+  background: var(--c-btn);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.secondary:hover { background: var(--c-surface-2); }
+.primary { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-accent-ink); }
+.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 85%, var(--c-surface)); }
+.primary[data-saved='true'] { border-color: var(--c-btn-border); background: var(--c-btn); color: var(--c-text); }
+.primary[data-saved='true']:hover { background: var(--c-surface-2); }
+.primary:disabled { border-color: var(--c-btn-border); background: var(--c-surface-2); color: var(--c-text-muted); cursor: not-allowed; }
+.primary:focus-visible, .secondary:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+
+/* The rest of the suite's facts, under a rule. */
+.rows { display: flex; flex-direction: column; margin: 0; padding-top: var(--sp-1); border-top: 1px solid var(--c-border); }
 .row {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
@@ -46,3 +88,34 @@
 }
 .upcoming li span { color: var(--c-text-muted); font-variant-numeric: tabular-nums; }
 .sub { margin: 0 0 var(--sp-2); color: var(--c-text-muted); font-size: var(--fs-label); font-weight: var(--fw-medium); text-transform: uppercase; letter-spacing: var(--ls-label); }
+.card > .sub { margin: 0; }
+
+/* ---------- Floor N at a glance ---------- */
+
+.glance { display: flex; flex-direction: column; margin: calc(-1 * var(--sp-2)) 0 0; padding: 0; list-style: none; }
+
+.glanceRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 var(--sp-1);
+  border: 0;
+  border-bottom: 1px solid var(--c-grid);
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+.glanceRow:hover { background: var(--c-surface-2); }
+.glanceRow:focus-visible { outline: 2px solid var(--c-focus); outline-offset: -2px; }
+.glanceRow[aria-current='true'] { background: var(--c-surface-2); box-shadow: inset 3px 0 0 var(--c-text); }
+
+.glanceNumber { flex: none; width: 44px; font-weight: var(--fw-semibold); }
+.glanceName { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glanceSf { flex: none; color: var(--c-text-muted); }

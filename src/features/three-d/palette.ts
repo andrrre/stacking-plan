@@ -1,13 +1,11 @@
+import { FILL_KEYS } from '../../app/state/legendKeys'
 import type { FillKey, SuiteVisual } from '../stack/suiteVisual'
 
 // What a suite box looks like in the 3D building: its fill, side, surface pattern, edge and ghosting. Pure: the
 // colours come from the same CSS tokens as the 2D stack (read by the caller, resolved for the current light or
 // dark theme), so the two views cannot drift.
 
-export const FILL_KEYS: readonly FillKey[] = [
-  'occupied', 'expiring', 'vacant', 'potential', 'committed', 'common',
-  'risk-le6', 'risk-le12', 'risk-le24', 'risk-le36', 'risk-gt36', 'risk-open',
-]
+export { FILL_KEYS }
 
 export type Rgba = { hex: string; alpha: number }
 
@@ -28,8 +26,14 @@ export type Palette = {
 export type PatternKind = 'hatch' | 'none'
 export type EdgeKind = 'potential' | 'committed' | 'risk-gt36' | 'none'
 
-/** The drawing recipe of one suite, before colours are attached. */
-export type SuiteLook = { fill: FillKey; pattern: PatternKind; edge: EdgeKind; ghost: boolean; lifted: boolean }
+/**
+ * The drawing recipe of one suite, before colours are attached. `ghost`: dimmed by a search or KPI highlight;
+ * `faded`: left out by the legend filter (FILTER_ALPHA). A suite can be both and is then as faint as the fainter.
+ */
+export type SuiteLook = { fill: FillKey; pattern: PatternKind; edge: EdgeKind; ghost: boolean; faded: boolean; lifted: boolean }
+
+/** How opaque a suite the legend filter leaves out is drawn (the 2D stack's --filter-opacity). */
+export const FILTER_ALPHA = 0.28
 
 // Potential and committed carry a 1.5px inset outline; the palest risk step keeps an edge on the card.
 const EDGE: Partial<Record<FillKey, EdgeKind>> = { potential: 'potential', committed: 'committed', 'risk-gt36': 'risk-gt36' }
@@ -41,22 +45,24 @@ export function overlayActive(suites: readonly SuiteVisual[]): boolean {
 }
 
 /**
- * A dimmed suite becomes a ghost unless it is selected or focused (as in 2D, where those light up);
- * the suites that stay lit while an overlay is active lift out of the facade.
+ * A dimmed suite becomes a ghost, and a filtered one fades, unless it is selected or focused (as in 2D, where
+ * those light up); the suites that stay lit while a search or highlight is active lift out of the facade.
  */
 export function suiteLook(v: SuiteVisual, active: boolean, focused = false): SuiteLook {
+  const lit = v.selected || focused
   return {
     fill: v.fill,
     pattern: PATTERN[v.fill] ?? 'none',
     edge: EDGE[v.fill] ?? 'none',
-    ghost: v.dimmed && !v.selected && !focused,
+    ghost: v.dimmed && !lit,
+    faded: v.filtered && !lit,
     lifted: active && !v.dimmed,
   }
 }
 
 /** A stable key for a look; SuiteMaterials.apply uses it to skip suites whose look did not change. */
 export function lookKey(l: SuiteLook): string {
-  return [l.fill, l.pattern, l.edge, l.ghost ? 'ghost' : 'solid', l.lifted ? 'lifted' : 'flat'].join('|')
+  return [l.fill, l.pattern, l.edge, l.ghost ? 'ghost' : 'solid', l.faded ? 'faded' : 'full', l.lifted ? 'lifted' : 'flat'].join('|')
 }
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i

@@ -1,4 +1,5 @@
 import type { Building, Change, ISODate, KpiKey, ParsedQuery, ShortlistEntry } from '../../domain/types'
+import type { FillKey } from './legendKeys'
 
 export type { KpiKey }
 
@@ -30,12 +31,14 @@ export type AppState = {
   importedBuildings: Building[]
   overlay: Overlay
   floor: number | null // the floor shown in the 3D floor view; null = the whole building
+  legend: FillKey | null // the legend pill pressed: suites painted otherwise are dimmed; null = no filter
+  presenting: boolean // presentation mode (drawers shut, fullscreen where the browser allows); never saved
 }
 
 export type Action =
-  | { type: 'building/set'; buildingId: string } // clears selection, highlight, changes
+  | { type: 'building/set'; buildingId: string } // clears selection, highlight, changes, legend filter
   | { type: 'asOf/set'; asOf: ISODate } // snapped to a slider step in [today, sliderDate(today, 60)]
-  | { type: 'mode/set'; mode: ColourMode }
+  | { type: 'mode/set'; mode: ColourMode } // drops a legend filter the new mode's legend does not show
   | { type: 'view/set'; view: ViewMode }
   | { type: 'req/set'; patch: Partial<RequirementDraft> } // merge; clears a 'match' selection
   | { type: 'req/clear' } // min/max/rent → null; keeps includePotential
@@ -51,3 +54,5 @@ export type Action =
   | { type: 'building/remove'; buildingId: string } // imported only: drops it and its shortlist; if selected, switches to the first bundled
   | { type: 'overlay/set'; overlay: Overlay }
   | { type: 'floor/set'; floor: number | null } // null leaves floor view; a floor the current building lacks → null
+  | { type: 'legend/toggle'; key: FillKey } // the pressed key again clears; a key the colour mode does not show is ignored
+  | { type: 'present/set'; on: boolean }

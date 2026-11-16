@@ -110,12 +110,12 @@ describe('suiteLook', () => {
     const today = visuals()
     const jul = visuals({ asOf: '2027-07-01' })
     const cases: [SuiteVisual, string][] = [
-      [find(today, '900'), 'occupied|none|none|solid|flat'],
-      [find(today, '600'), 'expiring|none|none|solid|flat'],
-      [find(today, '500'), 'vacant|hatch|none|solid|flat'],
-      [find(today, '100'), 'common|none|none|solid|flat'],
-      [find(today, '1010'), 'committed|none|committed|solid|flat'],
-      [find(jul, '600'), 'potential|none|potential|solid|flat'],
+      [find(today, '900'), 'occupied|none|none|solid|full|flat'],
+      [find(today, '600'), 'expiring|none|none|solid|full|flat'],
+      [find(today, '500'), 'vacant|hatch|none|solid|full|flat'],
+      [find(today, '100'), 'common|none|none|solid|full|flat'],
+      [find(today, '1010'), 'committed|none|committed|solid|full|flat'],
+      [find(jul, '600'), 'potential|none|potential|solid|full|flat'],
     ]
     for (const [v, key] of cases) expect(lookKey(suiteLook(v, false)), v.suite.number).toBe(key)
   })
@@ -144,6 +144,21 @@ describe('suiteLook', () => {
     const v = find(visuals({ minSf: 10_000 }), '600')
     expect(suiteLook({ ...v, selected: true }, true).ghost).toBe(false)
     expect(suiteLook(v, true, true).ghost).toBe(false)
+  })
+
+  it('fades a suite the legend filter leaves out, without lifting anything; a selected or focused one stays lit', () => {
+    const v = find(visuals(), '600')
+    const out = { ...v, filtered: true }
+    expect(suiteLook(out, false)).toMatchObject({ faded: true, ghost: false, lifted: false })
+    expect(lookKey(suiteLook(out, false))).toBe('expiring|none|none|solid|faded|flat')
+    expect(suiteLook({ ...out, selected: true }, false).faded).toBe(false)
+    expect(suiteLook(out, false, true).faded).toBe(false)
+    expect(overlayActive([out])).toBe(false)
+  })
+
+  it('a suite both ghosted and filtered is both: the material keeps the fainter of the two', () => {
+    const v = find(visuals({ minSf: 10_000 }), '600')
+    expect(suiteLook({ ...v, filtered: true }, true)).toMatchObject({ ghost: true, faded: true })
   })
 })
 

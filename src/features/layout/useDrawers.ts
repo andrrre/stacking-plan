@@ -11,6 +11,8 @@ import { loadLeftDrawer, saveLeftDrawer } from './leftDrawer'
 // current requirement and selection. Below 1100 px the drawers overlay the stage, so only one is open at a time:
 // the right one hides the left while it is open, and opening the left dismisses the right. There the left one
 // starts closed on a first visit, and a list found while the user types in it waits for focus to leave it.
+// Presentation mode shuts both: the left one until it ends (or its handle is pressed), the right one until
+// something new is selected; when it ends the left one is back as it was.
 
 /** `onFocusWithin` reports whether focus is inside the left drawer. */
 export type LeftDrawer = { open: boolean; count: number; onToggle: () => void; onFocusWithin: (inside: boolean) => void }
@@ -67,8 +69,22 @@ function useRightDrawer() {
   return { view, open, onClose, onYield }
 }
 
+/** True while presentation mode keeps the left drawer shut; entering the mode also dismisses the right one. */
+function usePresentHidden(onYield: () => void): [boolean, (hidden: boolean) => void] {
+  const { presenting } = useAppState().state
+  const [hidden, setHidden] = useState(presenting)
+  const [was, setWas] = useState(presenting)
+  if (was !== presenting) {
+    setWas(presenting)
+    setHidden(presenting)
+    if (presenting) onYield()
+  }
+  return [hidden, setHidden]
+}
+
 export function useDrawers(): { left: LeftDrawer; right: RightDrawer } {
   const right = useRightDrawer()
+  const [presentHidden, setPresentHidden] = usePresentHidden(right.onYield)
   const narrow = useNarrow()
   const count = useShortlist().length
   // A first visit (nothing stored) opens the left drawer only where it can push the stage.
@@ -79,13 +95,14 @@ export function useDrawers(): { left: LeftDrawer; right: RightDrawer } {
   // until focus leaves it, so the drawer being typed into is never taken away. A selection opens at once.
   const listWaits = narrow && preferOpen && focusInLeft && right.view.kind === 'list'
   const rightOpen = right.open && !listWaits
-  const open = preferOpen && !(narrow && rightOpen)
+  const open = preferOpen && !presentHidden && !(narrow && rightOpen)
   const { onYield } = right
   const onToggle = useCallback(() => {
+    setPresentHidden(false)
     setStored(!open)
     saveLeftDrawer(browserStorage(), !open)
     if (!open && narrow) onYield()
-  }, [open, narrow, onYield])
+  }, [open, narrow, onYield, setPresentHidden])
   return {
     left: { open, count, onToggle, onFocusWithin: setFocusInLeft },
     right: { view: right.view, open: rightOpen, onClose: right.onClose },

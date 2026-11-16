@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findFits } from './findFits'
+import { findFits, suiteCandidate } from './findFits'
 import { BUNDLED_BUILDINGS } from '../data'
 import { building, floor, lease, suite } from './testing/fixtures'
 import type { Candidate, Requirement } from './types'
@@ -146,5 +146,27 @@ describe('findFits rules (fixtures)', () => {
   it('returns nothing for an empty building or when nothing is big enough', () => {
     expect(findFits(building({ floors: [] }), req(), TODAY, TODAY)).toEqual([])
     expect(findFits(hero, req({ minSf: 60_000 }), TODAY, TODAY)).toEqual([])
+  })
+})
+
+describe('suiteCandidate (one suite added to the client summary from its details)', () => {
+  const on = (n: number) => hero.floors.find((f) => f.number === n) as (typeof hero.floors)[number]
+  const find = (n: number, num: string) => on(n).suites.find((s) => s.number === num) as (typeof hero.floors)[number]['suites'][number]
+
+  it('a vacant suite is a firm one-suite candidate, as the finder would give it', () => {
+    const c = suiteCandidate(on(5), find(5, '500'), TODAY, TODAY)
+    expect(c).toEqual(findFits(hero, req({ minSf: 10_250, maxSf: 10_250 }), TODAY, TODAY)[0])
+    expect(c).toMatchObject({ key: 'odt-500', suiteNumbers: ['500'], floor: 5, totalSf: 10_250, excessSf: 0, availability: 'now' })
+  })
+
+  it('a potential suite carries its no-renewal caveat', () => {
+    const c = suiteCandidate(on(6), find(6, '600'), JUL_2027, TODAY)
+    expect(c).toMatchObject({ availability: 'potential', caveats: [{ kind: 'assumesNoRenewal', tenant: 'Flamingo Row Media' }] })
+  })
+
+  it('occupied, committed and common space is not a candidate', () => {
+    expect(suiteCandidate(on(9), find(9, '900'), TODAY, TODAY)).toBeNull()
+    expect(suiteCandidate(on(10), find(10, '1010'), TODAY, TODAY)).toBeNull()
+    expect(suiteCandidate(on(1), find(1, '100'), TODAY, TODAY)).toBeNull()
   })
 })

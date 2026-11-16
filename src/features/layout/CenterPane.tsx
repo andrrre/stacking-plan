@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { activeRequirement } from '../../app/state/selectors'
 import { useAppState } from '../../app/state/useAppState'
-import { LegendSwitch } from '../risk/LegendSwitch'
 import { StackToolbar } from '../risk/StackToolbar'
+import { Legend } from '../stack/Legend'
 import { ScenarioBar } from '../scenario/ScenarioBar'
 import { DateSlider } from '../timeline/DateSlider'
 import { ViewSwitch } from '../three-d/ViewSwitch'
@@ -32,7 +32,7 @@ export function CenterPane() {
           {hint && <p className={styles.hint} data-testid="stage-hint" data-print="hide">Click a suite for details · enter a size to find space</p>}
         </div>
         <div className={styles.legendRow}>
-          <LegendSwitch />
+          <Legend />
         </div>
       </div>
       <DateSlider />

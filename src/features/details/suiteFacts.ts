@@ -1,6 +1,8 @@
+import type { FillKey } from '../../app/state/legendKeys'
+import { maximalRuns } from '../../domain/blocks'
 import { addDaysIso } from '../../domain/dates'
 import { formatMmYyyy } from '../../domain/format'
-import type { Building, ISODate, Lease, StatusResult, Suite } from '../../domain/types'
+import type { Building, Floor, ISODate, Lease, StatusResult, Suite } from '../../domain/types'
 
 export type Located = { suite: Suite; floor: number; neighbours: Suite[] }
 
@@ -49,4 +51,40 @@ export function statusText(st: StatusResult, today: ISODate): string {
 export function monthsText(n: number): string {
   if (n < 1) return '< 1 month'
   return n === 1 ? '1 month' : `${n} months`
+}
+
+/** The availability status a suite's chip names (overlays included), in either colour mode. */
+export function statusKey(st: StatusResult): FillKey {
+  return st.status === 'vacant' && st.overlay !== 'none' ? st.overlay : st.status
+}
+
+/** The line under the title: who is in the suite, or what it is available as. */
+export function tenantLine(suite: Suite, st: StatusResult): string {
+  switch (st.status) {
+    case 'common': return suite.name || 'Common area'
+    case 'occupied':
+    case 'expiring': return st.lease.tenant
+    case 'vacant':
+      if (st.overlay === 'potential') return `Potential availability · previously ${st.endedLease.tenant}`
+      if (st.overlay === 'committed') return `Committed to ${st.nextLease.tenant}`
+      return 'Available for lease'
+  }
+}
+
+/** The Lease cell: "Ends MM/YYYY", "Ended MM/YYYY", "Starts MM/YYYY", "Available now", "No end date" or "—". */
+export function leaseText(st: StatusResult, today: ISODate): string {
+  switch (st.status) {
+    case 'common': return '—'
+    case 'occupied':
+    case 'expiring': return st.lease.end === null ? 'No end date' : `Ends ${formatMmYyyy(st.lease.end)}`
+    case 'vacant':
+      if (st.overlay === 'potential') return `Ended ${formatMmYyyy(st.endedLease.end ?? st.availableFrom)}`
+      if (st.overlay === 'committed') return `Starts ${formatMmYyyy(st.nextLease.start)}`
+      return st.availableFrom > today ? `Available from ${formatMmYyyy(st.availableFrom)}` : 'Available now'
+  }
+}
+
+/** SF of the contiguous available run (the KPI's block logic) the suite belongs to on its floor; null when it is not available. */
+export function contiguousOnFloor(f: Floor, suiteId: string, D: ISODate, today: ISODate, includePotential: boolean): number | null {
+  return maximalRuns(f, D, today, includePotential).find((r) => r.suiteIds.includes(suiteId))?.totalSf ?? null
 }

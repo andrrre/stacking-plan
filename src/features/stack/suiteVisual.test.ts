@@ -20,6 +20,7 @@ function model(over: Partial<Input> = {}): StackModel {
     highlightIds: null,
     modifiedIds: new Set(),
     selectedSuiteId: null,
+    legend: null,
     ...over,
   })
 }
@@ -77,68 +78,23 @@ describe('buildStackModel: floors and widths', () => {
 })
 
 describe('buildStackModel: labels', () => {
-  it('primary reads Vacant, the tenant, Potential or Leased from MM/YYYY', () => {
+  it('line 2 is the tenant or the status in words, as of the date', () => {
     const m = model()
-    expect(visual(m, '500').label.primary).toBe('Vacant')
-    expect(visual(m, '600').label.primary).toBe('Flamingo Row Media')
-    expect(visual(m, '1010').label.primary).toBe('Leased from 03/2027')
-    expect(visual(model({ asOf: JUL }), '600').label.primary).toBe('Potential')
+    expect(visual(m, '500').label.line2).toBe('Vacant')
+    expect(visual(m, '900').label.line2).toBe('Coralstone Insurance')
+    expect(visual(m, '600').label.line2).toBe('Flamingo Row Media · ends 04/2027')
+    expect(visual(m, '1010').label.line2).toBe('Committed · starts 03/2027')
+    expect(visual(m, '100').label.line2).toBe('Lobby')
+    expect(visual(model({ asOf: JUL }), '600').label.line2).toBe('Potential · was Flamingo Row Media')
   })
 
-  it('a potential suite carries the reason as secondary text: 600 at 2027-07-01', () => {
-    const label = visual(model({ asOf: JUL }), '600').label
-    expect(label.primary).toBe('Potential')
-    expect(label.reason).toBe('Flamingo Row Media lease ends 04/2027')
+  it('lease risk mode adds the lease end to a leased suite', () => {
+    expect(visual(model({ mode: 'risk' }), '900').label.line2).toBe('Coralstone Insurance · ends 12/2029')
   })
 
-  it('only the potential overlay has a reason', () => {
-    const m = model()
-    for (const n of ['500', '600', '1010', '100', '400']) expect(visual(m, n).label.reason, n).toBeUndefined()
-  })
-
-  it('common suites show their name', () => {
-    expect(visual(model(), '100').label.primary).toBe('Lobby')
-    expect(visual(model(), '110').label.primary).toBe('Fitness centre')
-  })
-
-  it('carries the suite number and SF', () => {
-    const v = visual(model(), '500')
-    expect(v.label.number).toBe('500')
-    expect(v.label.sf).toBe('10,250 SF')
-  })
-
-  it('400 carries the vacating tag "Vacant from 06/2027"', () => {
-    expect(visual(model(), '400').label.tag).toBe('Vacant from 06/2027')
-    expect(visual(model(), '600').label.tag).toBeUndefined()
-  })
-
-  it('an open-ended lease carries the "No end date" tag', () => {
-    const v = visual(model(), '230')
-    expect(v.status.status).toBe('occupied')
-    expect(v.label.tag).toBe('No end date')
-    expect(v.label.end).toBeUndefined()
-  })
-
-  it('the expiring cue is a clock plus MM/YYYY', () => {
-    const m = model()
-    const cues = ['600', '400', '220', '1000'].map((n) => visual(m, n).label.cue)
-    expect(cues).toEqual([
-      { glyph: 'clock', text: '04/2027' },
-      { glyph: 'clock', text: '05/2027' },
-      { glyph: 'clock', text: '08/2027' },
-      { glyph: 'clock', text: '09/2027' },
-    ])
-  })
-
-  it('a committed suite carries the lock cue plus its start MM/YYYY; occupied and vacant suites carry none', () => {
-    const m = model()
-    expect(visual(m, '1010').label.cue).toEqual({ glyph: 'lock', text: '03/2027' })
-    expect(visual(m, '900').label.cue).toBeUndefined()
-    expect(visual(m, '500').label.cue).toBeUndefined()
-  })
-
-  it('an occupied suite with an end date shows the end as MM/YYYY', () => {
-    expect(visual(model(), '900').label.end).toBe('12/2029')
+  it('carries the suite number and SF, and marks small suites compact', () => {
+    expect(visual(model(), '500').label).toMatchObject({ number: '500', sf: '10,250 SF', compact: false })
+    expect(visual(model(), '720').label.compact).toBe(true)
   })
 })
 
@@ -281,6 +237,38 @@ describe('buildStackModel: matches, highlight, dimming', () => {
   })
 })
 
+describe('buildStackModel: legend filter', () => {
+  const all = (m: StackModel) => m.floors.flatMap((f) => f.suites)
+
+  it('nothing is filtered without a legend key', () => {
+    expect(all(model()).some((v) => v.filtered)).toBe(false)
+  })
+
+  it('filters every suite painted otherwise than the key', () => {
+    const m = model({ legend: 'vacant' })
+    const lit = all(m).filter((v) => !v.filtered).map((v) => v.suite.number).sort()
+    expect(lit).toEqual(['300', '310', '410', '500', '700', '710'])
+  })
+
+  it('follows the as-of date and the colour mode: the key is the fill', () => {
+    expect(visual(model({ legend: 'potential', asOf: JUL }), '600').filtered).toBe(false)
+    expect(visual(model({ legend: 'potential' }), '600').filtered).toBe(true)
+    expect(visual(model({ legend: 'risk-le6', mode: 'risk' }), '600').filtered).toBe(false)
+    expect(visual(model({ legend: 'risk-le6', mode: 'risk' }), '900').filtered).toBe(true)
+  })
+
+  it('is separate from search dimming: a suite may be dimmed, filtered, both or neither', () => {
+    const m = model({ legend: 'vacant', matches: MATCHES })
+    expect(visual(m, '500')).toMatchObject({ dimmed: false, filtered: false })
+    expect(visual(m, '300')).toMatchObject({ dimmed: true, filtered: false })
+    expect(visual(m, '600')).toMatchObject({ dimmed: true, filtered: true })
+  })
+
+  it('a selected suite stays selected when filtered', () => {
+    expect(visual(model({ legend: 'vacant', selectedSuiteId: 'odt-600' }), '600')).toMatchObject({ selected: true, filtered: true })
+  })
+})
+
 describe('buildStackModel: modified and selected', () => {
   it('marks modified suites', () => {
     const m = model({ modifiedIds: new Set(['odt-500']) })
@@ -299,22 +287,21 @@ describe('buildStackModel: edge cases', () => {
   it('a vacant suite whose vacating lease has ended reads plain Vacant, tagged "Vacant from MM/YYYY"', () => {
     const v = visual(model({ asOf: JUL }), '400')
     expect(v.status).toMatchObject({ status: 'vacant', overlay: 'none' })
-    expect(v.label.primary).toBe('Vacant')
-    expect(v.label.tag).toBe('Vacant from 06/2027')
+    expect(v.label.line2).toBe('Vacant')
     expect(v.fill).toBe('vacant')
     expect(v.ariaLabel).toBe('Suite 400, floor 4, vacant, 6,100 SF, vacant from 1 Jun 2027')
     expect(v.tooltip).toBe('Vacant\nSuite 400 · Floor 4 · 6,100 SF\nVacant from 06/2027')
   })
 
-  it('space vacant since before today carries no "Vacant from" tag', () => {
-    expect(visual(model({ asOf: JUL }), '500').label.tag).toBeUndefined()
-    expect(visual(model(), '700').label.tag).toBeUndefined()
+  it('space vacant since before today carries no "Vacant from" line', () => {
+    expect(visual(model({ asOf: JUL }), '500').tooltip).toBe('Vacant\nSuite 500 · Floor 5 · 10,250 SF')
+    expect(visual(model(), '700').tooltip).toBe('Vacant\nSuite 700 · Floor 7 · 4,300 SF')
   })
 
   it('a common suite without a name falls back to "Common area"', () => {
     const b = building({ floors: [floor({ number: 1, suites: [suite({ kind: 'common', number: '100' })] })] })
     const v = model({ building: b }).floors[0]?.suites[0]
-    expect(v?.label.primary).toBe('Common area')
+    expect(v?.label.line2).toBe('Common area')
     expect(v?.ariaLabel).toBe('Suite 100, floor 1, Common area, 1,000 SF, common area')
   })
 

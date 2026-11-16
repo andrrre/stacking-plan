@@ -12,8 +12,8 @@ export function suiteDataAttributes(v: SuiteVisual, joinsNext: boolean) {
     'data-risk': v.risk,
     'data-match-rank': v.matchRank ?? undefined,
     'data-dimmed': String(v.dimmed),
+    'data-filtered': String(v.filtered),
     'data-modified': String(v.modified),
     'data-joins-next': joinsNext ? 'true' : undefined,
-    'data-has-cue': v.label.cue ? 'true' : undefined,
   }
 }

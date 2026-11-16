@@ -1,9 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { StateProvider } from '../../app/state/StateProvider'
 import { initState } from '../../app/state/init'
+import { useAppState } from '../../app/state/useAppState'
 import type { AppState } from '../../app/state/types'
 import { SuiteDetails } from './SuiteDetails'
+
+/** What the details' actions change in app state, rendered for the assertions. */
+function Probe() {
+  const { state } = useAppState()
+  const selected = state.selection?.kind === 'suite' ? state.selection.suiteId : 'none'
+  return <output data-testid="probe">{`${selected}|${state.view}|${state.floor ?? 'none'}|${state.shortlist.length}`}</output>
+}
 
 const TODAY = '2026-11-15'
 
@@ -13,9 +22,12 @@ function renderDetails(number: string, over: Partial<AppState> = {}) {
   return render(
     <StateProvider initialState={state}>
       <SuiteDetails suiteId={`odt-${number}`} />
+      <Probe />
     </StateProvider>,
   )
 }
+
+const cell = (id: string) => screen.getByTestId(id).textContent
 
 describe('SuiteDetails', () => {
   it('600: tenant, size, rent, end date, status and months remaining', () => {
@@ -100,5 +112,75 @@ describe('SuiteDetails', () => {
       </StateProvider>,
     )
     expect(container).toBeEmptyDOMElement()
+  })
+
+  describe('the handoff layout', () => {
+    it('vacant 700: chip, "Available for lease", Floor / Size / Lease / Contiguous on floor', () => {
+      renderDetails('700')
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Suite 700')
+      expect(cell('suite-chip')).toBe('Vacant')
+      expect(cell('suite-tenant')).toBe('Available for lease')
+      expect([cell('fact-floor'), cell('fact-size'), cell('fact-lease'), cell('fact-contiguous')]).toEqual(['7', '4,300 SF', 'Available now', '10,500 SF'])
+    })
+
+    it('expiring 600: tenant, "Ends 04/2027", no contiguous space', () => {
+      renderDetails('600')
+      expect(cell('suite-chip')).toBe('Expiring ≤ 12 mo')
+      expect(cell('suite-tenant')).toBe('Flamingo Row Media')
+      expect(cell('fact-lease')).toBe('Ends 04/2027')
+      expect(cell('fact-contiguous')).toBe('—')
+    })
+
+    it('potential 600 in July 2027: "previously" the tenant, "Ended 04/2027"', () => {
+      renderDetails('600', { asOf: '2027-07-01' })
+      expect(cell('suite-chip')).toBe('Potential')
+      expect(cell('suite-tenant')).toBe('Potential availability · previously Flamingo Row Media')
+      expect(cell('fact-lease')).toBe('Ended 04/2027')
+      expect(cell('fact-contiguous')).toBe('12,400 SF')
+    })
+
+    it('committed 1010: "Starts 03/2027"', () => {
+      renderDetails('1010')
+      expect(cell('suite-chip')).toBe('Committed')
+      expect(cell('fact-lease')).toBe('Starts 03/2027')
+    })
+  })
+
+  describe('Add to client summary', () => {
+    it('adds an available suite to the shortlist, then offers to remove it', async () => {
+      renderDetails('700')
+      const button = screen.getByTestId('add-to-summary')
+      expect(button).toHaveTextContent('Add to client summary')
+      await userEvent.click(button)
+      expect(screen.getByTestId('probe')).toHaveTextContent(/\|1$/)
+      expect(button).toHaveTextContent('Remove from client summary')
+      expect(button).toHaveAttribute('data-saved', 'true')
+      await userEvent.click(button)
+      expect(screen.getByTestId('probe')).toHaveTextContent(/\|0$/)
+    })
+
+    it('is unavailable, with the reason, for space that is not available', () => {
+      renderDetails('900')
+      expect(screen.getByTestId('add-to-summary')).toBeDisabled()
+      expect(screen.getByTestId('add-to-summary')).toHaveAttribute('title', 'Only available space can go in the client summary')
+    })
+  })
+
+  it('Floor plan opens the 3D floor view on the suite\'s floor, from the 2D stack too', async () => {
+    renderDetails('700', { view: 'stack' })
+    await userEvent.click(screen.getByTestId('open-floor-plan'))
+    expect(screen.getByTestId('probe')).toHaveTextContent('odt-700|3d|7|0')
+  })
+
+  it('"Floor N at a glance" lists the floor\'s suites, marks the current one and selects on click', async () => {
+    renderDetails('700')
+    const glance = screen.getByTestId('floor-glance')
+    expect(glance).toHaveTextContent('Floor 7 at a glance')
+    const rows = within(glance).getAllByRole('button')
+    expect(rows.map((r) => r.textContent)).toEqual(['700Vacant4,300 SF', '710Vacant6,200 SF', '720Halcyon Tide Realty1,900 SF'])
+    expect(rows[0]).toHaveAttribute('aria-current', 'true')
+    expect(rows[1]).not.toHaveAttribute('aria-current')
+    await userEvent.click(rows[2] as HTMLElement)
+    expect(screen.getByTestId('probe')).toHaveTextContent(/^odt-720\|/)
   })
 })

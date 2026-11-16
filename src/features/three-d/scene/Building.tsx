@@ -11,7 +11,8 @@ import type { SuiteMaterials } from './suiteMaterials'
 
 // The meshes: suite boxes with crisp edges, floor slabs, roof caps, a base plinth and a soft contact
 // shadow. Ghosted suites draw no edges (they would show through the translucent boxes). Geometries are
-// shared unit shapes scaled per object; everything created here is disposed here.
+// shared unit shapes scaled per object; everything created here is disposed here. Suites the legend filter
+// fades draw no edges either.
 
 function useLineMaterials(p: Palette) {
   const mats = useMemo(() => ({
@@ -39,7 +40,7 @@ export function Suites({ layout, looks, palette, mats, shapes, group, animateAt 
     const at = animateAt()
     for (const b of layout.suites) {
       const look = looks.get(b.id)
-      if (look) mats.apply(b.id, lookColours(look, palette), look.ghost, b, at, lookKey(look))
+      if (look) mats.apply(b.id, lookColours(look, palette), look, b, at, lookKey(look))
     }
     mats.retain(new Set(layout.suites.map((b) => b.id)))
     invalidate()
@@ -53,7 +54,7 @@ export function Suites({ layout, looks, palette, mats, shapes, group, animateAt 
       </group>
       {layout.suites.map((b) => (
         <lineSegments
-          key={b.id} dispose={null} geometry={shapes.edges} material={lines.solid} visible={!looks.get(b.id)?.ghost}
+          key={b.id} dispose={null} geometry={shapes.edges} material={lines.solid} visible={!looks.get(b.id)?.ghost && !looks.get(b.id)?.faded}
           position={[b.x, b.y, b.z]} scale={[b.w, b.h, b.d]}
         />
       ))}

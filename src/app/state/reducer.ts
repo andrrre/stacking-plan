@@ -4,7 +4,8 @@ import { MAX_SHORTLIST } from '../../domain/constants'
 import type { Building, ParsedQuery, ShortlistEntry } from '../../domain/types'
 import { selectBuilding } from './selectBuilding'
 import { selectBaseBuilding } from './selectors'
-import type { Action, AppState, RequirementDraft, Selection } from './types'
+import { legendKeys, type FillKey } from './legendKeys'
+import type { Action, AppState, ColourMode, RequirementDraft, Selection } from './types'
 
 // Every case returns a new object; inputs are never mutated.
 
@@ -18,14 +19,32 @@ function applyParsed(req: RequirementDraft, parsed: ParsedQuery): RequirementDra
   }
 }
 
+/** An answered ask replaces the requirement, moves to its move-in date (if any) and clears the selection. */
+function applyAsk(state: AppState, parsed: ParsedQuery): AppState {
+  const asOf = parsed.moveInBy === undefined ? state.asOf : snapToSlider(parsed.moveInBy, state.today)
+  return { ...state, req: applyParsed(state.req, parsed), asOf, selection: null }
+}
+
 function addEntry(list: ShortlistEntry[], entry: ShortlistEntry): ShortlistEntry[] {
   if (list.filter((e) => e.buildingId === entry.buildingId).length >= MAX_SHORTLIST || list.some((e) => e.id === entry.id)) return list
   return [...list, entry]
 }
 
-/** Switching building clears selection, KPI highlight and the scenario (A8), and leaves floor view. */
+/** Switching building clears selection, KPI highlight, the scenario (A8) and the legend filter, and leaves floor view. */
 function switchBuilding(state: AppState, buildingId: string): AppState {
-  return { ...state, buildingId, selection: null, highlight: null, changes: [], floor: null }
+  return { ...state, buildingId, selection: null, highlight: null, changes: [], floor: null, legend: null }
+}
+
+/** The pressed key toggles off; a key the current legend does not show is ignored. */
+function toggleLegend(state: AppState, key: FillKey): AppState {
+  if (!legendKeys(state.mode).includes(key)) return state
+  return { ...state, legend: state.legend === key ? null : key }
+}
+
+/** A legend filter survives a colour mode change only if the new legend has the same pill. */
+function setMode(state: AppState, mode: ColourMode): AppState {
+  const legend = state.legend !== null && legendKeys(mode).includes(state.legend) ? state.legend : null
+  return { ...state, mode, legend }
 }
 
 /** Floor view follows the selection: a suite (or a match's first suite) on another floor moves it there. */
@@ -66,7 +85,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'asOf/set':
       return { ...state, asOf: snapToSlider(action.asOf, state.today) }
     case 'mode/set':
-      return { ...state, mode: action.mode }
+      return setMode(state, action.mode)
     case 'view/set':
       return { ...state, view: action.view }
     case 'req/set':
@@ -78,12 +97,7 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'req/clear':
       return { ...state, req: { ...state.req, minSf: null, maxSf: null, maxRentPsf: null } }
     case 'ask/apply':
-      return {
-        ...state,
-        req: applyParsed(state.req, action.parsed),
-        asOf: action.parsed.moveInBy === undefined ? state.asOf : snapToSlider(action.parsed.moveInBy, state.today),
-        selection: null,
-      }
+      return applyAsk(state, action.parsed)
     case 'noFit/jump':
       return { ...state, asOf: snapToSlider(action.asOf, state.today), req: { ...state.req, includePotential: true } }
     case 'select':
@@ -106,5 +120,9 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, overlay: action.overlay }
     case 'floor/set':
       return { ...state, floor: knownFloor(state, action.floor) }
+    case 'legend/toggle':
+      return toggleLegend(state, action.key)
+    case 'present/set':
+      return { ...state, presenting: action.on }
   }
 }

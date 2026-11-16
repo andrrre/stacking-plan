@@ -29,6 +29,8 @@ function makeState(overrides: Partial<AppState> = {}): AppState {
     importedBuildings: [],
     overlay: 'none',
     floor: null,
+    legend: null,
+    presenting: false,
     ...overrides,
   })
 }
@@ -288,5 +290,50 @@ describe('reducer', () => {
 
   it('overlay/set', () => {
     expect(run(makeState(), { type: 'overlay/set', overlay: 'summary' }).overlay).toBe('summary')
+  })
+
+  describe('legend/toggle', () => {
+    it('sets a key, switches to another and clears on the same key', () => {
+      const on = run(makeState(), { type: 'legend/toggle', key: 'vacant' })
+      expect(on.legend).toBe('vacant')
+      expect(run(on, { type: 'legend/toggle', key: 'expiring' }).legend).toBe('expiring')
+      expect(run(on, { type: 'legend/toggle', key: 'vacant' }).legend).toBeNull()
+    })
+
+    it('a key the colour mode does not show changes nothing', () => {
+      const s = makeState()
+      expect(reducer(s, { type: 'legend/toggle', key: 'risk-le6' })).toBe(s)
+      expect(run(makeState({ mode: 'risk' }), { type: 'legend/toggle', key: 'risk-le6' }).legend).toBe('risk-le6')
+    })
+
+    it('keeps the selection: a filtered-out suite stays selected', () => {
+      const s = makeState({ selection: { kind: 'suite', suiteId: 'odt-600' } })
+      expect(run(s, { type: 'legend/toggle', key: 'vacant' }).selection).toEqual({ kind: 'suite', suiteId: 'odt-600' })
+    })
+
+    it('switching, importing or removing the shown building clears it', () => {
+      expect(run(makeState({ legend: 'vacant' }), { type: 'building/set', buildingId: 'pbp' }).legend).toBeNull()
+      const imported = building({ id: 'csv-x' })
+      expect(run(makeState({ legend: 'vacant' }), { type: 'building/import', buildings: [imported] }).legend).toBeNull()
+    })
+
+    it('a colour mode change keeps a key both legends have and clears one the new legend lacks', () => {
+      expect(run(makeState({ legend: 'vacant' }), { type: 'mode/set', mode: 'risk' }).legend).toBe('vacant')
+      expect(run(makeState({ legend: 'expiring' }), { type: 'mode/set', mode: 'risk' }).legend).toBeNull()
+      expect(run(makeState({ mode: 'risk', legend: 'risk-le12' }), { type: 'mode/set', mode: 'availability' }).legend).toBeNull()
+    })
+
+    it('other actions keep it', () => {
+      const s = makeState({ legend: 'vacant' })
+      expect(run(s, { type: 'asOf/set', asOf: '2027-05-01' }).legend).toBe('vacant')
+      expect(run(s, { type: 'req/set', patch: { minSf: 9000 } }).legend).toBe('vacant')
+      expect(run(s, { type: 'floor/set', floor: 5 }).legend).toBe('vacant')
+    })
+  })
+
+  it('present/set turns presentation mode on and off', () => {
+    const on = run(makeState(), { type: 'present/set', on: true })
+    expect(on.presenting).toBe(true)
+    expect(run(on, { type: 'present/set', on: false }).presenting).toBe(false)
   })
 })

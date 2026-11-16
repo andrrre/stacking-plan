@@ -5,6 +5,7 @@ import { BuildingSwitcher } from '../building/BuildingSwitcher'
 import { ImportCsv } from '../import/ImportCsv'
 import { SummaryButton } from '../shortlist/SummaryButton'
 import { ThemeToggle } from '../theme/ThemeToggle'
+import { PresentButton } from './PresentButton'
 import styles from './Header.module.css'
 
 function BrandMark() {
@@ -35,6 +36,7 @@ export function Header() {
       <div className={styles.actions} data-print="hide">
         <ImportCsv buttonClassName={styles.button} />
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
+        <PresentButton className={styles.button} />
         <SummaryButton className={styles.primary} />
         <ThemeToggle className={styles.iconButton} />
       </div>

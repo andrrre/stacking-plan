@@ -49,7 +49,7 @@
   --pat-hatch:repeating-linear-gradient(135deg,var(--c-vacant) 0 7px,var(--c-vacant-2) 7px 14px);
   --edge-potential:1.5px solid var(--c-potential-edge); --edge-committed:1.5px solid var(--c-committed-edge);
   --match-ring:0 0 0 2px var(--c-surface),0 0 0 4px var(--c-match);
-  --dim-opacity:.45; --dim-filter:grayscale(1);
+  --dim-opacity:.45; --dim-filter:grayscale(1); --filter-opacity:.28 /*suites the legend filter leaves out (inactive: exempt from contrast)*/;
   /* ---------- type ---------- */
   --font-sans:'Inter Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-display:'Newsreader Variable',Georgia,'Times New Roman',serif;
@@ -61,7 +61,7 @@
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
   --r-sm:3px; --r-md:6px; --r-lg:10px; --r-pill:999px;
   --shadow-1:0 1px 2px var(--c-shadow),0 1px 3px var(--c-shadow);
-  --header-h:60px; --kpi-h:64px; --rail-w:272px; --panel-w:336px;
+  --header-h:60px; --kpi-h:64px; --rail-w:272px; --panel-w:360px;
   --floor-h:34px; --floor-gap:2px; --suite-gap:2px; --floor-label-w:32px; --suite-min-w:28px;
   --dur-fast:120ms; --dur-status:180ms; --ease:cubic-bezier(.2,0,0,1);
 }

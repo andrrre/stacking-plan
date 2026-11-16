@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { buildStackModel, type SuiteVisual } from '../stack/suiteVisual'
 import {
-  LINE_H, chooseParts, convexOverlap, cueWidth, hideCollisions, labelContent, labelPriority, labelSize, mapPoint, rectToQuad,
-  textWidth, toMatrix3d, turnLabel, turnQuad, type LabelContent, type Pt2,
+  LINE_H, MIN_FACE_H, ONE_LINE_H, TWO_LINES_H, chooseParts, convexOverlap, fitLabel, hideCollisions, innerRect, labelContent, labelPriority, labelSize, line1Text, textWidth, turnLabel,
+  uprightBox,
+  type LabelContent, type Pt2,
 } from './labels3d'
 
 const TODAY = '2026-11-15'
@@ -17,86 +18,102 @@ function visuals(asOf = TODAY): SuiteVisual[] {
 const content = (n: string, asOf = TODAY) => labelContent(visuals(asOf).find((v) => v.suite.number === n) as SuiteVisual)
 
 describe('labelContent', () => {
-  it('leads with the status cue: VACANT, the expiring clock date, the committed lock date, Potential', () => {
-    expect(content('500')).toEqual({ cue: { kind: 'word', text: 'VACANT' }, number: '500', tenant: null, sf: '10,250 SF' })
-    expect(content('600')).toMatchObject({ cue: { kind: 'clock', text: '04/2027' }, number: '600', tenant: 'Flamingo Row Media' })
-    expect(content('1010')).toMatchObject({ cue: { kind: 'lock', text: '03/2027' }, tenant: null })
-    expect(content('600', '2027-07-01')).toMatchObject({ cue: { kind: 'word', text: 'Potential' }, tenant: 'Flamingo Row Media lease ends 04/2027' })
+  it('two lines: number and SF, then the tenant or the status in words', () => {
+    expect(content('700')).toEqual({ number: '700', sf: '4,300 SF', text: 'Vacant', compact: false, notable: true })
+    expect(content('600')).toMatchObject({ text: 'Flamingo Row Media · ends 04/2027', notable: true })
+    expect(content('1010')).toMatchObject({ text: 'Committed · starts 03/2027', notable: true })
+    expect(content('600', '2027-07-01')).toMatchObject({ text: 'Potential · was Flamingo Row Media', notable: true })
+    expect(content('900')).toEqual({ number: '900', sf: '12,400 SF', text: 'Coralstone Insurance', compact: false, notable: false })
+    expect(content('100')).toMatchObject({ text: 'Lobby', notable: false })
   })
 
-  it('has no cue for occupied or common space, just number, tenant (or area name) and SF', () => {
-    expect(content('900')).toEqual({ cue: null, number: '900', tenant: 'Coralstone Insurance', sf: '12,400 SF' })
-    expect(content('100')).toMatchObject({ cue: null, tenant: 'Lobby' })
+  it('marks suites under 2,500 SF compact', () => {
+    expect(content('720').compact).toBe(true)
+    expect(content('330').compact).toBe(true)
+    expect(content('220').compact).toBe(false)
   })
 
-  it('every vacant and expiring suite of the hero carries its cue', () => {
-    const vs = visuals()
-    const cue = (n: string) => labelContent(vs.find((v) => v.suite.number === n) as SuiteVisual).cue
-    for (const n of ['300', '310', '410', '500', '700', '710']) expect(cue(n)?.text, n).toBe('VACANT')
-    for (const n of ['600', '400', '220', '1000']) expect(cue(n)?.kind, n).toBe('clock')
+  it('line 1 reads "number · SF"', () => {
+    expect(line1Text(content('700'))).toBe('700 · 4,300 SF')
   })
 })
 
 describe('turnLabel (floor view, narrow but deep top faces)', () => {
-  const tenanted: LabelContent = { cue: null, number: '320', tenant: 'Breakwater Consulting', sf: '2,800 SF' }
+  const tenanted: LabelContent = { number: '320', sf: '2,800 SF', text: 'Breakwater Consulting', compact: false, notable: false }
 
   it('turns the label to run along the depth when that shows more of it', () => {
     expect(turnLabel(tenanted, { w: 55, h: 230 }, false)).toBe(true)
-    expect(turnLabel(content('330'), { w: 40, h: 230 }, false)).toBe(true)
+    expect(turnLabel({ ...tenanted, compact: true }, { w: 22, h: 230 }, false)).toBe(true) // the number alone fits only turned
   })
 
   it('keeps it across the face when the face is wide enough, or when turning gains nothing', () => {
     expect(turnLabel(content('500'), { w: 500, h: 230 }, false)).toBe(false)
     expect(turnLabel(tenanted, { w: 260, h: 230 }, false)).toBe(false)
     expect(turnLabel(tenanted, { w: 55, h: 50 }, false)).toBe(false) // shallow: no room the other way either
-  })
-
-  it('reads the turned face from its front-left corner towards the back', () => {
-    const tl = { x: 0, y: 0 }, tr = { x: 10, y: 0 }, br = { x: 10, y: 50 }, bl = { x: 0, y: 50 }
-    expect(turnQuad([tl, tr, br, bl])).toEqual([bl, tl, tr, br])
+    expect(turnLabel({ ...tenanted, compact: true }, { w: 60, h: 230 }, false)).toBe(false)
   })
 })
 
 describe('chooseParts', () => {
-  const c: LabelContent = { cue: { kind: 'clock', text: '04/2027' }, number: '600', tenant: 'Flamingo Row Media', sf: '12,400 SF' }
+  const c: LabelContent = { number: '600', sf: '12,400 SF', text: 'Flamingo Row Media · ends 04/2027', compact: false, notable: true }
 
-  it('shows everything on a wide, tall face, the tenant on its own line', () => {
-    expect(chooseParts(c, { w: 400, h: 40 }, false)).toEqual({ cue: true, number: true, tenant: true, sf: true, lines: 2 })
+  it('shows both lines on a wide, tall face', () => {
+    expect(chooseParts(c, { w: 400, h: 40 }, false)).toEqual({ number: true, sf: true, tenant: true, lines: 2 })
   })
 
-  it('drops parts from the end of the priority list as the face narrows: SF, then tenant, then number, then cue', () => {
-    const at = (w: number) => chooseParts(c, { w, h: 20 }, false)
-    expect(at(400)).toEqual({ cue: true, number: true, tenant: true, sf: true, lines: 1 })
-    expect(at(170)).toMatchObject({ cue: true, number: true, tenant: true, sf: false })
-    expect(at(100)).toMatchObject({ cue: true, number: true, tenant: false, sf: false })
-    expect(at(70)).toMatchObject({ cue: true, number: false, tenant: false })
-    expect(at(12)).toEqual({ cue: false, number: false, tenant: false, sf: false, lines: 0 })
+  it('drops line 2 first, then the SF, and keeps the number to the last', () => {
+    expect(chooseParts(c, { w: 400, h: 20 }, false)).toEqual({ number: true, sf: true, tenant: false, lines: 1 }) // one line tall
+    const at = (w: number) => chooseParts(c, { w, h: 40 }, false)
+    expect(at(textWidth(line1Text(c)) + 10)).toMatchObject({ sf: true, tenant: true })
+    expect(at(textWidth(line1Text(c)) + 9)).toEqual({ number: true, sf: false, tenant: false, lines: 1 }) // no line 2 without the SF
+    expect(at(textWidth('600') + 10)).toMatchObject({ number: true, sf: false })
+    expect(at(12)).toEqual({ number: false, sf: false, tenant: false, lines: 0 })
   })
 
-  it('a label without a cue shows its number first, or nothing', () => {
-    const plain: LabelContent = { cue: null, number: '330', tenant: 'Palmhaven', sf: '800 SF' }
-    expect(chooseParts(plain, { w: 34, h: 20 }, false)).toMatchObject({ number: true, tenant: false })
-    expect(chooseParts(plain, { w: 20, h: 20 }, false).lines).toBe(0)
+  it('a compact suite shows its number alone, however much room there is', () => {
+    expect(chooseParts({ ...c, compact: true }, { w: 400, h: 40 }, false)).toEqual({ number: true, sf: false, tenant: false, lines: 1 })
+  })
+
+  it('shows line 2 truncated when at least a useful stub of it fits', () => {
+    const long = { ...c, text: 'A'.repeat(60) }
+    expect(chooseParts(long, { w: 120, h: 40 }, false).tenant).toBe(true)
   })
 
   it('shows nothing on a face too short for a line', () => {
-    expect(chooseParts(c, { w: 400, h: LINE_H - 3 }, false).lines).toBe(0)
+    expect(chooseParts(c, { w: 400, h: ONE_LINE_H - 1 }, false).lines).toBe(0)
+    expect(chooseParts(c, { w: 400, h: ONE_LINE_H }, false).lines).toBe(1)
   })
 
-  it('a forced label (matched, selected, hovered, focused) always keeps cue and number', () => {
-    expect(chooseParts(c, { w: 10, h: 6 }, true)).toEqual({ cue: true, number: true, tenant: false, sf: false, lines: 1 })
+  it('a forced label (matched, selected, hovered, focused) always keeps its number', () => {
+    expect(chooseParts(c, { w: 10, h: 6 }, true)).toEqual({ number: true, sf: false, tenant: false, lines: 1 })
   })
 
-  it('labelSize grows with the parts shown and never shrinks below the visible head', () => {
+  it('labelSize grows with the parts shown and never shrinks below the number', () => {
     const all = chooseParts(c, { w: 400, h: 40 }, false)
     const s = labelSize(c, all, 400)
-    expect(s.h).toBe(2 * LINE_H + 2)
-    expect(s.w).toBeGreaterThan(cueWidth(c.cue) + textWidth('600'))
-    expect(labelSize(c, { cue: false, number: false, tenant: false, sf: false, lines: 0 }, 100)).toEqual({ w: 0, h: 0 })
-    const oneLine = chooseParts(c, { w: 170, h: 20 }, false)
-    expect(labelSize(c, oneLine, 170).w).toBeLessThanOrEqual(170) // a truncated tenant stays on its face
+    expect(s.h).toBe(TWO_LINES_H)
+    expect(labelSize(c, { number: true, sf: true, tenant: false, lines: 1 }, 400).h).toBe(LINE_H)
+    expect(s.w).toBe(textWidth(c.text) + 10)
+    expect(labelSize(c, { number: false, sf: false, tenant: false, lines: 0 }, 100)).toEqual({ w: 0, h: 0 })
+    expect(labelSize(c, all, 150).w).toBeLessThanOrEqual(150) // a truncated line 2 stays on its face
     const forced = chooseParts(c, { w: 10, h: 20 }, true)
-    expect(labelSize(c, forced, 10).w).toBeGreaterThan(cueWidth(c.cue) + textWidth('600')) // cue and number overflow
+    expect(labelSize(c, forced, 10).w).toBe(textWidth('600') + 10) // the number overflows
+  })
+})
+
+describe('innerRect (labels sit upright inside the projected face)', () => {
+  it('is the face itself when the face is an upright rectangle', () => {
+    expect(innerRect([{ x: 5, y: 5 }, { x: 105, y: 5 }, { x: 105, y: 35 }, { x: 5, y: 35 }])).toEqual({ x: 5, y: 5, w: 100, h: 30 })
+  })
+
+  it('stays inside a face seen in perspective: right of both left corners, below both top corners', () => {
+    const r = innerRect([{ x: 10, y: 20 }, { x: 210, y: 26 }, { x: 205, y: 60 }, { x: 12, y: 52 }])
+    expect(r).toEqual({ x: 12, y: 26, w: 193, h: 26 })
+  })
+
+  it('a face too slanted for any upright box gives an empty one at its centre', () => {
+    const r = innerRect([{ x: 0, y: 0 }, { x: 100, y: 60 }, { x: 80, y: 90 }, { x: -20, y: 30 }])
+    expect(r).toEqual({ x: 0, y: 45, w: 80, h: 0 })
   })
 })
 
@@ -121,31 +138,50 @@ describe('collisions', () => {
     expect([...hidden].sort()).toEqual(['a', 'd'])
   })
 
-  it('labelPriority: forced, then status cue, then plain, then ghost', () => {
-    const cue: LabelContent = { cue: { kind: 'word', text: 'VACANT' }, number: '1', tenant: null, sf: '' }
-    const plain: LabelContent = { ...cue, cue: null }
+  it('labelPriority: forced, then notable status, then plain, then dimmed', () => {
+    const cue: LabelContent = { number: '1', sf: '1,000 SF', text: 'Vacant', compact: false, notable: true }
+    const plain: LabelContent = { ...cue, notable: false }
     expect([labelPriority(plain, true, true), labelPriority(cue, false, false), labelPriority(plain, false, false), labelPriority(cue, false, true)])
       .toEqual([4, 3, 2, 1])
   })
 })
 
-describe('rectToQuad', () => {
-  it('maps the box corners onto the quad, perspective included', () => {
-    const q: [Pt2, Pt2, Pt2, Pt2] = [{ x: 10, y: 20 }, { x: 210, y: 40 }, { x: 205, y: 80 }, { x: 12, y: 52 }]
-    const m = rectToQuad(q, 100, 30)
-    const close = (p: Pt2, e: Pt2) => {
-      expect(p.x).toBeCloseTo(e.x, 6)
-      expect(p.y).toBeCloseTo(e.y, 6)
-    }
-    close(mapPoint(m, 0, 0), q[0])
-    close(mapPoint(m, 100, 0), q[1])
-    close(mapPoint(m, 100, 30), q[2])
-    close(mapPoint(m, 0, 30), q[3])
-    expect(toMatrix3d(m)).toMatch(/^matrix3d\((-?[\d.e-]+,){15}-?[\d.e-]+\)$/)
+describe('uprightBox and fitLabel (a face seen at an angle slopes on screen)', () => {
+  // A long facade face 22px thick whose edges fall 20px over its 400px width.
+  const sloped: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 120 }, { x: 400, y: 142 }, { x: 0, y: 122 }]
+  const c: LabelContent = { number: '700', sf: '4,300 SF', text: 'Vacant', compact: false, notable: true }
+
+  it('the inner bounds of a sloped face are too thin for a line', () => {
+    expect(innerRect(sloped).h).toBe(2)
   })
 
-  it('is a plain scale-and-translate for an axis-aligned rectangle', () => {
-    const m = rectToQuad([{ x: 5, y: 5 }, { x: 105, y: 5 }, { x: 105, y: 25 }, { x: 5, y: 25 }], 50, 10)
-    expect(toMatrix3d(m)).toBe('matrix3d(2,0,0,0,0,2,0,0,0,0,1,0,5,5,0,1)')
+  it('finds the widest box of a given height from the face\'s left side', () => {
+    const box = uprightBox(sloped, 14) as { x: number; y: number; w: number; h: number }
+    expect(box.x).toBe(0)
+    expect(box.h).toBeGreaterThanOrEqual(14)
+    expect(box.w).toBeCloseTo(160, 0) // 22px thick, 14 needed: 8px of fall = 160px
+    expect(uprightBox(sloped, 23)).toBeNull()
+  })
+
+  it('takes the whole face when it is upright and tall enough', () => {
+    const upright: [Pt2, Pt2, Pt2, Pt2] = [{ x: 5, y: 5 }, { x: 105, y: 5 }, { x: 105, y: 35 }, { x: 5, y: 35 }]
+    expect(uprightBox(upright, 14)).toEqual({ x: 5, y: 5, w: 100, h: 30 })
+  })
+
+  it('fitLabel shows line 1 upright on the sloped face', () => {
+    const fit = fitLabel(c, sloped, false)
+    expect(fit.parts).toEqual({ number: true, sf: true, tenant: false, lines: 1 })
+    expect(fit.box.h).toBeGreaterThanOrEqual(ONE_LINE_H)
+  })
+
+  it('fitLabel leaves a face thinner than MIN_FACE_H unlabelled unless forced', () => {
+    const thin: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 100 }, { x: 400, y: 100 + MIN_FACE_H - 1 }, { x: 0, y: 100 + MIN_FACE_H - 1 }]
+    expect(fitLabel(c, thin, false).parts.lines).toBe(0)
+    expect(fitLabel(c, thin, true).parts).toMatchObject({ number: true, lines: 1 })
+  })
+
+  it('fitLabel prefers two lines where the face is tall enough for them', () => {
+    const tall: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 110 }, { x: 400, y: 150 }, { x: 0, y: 140 }]
+    expect(fitLabel(c, tall, false).parts).toEqual({ number: true, sf: true, tenant: true, lines: 2 })
   })
 })

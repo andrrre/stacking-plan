@@ -29,6 +29,7 @@ function useDerived(model: SceneProps['model'], focusedId: string | null) {
       contents: new Map(all.map((v) => [v.suite.id, labelContent(v)])),
       looks,
       ghosts: new Set([...looks].flatMap(([id, l]) => (l.ghost ? [id] : []))),
+      faded: new Set([...looks].flatMap(([id, l]) => (l.faded ? [id] : []))),
     }
   }, [model, focusedId])
 }
@@ -104,7 +105,7 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
           city={city ? { ...town, running, dim } : null}
         />
       </Canvas>
-      <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />
+      <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} faded={derived.faded} refs={refs} />
     </div>
   )
 }

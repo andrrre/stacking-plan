@@ -1,7 +1,6 @@
 import type { LabelContent } from '../labels3d'
 import type { Layout3D } from '../layout3d'
 import type { SuiteVisual } from '../../stack/suiteVisual'
-import { ClockGlyph, LockGlyph } from '../../stack/SuiteCell'
 import { bind, register, type OverlayRefs } from './overlayRefs'
 import styles from '../three-d.module.css'
 
@@ -13,10 +12,14 @@ type Props = {
   visuals: ReadonlyMap<string, SuiteVisual>
   contents: ReadonlyMap<string, LabelContent>
   ghosts: ReadonlySet<string>
+  faded: ReadonlySet<string>
   refs: OverlayRefs
 }
 
-function Label({ v, c, ghost, refs }: { v: SuiteVisual; c: LabelContent; ghost: boolean; refs: OverlayRefs }) {
+type LabelProps = { v: SuiteVisual; c: LabelContent; ghost: boolean; faded: boolean; refs: OverlayRefs }
+
+/** Two lines: "number · SF" over the tenant or status; overlaySync says which parts show (data-parts). */
+function Label({ v, c, ghost, faded, refs }: LabelProps) {
   return (
     <div
       ref={register(refs.labels, v.suite.id)}
@@ -24,18 +27,14 @@ function Label({ v, c, ghost, refs }: { v: SuiteVisual; c: LabelContent; ghost: 
       data-testid={`label3d-${v.suite.id}`}
       data-fill={v.fill}
       data-ghost={String(ghost)}
+      data-filtered={String(faded)}
       data-hidden="true"
     >
-      {c.cue && (
-        <span className={styles.lCue} data-kind={c.cue.kind}>
-          {c.cue.kind === 'clock' && <ClockGlyph />}
-          {c.cue.kind === 'lock' && <LockGlyph />}
-          {c.cue.text}
-        </span>
-      )}
-      <span className={styles.lNumber}>{c.number}</span>
-      {c.tenant && <span className={styles.lTenant}>{c.tenant}</span>}
-      <span className={styles.lSf}>{c.sf}</span>
+      <span className={styles.lLine1}>
+        <span className={styles.lNumber}>{c.number}</span>
+        <span className={styles.lSf}> · {c.sf}</span>
+      </span>
+      <span className={styles.lTenant}>{c.text}</span>
       {v.modified && <span className={styles.modifiedDot} />}
     </div>
   )
@@ -55,7 +54,7 @@ function Rings({ layout, refs }: Pick<Props, 'layout' | 'refs'>) {
   )
 }
 
-export function Overlay({ layout, visuals, contents, ghosts, refs }: Props) {
+export function Overlay({ layout, visuals, contents, ghosts, faded, refs }: Props) {
   return (
     <div className={styles.overlay} aria-hidden="true">
       <Rings layout={layout} refs={refs} />
@@ -67,7 +66,7 @@ export function Overlay({ layout, visuals, contents, ghosts, refs }: Props) {
       {layout.suites.map((b) => {
         const v = visuals.get(b.id)
         const c = contents.get(b.id)
-        return v && c ? <Label key={b.id} v={v} c={c} ghost={ghosts.has(b.id)} refs={refs} /> : null
+        return v && c ? <Label key={b.id} v={v} c={c} ghost={ghosts.has(b.id)} faded={faded.has(b.id)} refs={refs} /> : null
       })}
       {layout.runs.map((r) => (
         <span key={r.rank} ref={register(refs.badges, r.rank)} className={styles.badge} data-testid={`badge3d-${r.rank}`}>

@@ -170,7 +170,7 @@ describe('right drawer', () => {
 
   it('H3: Escape on a control inside the details, with a search active, moves focus to the first match card', async () => {
     renderApp({ req: SEARCH, selection: { kind: 'suite', suiteId: 'odt-600' } })
-    const inside = within(screen.getByTestId('suite-details')).getAllByRole('button')[0]
+    const inside = within(screen.getByTestId('suite-details')).getByTestId('open-floor-plan') // the first enabled control
     inside.focus()
     await userEvent.keyboard('{Escape}')
     expect(within(rightPanel()).getByTestId('match-list')).toBeVisible()
@@ -251,5 +251,85 @@ describe('below 1100 px', () => {
     await userEvent.click(screen.getByTestId('suite-odt-500'))
     expect(rightPanel()).toHaveAttribute('data-open', 'true')
     expect(toggle()).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
+describe('presentation mode', () => {
+  const present = () => screen.getByTestId('present')
+
+  it('Present shuts both drawers; Exit presentation brings the left one back as it was', async () => {
+    renderApp()
+    await userEvent.click(screen.getByTestId('suite-odt-500'))
+    expect(rightPanel()).toHaveAttribute('data-open', 'true')
+    await userEvent.click(present())
+    expect(present()).toHaveAttribute('aria-pressed', 'true')
+    expect(present()).toHaveTextContent('Exit presentation')
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false')
+    expect(rightPanel()).toHaveAttribute('data-open', 'false')
+    expect(localStorage.getItem('stackmatch.v1.leftDrawer')).toBeNull() // never saved
+    await userEvent.click(present())
+    expect(present()).toHaveAttribute('aria-pressed', 'false')
+    expect(present()).toHaveTextContent('Present')
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('a hidden left drawer stays hidden after presenting', async () => {
+    localStorage.setItem('stackmatch.v1.leftDrawer', 'false')
+    renderApp()
+    await userEvent.click(present())
+    await userEvent.click(present())
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('selecting a suite while presenting shows its details', async () => {
+    renderApp()
+    await userEvent.click(present())
+    await userEvent.click(screen.getByTestId('suite-odt-700'))
+    expect(rightPanel()).toHaveAttribute('data-open', 'true')
+  })
+
+  it('Escape ends it where fullscreen is unavailable (jsdom has none)', async () => {
+    renderApp()
+    await userEvent.click(present())
+    await userEvent.keyboard('{Escape}')
+    expect(present()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('leaving fullscreen by the browser ends it', async () => {
+    renderApp()
+    await userEvent.click(present())
+    fireEvent(document, new Event('fullscreenchange'))
+    expect(present()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('the handle still opens the left drawer while presenting', async () => {
+    renderApp()
+    await userEvent.click(present())
+    await userEvent.click(toggle())
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('presentation mode and browser fullscreen', () => {
+  afterEach(() => {
+    for (const key of ['exitFullscreen', 'fullscreenElement']) Reflect.deleteProperty(document, key)
+    Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
+  })
+
+  it('asks for fullscreen on Present, and leaves fullscreen granted after the mode already ended', async () => {
+    let fullscreen: Element | null = null
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => fullscreen })
+    const exit = vi.fn(() => { fullscreen = null; return Promise.resolve() })
+    Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exit })
+    const request = vi.fn(() => Promise.resolve())
+    Object.defineProperty(document.documentElement, 'requestFullscreen', { configurable: true, value: request })
+    renderApp()
+    await userEvent.click(screen.getByTestId('present'))
+    expect(request).toHaveBeenCalledOnce()
+    await userEvent.click(screen.getByTestId('present')) // Exit before the browser granted it
+    fullscreen = document.documentElement // granted late
+    fireEvent(document, new Event('fullscreenchange'))
+    expect(exit).toHaveBeenCalled()
+    expect(screen.getByTestId('present')).toHaveAttribute('aria-pressed', 'false')
   })
 })

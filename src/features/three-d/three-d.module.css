@@ -77,7 +77,9 @@
 
 /* ---------- facade labels ---------- */
 
-/* A label covers its suite's projected front face; the frame loop sets the box and which parts show. */
+/* A label is an upright box inside its suite's projected face (never skewed onto it): the frame loop sets the
+   box, a translate (and in floor view, for a narrow deep suite, a quarter turn) and which parts show. Two
+   left-aligned lines, centred top to bottom: "number · SF" (11px semibold) over the tenant or status (12px). */
 .label {
   --ink: var(--c-text);
   position: absolute;
@@ -85,39 +87,28 @@
   left: 0;
   transform-origin: 0 0;
   display: flex;
-  flex-wrap: nowrap;
-  align-content: center;
-  align-items: center;
-  column-gap: 5px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
   padding: 0 5px;
   overflow: hidden;
   color: var(--ink);
-  font-size: var(--fs-xs);
-  line-height: 14px;
-  font-weight: var(--fw-medium);
   white-space: nowrap;
 }
 
-.label[data-lines='2'] { flex-wrap: wrap; }
 .label[data-hidden='true'] { visibility: hidden; }
 .label[data-forced='true'] { z-index: 1; overflow: visible; }
 
-.lCue { order: 1; display: inline-flex; align-items: center; gap: 3px; font-weight: var(--fw-semibold); }
-.lCue[data-kind='word'] { letter-spacing: .05em; font-weight: 700; }
-.lNumber { order: 2; font-weight: var(--fw-semibold); }
-.lTenant { order: 3; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-sm); font-weight: var(--fw-semibold); }
-.lSf { order: 4; opacity: .85; }
+.lLine1 { font-size: var(--fs-xs); line-height: 14px; font-weight: var(--fw-semibold); }
+/* Two lines fit in TWO_LINES_H (labels3d.ts): line 1 tightens to 12px, which digits and capitals allow. */
+.label[data-lines='2'] .lLine1 { line-height: 12px; }
+.lTenant { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-sm); line-height: 14px; font-weight: var(--fw-regular); }
 
-.label[data-lines='2'] .lSf { order: 3; }
-.label[data-lines='2'] .lTenant { order: 4; flex-basis: 100%; }
-
-.label:not([data-parts~='cue']) .lCue,
 .label:not([data-parts~='number']) .lNumber,
-.label:not([data-parts~='tenant']) .lTenant,
-.label:not([data-parts~='sf']) .lSf { display: none; }
+.label:not([data-parts~='sf']) .lSf,
+.label:not([data-parts~='tenant']) .lTenant { display: none; }
 
-/* A forced label on a suite too narrow for it gets a chip in the suite's own colour, so it stays legible. */
-.label[data-forced='true'] .lCue,
+/* A forced label on a suite too narrow for it gets a halo in the suite's own colour, so its number stays legible. */
 .label[data-forced='true'] .lNumber { text-shadow: 0 0 3px var(--fill), 0 0 3px var(--fill); }
 
 .label[data-fill='occupied'] { --ink: var(--c-occupied-ink); --fill: var(--c-occupied); }
@@ -133,10 +124,12 @@
 .label[data-fill='risk-gt36'] { --ink: var(--c-risk-gt36-ink); --fill: var(--c-risk-gt36); }
 .label[data-fill='risk-open'] { --ink: var(--c-risk-open-ink); --fill: var(--c-risk-open); }
 .label[data-ghost='true'] { --ink: var(--c-text-muted); --fill: transparent; opacity: .42; }
-/* A ghosted suite keeps only its cue and number: findable if you look, never competing with the matches. */
-.label[data-ghost='true'] .lTenant,
-.label[data-ghost='true'] .lSf { display: none; }
-/* Floor view: a suite's whole top face is free, so a long tenant name wraps to a second line before it truncates. */
+/* A ghosted suite keeps only its number: findable if you look, never competing with the matches. */
+.label[data-ghost='true'] .lSf,
+.label[data-ghost='true'] .lTenant { display: none; }
+/* The legend filter fades a suite's label with its box (after the ghost rule: never brighter than the fainter). */
+.label[data-filtered='true'] { opacity: var(--filter-opacity); }
+/* Floor view: a suite's whole top face is free, so a long line 2 wraps to a second line before it truncates. */
 .scene[data-floor-view='true'] .label[data-lines='2'][data-ghost='false'][data-parts~='tenant'] .lTenant {
   display: -webkit-box;
   -webkit-box-orient: vertical;

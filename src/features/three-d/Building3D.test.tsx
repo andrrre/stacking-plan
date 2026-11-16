@@ -38,7 +38,7 @@ function MirrorHarness({ points = new Map(), onFocusChange = () => undefined }: 
   return <Mirror model={model} points={points} getItemProps={getItemProps} onSelect={onSelect} onFocusChange={onFocusChange} />
 }
 
-const ATTRS = ['title', 'data-status', 'data-overlay', 'data-fill', 'data-risk', 'data-match-rank', 'data-dimmed', 'data-modified', 'data-joins-next', 'data-has-cue', 'aria-pressed', 'aria-label']
+const ATTRS = ['title', 'data-status', 'data-overlay', 'data-fill', 'data-risk', 'data-match-rank', 'data-dimmed', 'data-modified', 'data-joins-next', 'data-filtered', 'aria-pressed', 'aria-label']
 const snapshot = (el: Element) => Object.fromEntries(ATTRS.map((a) => [a, el.getAttribute(a)]))
 
 describe('WebGL availability', () => {

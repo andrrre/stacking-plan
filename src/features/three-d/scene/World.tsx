@@ -27,6 +27,7 @@ export type WorldProps = {
   contents: ReadonlyMap<string, LabelContent>
   looks: ReadonlyMap<string, SuiteLook>
   ghosts: ReadonlySet<string>
+  faded: ReadonlySet<string> // left out by the legend filter
   spread: number // 0 floors together … 1 separated
   focusedId: string | null
   reduced: boolean
@@ -58,7 +59,7 @@ function readTokens() {
 }
 
 export function World(p: WorldProps) {
-  const { mode, theme, layout, visuals, contents, looks, ghosts, refs, onSelect, onPoints, focusedId, reduced } = p
+  const { mode, theme, layout, visuals, contents, looks, ghosts, faded, refs, onSelect, onPoints, focusedId, reduced } = p
   // The tokens are read once, and again when the colour mode or the theme changes (the new palette rebuilds the
   // materials, which invalidate the frame).
   const palette = useMemo(() => {
@@ -75,7 +76,7 @@ export function World(p: WorldProps) {
   const pick = useMemo(() => ({ group, hover, mats, tooltip: refs.tooltip, visuals, onSelect }), [mats, refs, visuals, onSelect])
   usePicker(pick)
   useContextWatch(p.onLost)
-  useFrameSync({ layout, visuals, contents, ghosts, refs, focusedId, hover, mats, group, onPoints })
+  useFrameSync({ layout, visuals, contents, ghosts, faded, refs, focusedId, hover, mats, group, onPoints })
   const focus = layout.focus?.floor ?? null
   // The framing angle: floor view's own, or part-way between the default and the separated view.
   const view = useMemo(() => (focus === null ? lerpView(DEFAULT_VIEW, SEPARATED_VIEW, p.spread) : FLOOR_VIEW), [focus, p.spread])

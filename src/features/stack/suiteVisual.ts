@@ -2,27 +2,14 @@ import { addDaysIso } from '../../domain/dates'
 import { formatLongDate, formatMmYyyy, formatSf } from '../../domain/format'
 import { riskBucket, statusAt } from '../../domain/status'
 import type { Building, Candidate, Floor, ISODate, RiskBucket, StatusResult, Suite } from '../../domain/types'
+import type { FillKey } from '../../app/state/legendKeys'
 import type { ColourMode } from '../../app/state/types'
+import { suiteLabel, type SuiteLabel } from './suiteLabel'
 
 // The one place that turns data into what a suite looks like and says (spec-technical §4, §5.6, §7).
 // Pure: no React, no clock. Callers only feed it data.
 
-export type FillKey =
-  | 'occupied' | 'expiring' | 'vacant' | 'potential' | 'committed' | 'common'
-  | 'risk-le6' | 'risk-le12' | 'risk-le24' | 'risk-le36' | 'risk-gt36' | 'risk-open'
-
-/** Non-colour status cue drawn before the number: clock + lease end MM/YYYY (expiring) or lock + start MM/YYYY (committed). */
-export type SuiteCue = { glyph: 'clock' | 'lock'; text: string }
-
-export type SuiteLabel = {
-  number: string
-  primary: string // tenant | 'Vacant' | 'Potential' | 'Leased from 03/2027' | common-area name
-  reason?: string // potential only, drawn after the primary text: 'Flamingo Row Media lease ends 04/2027'
-  sf: string
-  end?: string // MM/YYYY, occupied suites with an end date (expiring suites carry it in the cue)
-  cue?: SuiteCue
-  tag?: string // 'Vacant from 06/2027' (active vacating lease) | 'No end date' (open-ended)
-}
+export type { FillKey, SuiteLabel }
 
 export type SuiteVisual = {
   suite: Suite
@@ -32,7 +19,8 @@ export type SuiteVisual = {
   label: SuiteLabel
   ariaLabel: string
   tooltip: string // native `title`
-  dimmed: boolean
+  dimmed: boolean // ghosted by a search or a KPI highlight
+  filtered: boolean // painted otherwise than the pressed legend pill
   matchRank: number | null
   modified: boolean
   selected: boolean
@@ -53,6 +41,7 @@ export type StackModelInput = {
   highlightIds: ReadonlySet<string> | null // a highlighted KPI tile replaces the match overlay
   modifiedIds: ReadonlySet<string>
   selectedSuiteId: string | null
+  legend?: FillKey | null // the pressed legend pill (none when absent)
 }
 
 const RISK_FILL: Record<'le6' | 'le12' | 'le24' | 'le36' | 'gt36' | 'openEnded', FillKey> = {
@@ -106,16 +95,6 @@ function tagFor(st: StatusResult, today: ISODate): string | undefined {
   return undefined
 }
 
-function labelFor(s: Suite, st: StatusResult, today: ISODate): SuiteLabel {
-  const tag = tagFor(st, today)
-  const label: SuiteLabel = { number: s.number, primary: primaryFor(s, st), sf: formatSf(s.areaSf), ...(tag && { tag }) }
-  if (st.status === 'expiring' && st.lease.end !== null) return { ...label, cue: { glyph: 'clock', text: formatMmYyyy(st.lease.end) } }
-  if (st.status === 'vacant' && st.overlay === 'committed') return { ...label, cue: { glyph: 'lock', text: formatMmYyyy(st.nextLease.start) } }
-  if (st.status === 'vacant' && st.overlay === 'potential') return { ...label, reason: potentialReason(st) }
-  if (st.status === 'occupied' && st.lease.end !== null) return { ...label, end: formatMmYyyy(st.lease.end) }
-  return label
-}
-
 /** The status part of the aria-label, after "Suite N, floor F, ". */
 function ariaStatus(s: Suite, st: StatusResult, today: ISODate): string {
   const sf = formatSf(s.areaSf)
@@ -167,9 +146,10 @@ function headline(st: StatusResult, primary: string): string {
   }
 }
 
-function tooltipFor(s: Suite, floorNumber: number, st: StatusResult, label: SuiteLabel, m: Marks): string {
-  const lines = [headline(st, label.primary), `Suite ${s.number} · Floor ${floorNumber} · ${label.sf}`]
-  if (label.tag) lines.push(label.tag)
+function tooltipFor(s: Suite, floorNumber: number, st: StatusResult, m: Marks): string {
+  const lines = [headline(st, primaryFor(s, st)), `Suite ${s.number} · Floor ${floorNumber} · ${formatSf(s.areaSf)}`]
+  const tag = tagFor(st, m.today)
+  if (tag) lines.push(tag)
   const risk = riskWords(m)
   if (risk) lines.push(`Lease risk: ${risk}`)
   if (m.matchRank !== null) lines.push(`Match ${m.matchRank}`)
@@ -182,17 +162,18 @@ function suiteVisual(s: Suite, floorNumber: number, ctx: Context): SuiteVisual {
   const risk = riskBucket(s, ctx.asOf, ctx.today)
   const matchRank = ctx.ranks.get(s.id) ?? null
   const marks: Marks = { risk, mode: ctx.mode, matchRank, modified: ctx.modifiedIds.has(s.id), today: ctx.today }
-  const label = labelFor(s, status, ctx.today)
   const dimmed = ctx.highlightIds ? !ctx.highlightIds.has(s.id) : ctx.ranks.size > 0 && matchRank === null
+  const fill = fillFor(status, risk, ctx.mode)
   return {
     suite: s,
     status,
     risk,
-    fill: fillFor(status, risk, ctx.mode),
-    label,
+    fill,
+    label: suiteLabel(s, status, ctx.mode),
     ariaLabel: ariaLabelFor(s, floorNumber, status, marks),
-    tooltip: tooltipFor(s, floorNumber, status, label, marks),
+    tooltip: tooltipFor(s, floorNumber, status, marks),
     dimmed,
+    filtered: Boolean(ctx.legend) && fill !== ctx.legend,
     matchRank,
     modified: marks.modified,
     selected: s.id === ctx.selectedSuiteId,

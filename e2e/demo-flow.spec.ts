@@ -28,12 +28,14 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await page.route('**/api/ask', (route) => route.abort())
   await page.route('**/api/summary', (route) => route.abort())
 
-  // 1. First paint: the 3D building, vacant and expiring space readable on the facade
+  // 1. First paint: the 3D building, vacant and expiring space labelled upright on the facade (line 1 at this
+  // zoom; line 2, the status in words, waits for a face tall enough for it)
   await gotoApp(page, '3d')
   await expect(page.getByTestId('view-3d')).toBeChecked()
   await expect(suite3d(page, 500)).toHaveAttribute('data-screen-hit', 'true')
-  expect(await visibleText(page, 500)).toContain('VACANT')
-  expect(await visibleText(page, 600)).toContain('04/2027')
+  expect(await visibleText(page, 500)).toContain('500 · 10,250 SF')
+  expect(await visibleText(page, 600)).toContain('600 · 12,400 SF')
+  await expect(label(page, 600)).toContainText('Flamingo Row Media · ends 04/2027')
   await expect(page.getByTestId('kpi-occupancy-value')).toHaveText('72%')
   await expect(page.getByTestId('kpi-vacant')).toContainText('38,150 SF')
   await expect(page.getByTestId('kpi-expiring')).toContainText('26,500 SF')
@@ -69,7 +71,7 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await expect(page.getByTestId('match-5')).toHaveCount(0)
   await expect(suite3d(page, 600)).toHaveAttribute('data-overlay', 'potential')
   await expect(page.getByTestId('badge3d-4')).toBeVisible()
-  expect(await visibleText(page, 600)).toContain('Potential')
+  await expect(label(page, 600)).toContainText('Potential · was Flamingo Row Media')
 
   // 4. Back to today, save match 1
   await page.getByTestId('date-today').click()

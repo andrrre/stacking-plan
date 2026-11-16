@@ -1,15 +1,17 @@
 import { Vector3, type Camera } from 'three'
 import {
-  chooseParts, hideCollisions, labelPriority, labelSize, mapPoint, rectToQuad, toMatrix3d, turnLabel, turnQuad, type LabelContent, type Placed,
+  chooseParts, fitLabel, hideCollisions, innerRect, labelPriority, labelSize, turnLabel, type Fit, type LabelContent, type Placed, type Rect,
+  type Size,
 } from '../labels3d'
 import { labelDepth, labelFace, suiteRect, type Corner, type FaceRect, type Layout3D, type SuiteBox } from '../layout3d'
 import type { SuiteVisual } from '../../stack/suiteVisual'
 import { write, type OverlayRefs } from './overlayRefs'
 
 // Each rendered frame: project every suite's label face (the front face, or the top face with floors
-// separated) to the canvas, choose what its label can say at
+// separated and in floor view) to the canvas, fit an upright box inside it, choose what its label can say at
 // that size, hide labels that would collide, and move the floor numbers, rank badges and rings with the
-// camera. Only changed values touch the DOM.
+// camera. Labels are never skewed onto the face: they stay flat, screen-aligned text (in floor view a narrow,
+// deep suite may turn its label a quarter). Only changed values touch the DOM.
 
 export type OverlayState = {
   camera: Camera
@@ -19,6 +21,7 @@ export type OverlayState = {
   visuals: ReadonlyMap<string, SuiteVisual>
   contents: ReadonlyMap<string, LabelContent>
   ghosts: ReadonlySet<string>
+  faded: ReadonlySet<string> // left out by the legend filter
   hoverId: string | null
   focusedId: string | null
   refs: OverlayRefs
@@ -59,14 +62,32 @@ const px = (n: number) => `${Math.round(n * 10) / 10}px`
 
 type LabelPlan = { id: string; w: number; h: number; transform: string; parts: string; lines: string; forced: boolean; turned: boolean }
 
-const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y)
+const EMPTY: Rect = { x: 0, y: 0, w: 0, h: 0 }
 
-/** The label box in the face's own pixels and the transform that lays it onto the projected face. */
-function onFace(pts: readonly Pt[]) {
-  const [tl, tr, br, bl] = pts as [Pt, Pt, Pt, Pt]
-  const w = (dist(bl, br) + dist(tl, tr)) / 2
-  const h = (dist(bl, tl) + dist(br, tr)) / 2
-  return { w, h, m: rectToQuad([tl, tr, br, bl], w, h) }
+const corners = (r: Rect) => [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }]
+
+/**
+ * Where the label's box goes and what it covers on screen. Upright: the face box itself, its text left-aligned
+ * and centred top to bottom. Turned (floor view): the box rotated a quarter about its bottom-left corner, so
+ * the text runs up the face from its front edge.
+ */
+function placeBox(face: Rect, size: Size, turned: boolean): { transform: string; text: Rect } {
+  const x = Math.round(face.x)
+  const y = Math.round(face.y)
+  if (!turned) return { transform: `translate(${x}px, ${y}px)`, text: { x, y: y + (face.h - size.h) / 2, w: size.w, h: size.h } }
+  const bottom = Math.round(face.y + face.h)
+  return { transform: `translate(${x}px, ${bottom}px) rotate(-90deg)`, text: { x: x + (face.w - size.h) / 2, y: bottom - size.w, w: size.h, h: size.w } }
+}
+
+/**
+ * Where a label goes on its face and what it shows: upright, the widest box that shows the most; in floor view a
+ * narrow, deep suite's label may run along the face's depth instead (the face's inner bounds, turned).
+ */
+function fitOnFace(s: OverlayState, b: SuiteBox, c: LabelContent, pts: [Pt, Pt, Pt, Pt], forced: boolean): Fit & { turned: boolean } {
+  const face = innerRect(pts)
+  const turned = s.layout.focus?.floor === b.floor && turnLabel(c, face, forced)
+  if (turned) return { box: face, parts: chooseParts(c, { w: face.h, h: face.w }, forced), turned }
+  return { ...fitLabel(c, pts, forced), turned }
 }
 
 function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Placed } | null {
@@ -74,20 +95,19 @@ function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Pla
   const c = s.contents.get(b.id)
   if (!v || !c) return null
   const strip = stripOf(s, b)
-  const across = faceQuad(s, suiteRect(b), 0, ringDepth(strip)) as [Pt, Pt, Pt, Pt]
+  const pts = faceQuad(s, suiteRect(b), 0, ringDepth(strip)) as [Pt, Pt, Pt, Pt]
   const forced = v.matchRank !== null || v.selected || b.id === s.hoverId || b.id === s.focusedId
-  // Floor view: on a narrow but deep top face the label runs along the depth when it shows more that way.
-  const turned = s.layout.focus?.floor === b.floor && turnLabel(c, onFace(across), forced)
-  const pts = turned ? turnQuad(across) : across
-  const { w, h, m } = onFace(pts)
-  const p = pts.some((q) => q.behind) || strip === 0 ? null : chooseParts(c, { w, h }, forced)
-  const parts = p ? (['cue', 'number', 'tenant', 'sf'] as const).filter((k) => p[k]) : []
-  const size = p ? labelSize(c, p, w) : { w: 0, h: 0 }
-  const top = (h - size.h) / 2
-  const quad = size.w > 0 ? [mapPoint(m, 0, top), mapPoint(m, size.w, top), mapPoint(m, size.w, top + size.h), mapPoint(m, 0, top + size.h)] : []
+  const fit = pts.some((q) => q.behind) || strip === 0 ? null : fitOnFace(s, b, c, pts, forced)
+  const face = fit?.box ?? EMPTY
+  const turned = fit?.turned ?? false
+  const box: Size = turned ? { w: face.h, h: face.w } : face
+  const p = fit?.parts
+  const parts = p ? (['number', 'sf', 'tenant'] as const).filter((k) => p[k]) : []
+  const size = p ? labelSize(c, p, box.w) : { w: 0, h: 0 }
+  const { transform, text } = placeBox(face, size, turned)
   return {
-    plan: { id: b.id, w, h, transform: toMatrix3d(m), parts: parts.join(' '), lines: String(p?.lines ?? 0), forced, turned },
-    placed: { id: b.id, quad, priority: labelPriority(c, forced, s.ghosts.has(b.id)) },
+    plan: { id: b.id, w: box.w, h: box.h, transform, parts: parts.join(' '), lines: String(p?.lines ?? 0), forced, turned },
+    placed: { id: b.id, quad: size.w > 0 ? corners(text) : [], priority: labelPriority(c, forced, s.ghosts.has(b.id) || s.faded.has(b.id)) },
   }
 }
 

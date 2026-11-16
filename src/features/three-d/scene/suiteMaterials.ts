@@ -1,5 +1,5 @@
 import { Color } from 'three'
-import type { LookColours } from '../palette'
+import { FILTER_ALPHA, type LookColours } from '../palette'
 import type { SuiteBox } from '../layout3d'
 import { SuiteMaterial } from './suiteMaterial'
 
@@ -8,7 +8,12 @@ import { SuiteMaterial } from './suiteMaterial'
 
 export const COLOUR_MS = 180
 
-type Tween = { from: Color; to: Color; sideFrom: Color; sideTo: Color; ghostFrom: number; ghostTo: number; start: number }
+type Tween = {
+  from: Color; to: Color; sideFrom: Color; sideTo: Color; ghostFrom: number; ghostTo: number; fadeFrom: number; fadeTo: number; start: number
+}
+
+/** How a suite is dimmed: ghosted by a search or highlight, faded by the legend filter. */
+export type Dim = { ghost: boolean; faded: boolean }
 
 const PATTERN_KIND = { hatch: 1 } as const
 /**
@@ -44,10 +49,10 @@ export class SuiteMaterials {
   }
 
   /**
-   * Sets a suite's look. With `animateAt` (a timestamp) the fill and ghosting fade over COLOUR_MS. `key`
+   * Sets a suite's look. With `animateAt` (a timestamp) the fill, ghosting and filter fade over COLOUR_MS. `key`
    * identifies the look (see lookKey); a suite whose key, colours and box are unchanged is skipped.
    */
-  apply(id: string, c: LookColours, ghost: boolean, box: SuiteBox, animateAt: number | null, key: string): void {
+  apply(id: string, c: LookColours, dim: Dim, box: SuiteBox, animateAt: number | null, key: string): void {
     const m = this.get(id)
     const signature = `${key}|${JSON.stringify(c)}|${box.x},${box.y},${box.z},${box.w},${box.h},${box.d}`
     if (this.applied.get(m) === signature) return
@@ -55,20 +60,23 @@ export class SuiteMaterials {
     const u = m.u
     const target = new Color(c.base)
     const side = new Color(c.side)
-    const ghostTo = ghost ? 1 : 0
-    const changed = !m.color.equals(target) || !u.uSide.value.equals(side) || u.uGhost.value !== ghostTo
+    const ghostTo = dim.ghost ? 1 : 0
+    const fadeTo = dim.faded ? FILTER_ALPHA : 1
+    const changed = !m.color.equals(target) || !u.uSide.value.equals(side) || u.uGhost.value !== ghostTo || u.uFade.value !== fadeTo
     if (this.seen.has(m) && changed && animateAt !== null) {
       this.tweens.set(m, {
-        from: m.color.clone(), to: target, sideFrom: u.uSide.value.clone(), sideTo: side, ghostFrom: u.uGhost.value, ghostTo, start: animateAt,
+        from: m.color.clone(), to: target, sideFrom: u.uSide.value.clone(), sideTo: side,
+        ghostFrom: u.uGhost.value, ghostTo, fadeFrom: u.uFade.value, fadeTo, start: animateAt,
       })
     } else if (changed) {
       this.tweens.delete(m)
       m.color.copy(target)
       u.uSide.value.copy(side)
       u.uGhost.value = ghostTo
+      u.uFade.value = fadeTo
     }
     this.seen.add(m)
-    m.depthWrite = !ghost
+    m.depthWrite = !dim.ghost && !dim.faded
     u.uPatKind.value = c.pattern ? PATTERN_KIND[c.pattern.kind] : 0
     if (c.pattern) {
       u.uPatColor.value.set(c.pattern.hex)
@@ -96,6 +104,7 @@ export class SuiteMaterials {
       m.color.copy(t.from).lerp(t.to, e)
       m.u.uSide.value.copy(t.sideFrom).lerp(t.sideTo, e)
       m.u.uGhost.value = t.ghostFrom + (t.ghostTo - t.ghostFrom) * e
+      m.u.uFade.value = t.fadeFrom + (t.fadeTo - t.fadeFrom) * e
       if (k >= 1) this.tweens.delete(m)
     }
     return this.tweens.size > 0

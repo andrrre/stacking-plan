@@ -49,53 +49,97 @@ test.describe('stack structure', () => {
   })
 })
 
+/** The line-2 text shows whole: rendered, inside its cell and not cut by an ellipsis. */
+async function wholeLine(line: Locator, cell: Locator): Promise<void> {
+  await expect(line).toBeVisible()
+  expect(await fullyInside(line, cell)).toBe(true)
+  expect(await line.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+}
+
 test.describe('the ten-second questions', () => {
-  test('Q1: exactly the vacant suites are vacant, and the uncommitted ones read VACANT', async ({ page }) => {
+  test('Q1: exactly the vacant suites are vacant, and the uncommitted ones say "Vacant" on line 2', async ({ page }) => {
     await gotoApp(page, 'stack')
     expect(await numbersWith(page, 'data-status', 'vacant')).toEqual([...VACANT].sort((x, y) => x - y))
     for (const n of VACANT_UNCOMMITTED) {
       const cell = suite(page, n)
       await expect(cell).toHaveAttribute('data-overlay', 'none')
-      const word = cell.getByText('Vacant', { exact: true })
-      await expect(word).toBeVisible()
-      expect(await word.evaluate((el) => (el as HTMLElement).innerText)).toBe('VACANT')
-      expect(await fullyInside(word, cell)).toBe(true)
+      await expect(cell).toContainText(`${n} · `)
+      await wholeLine(cell.getByText('Vacant', { exact: true }), cell)
     }
     await expect(suite(page, 1010)).toHaveAttribute('data-overlay', 'committed')
     await expect(suite(page, 1010).getByText('Vacant', { exact: true })).toHaveCount(0)
   })
 
-  test('Q2: exactly the expiring suites are expiring, and show their MM/YYYY at 1280 px', async ({ page }) => {
+  test('Q2: exactly the expiring suites are expiring, and say "Tenant · ends MM/YYYY" at 1280 px', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await gotoApp(page, 'stack')
     expect(await numbersWith(page, 'data-status', 'expiring')).toEqual([220, 400, 600, 1000])
     for (const [n, mmyyyy] of Object.entries(EXPIRING)) {
       const cell = suite(page, n)
-      const cue = cell.getByText(mmyyyy, { exact: true })
-      await expect(cue).toBeVisible()
-      expect(await fullyInside(cue, cell)).toBe(true)
+      const line = cell.getByText(new RegExp(` · ends ${mmyyyy.replace('/', '\\/')}$`))
+      await expect(line).toBeVisible()
+      expect(await fullyInside(line, cell)).toBe(true)
+      // The narrowest (220, 2,600 SF) may cut its tenant short with an ellipsis; the tooltip has it whole.
+      if (n !== '220') expect(await line.evaluate((el) => el.scrollWidth <= el.clientWidth), n).toBe(true)
     }
   })
 
-  test('committed 1010 shows its start date in the cue at 1280 px', async ({ page }) => {
+  test('committed 1010 says "Committed · starts 03/2027" at 1280 px', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await gotoApp(page, 'stack')
     const cell = suite(page, 1010)
-    const cue = cell.getByText('03/2027', { exact: true })
-    await expect(cue).toBeVisible()
-    expect(await fullyInside(cue, cell)).toBe(true)
+    await wholeLine(cell.getByText('Committed · starts 03/2027', { exact: true }), cell)
+    await expect(cell).toContainText('1010 · 3,000 SF')
+  })
+
+  test('a suite under 2,500 SF shows only its number; the rest is in its name and tooltip', async ({ page }) => {
+    await gotoApp(page, 'stack')
+    const cell = suite(page, 720)
+    await expect(cell).toHaveAttribute('data-compact', 'true')
+    expect(await cell.evaluate((el) => (el as HTMLElement).innerText.trim())).toBe('720')
+    await expect(cell).toHaveAttribute('aria-label', /Halcyon Tide Realty, 1,900 SF/)
   })
 })
 
-test('legend: 4 availability entries, overlay keys and the assumption line', async ({ page }) => {
+test('legend: a pill per status with its count and space, and the assumption line', async ({ page }) => {
   await gotoApp(page, 'stack')
-  const legend = page.getByTestId('legend')
-  await expect(legend.getByTestId('legend-entry')).toHaveCount(4)
-  await expect(legend.getByTestId('legend-entry')).toHaveText([/Occupied/, /Expiring/, /Vacant/, /Common/])
-  await expect(legend.getByTestId('legend-overlay')).toHaveText([/Potential/, /Committed/])
+  const pills = page.getByTestId('legend').getByTestId('legend-pill')
+  await expect(pills).toHaveText([
+    'Vacant6 suites · 35,150 SF', 'Potential0 suites', 'Expiring ≤ 12 mo4 suites · 26,500 SF',
+    'Committed1 suite · 3,000 SF', 'Occupied18 suites · 70,150 SF', 'Common area3 suites · 12,400 SF',
+  ])
+  for (const pill of await pills.all()) await expect(pill).toHaveAttribute('aria-pressed', 'false')
   await expect(page.getByTestId('legend-assumption')).toHaveText(
     'A lease that ends is assumed not renewed: shown as potential',
   )
+})
+
+test('legend filter: a pill dims every other status to 28%, another pill switches, the same pill clears', async ({ page }) => {
+  await gotoApp(page, 'stack')
+  const pill = (key: string) => page.getByTestId('legend').locator(`[data-key="${key}"]`)
+  const opacity = (n: number) => suite(page, n).evaluate((el) => getComputedStyle(el).opacity)
+  await pill('vacant').click()
+  await expect(pill('vacant')).toHaveAttribute('aria-pressed', 'true')
+  expect(await numbersWith(page, 'data-filtered', 'false')).toEqual(VACANT_UNCOMMITTED)
+  await expect.poll(() => opacity(600)).toBe('0.28')
+  await expect.poll(() => opacity(500)).toBe('1')
+  await expect(page).toHaveURL(/legend=vacant/)
+  await pill('expiring').click()
+  await expect(pill('vacant')).toHaveAttribute('aria-pressed', 'false')
+  expect(await numbersWith(page, 'data-filtered', 'false')).toEqual([220, 400, 600, 1000])
+  await pill('expiring').click()
+  expect(await numbersWith(page, 'data-filtered', 'true')).toEqual([])
+  await expect.poll(() => opacity(600)).toBe('1')
+  await expect(page).not.toHaveURL(/legend=/)
+})
+
+test('legend filter: a selected suite stays selectable, lit and detailed while filtered out', async ({ page }) => {
+  await gotoApp(page, 'stack', { legend: 'vacant' })
+  await suite(page, 600).click()
+  await expect(suite(page, 600)).toHaveAttribute('aria-pressed', 'true')
+  await expect(suite(page, 600)).toHaveAttribute('data-filtered', 'true')
+  await expect.poll(() => suite(page, 600).evaluate((el) => getComputedStyle(el).opacity)).toBe('1')
+  await expect(page.getByTestId('suite-details')).toContainText('Suite 600')
 })
 
 test('keyboard: one tab stop, arrows move focus, Enter selects, Escape clears', async ({ page }) => {

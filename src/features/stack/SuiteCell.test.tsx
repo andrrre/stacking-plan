@@ -30,17 +30,25 @@ describe('SuiteCell', () => {
     render(<SuiteCell visual={v} roving={roving} joinsNext onSelect={() => {}} />)
     const el = screen.getByTestId('suite-odt-1010')
     const attrs = suiteDataAttributes(v, true)
-    expect(attrs).toMatchObject({ 'data-status': 'vacant', 'data-overlay': 'committed', 'data-joins-next': 'true', 'data-has-cue': 'true' })
+    expect(attrs).toMatchObject({ 'data-status': 'vacant', 'data-overlay': 'committed', 'data-joins-next': 'true', 'data-filtered': 'false' })
     for (const [name, value] of Object.entries(attrs)) {
       if (value === undefined) expect(el).not.toHaveAttribute(name)
       else expect(el).toHaveAttribute(name, String(value))
     }
   })
 
-  it('draws a label reason after the primary text, the primary word first', () => {
-    const v = visual('600')
-    const potential = { ...v, label: { ...v.label, primary: 'Potential', reason: 'Flamingo Row Media lease ends 04/2027' } }
-    render(<SuiteCell visual={potential} roving={roving} joinsNext={false} onSelect={() => {}} />)
-    expect(screen.getByTestId('suite-odt-600')).toHaveTextContent(/Potential\W+Flamingo Row Media lease ends 04\/2027/)
+  it('draws two lines: "number · SF" over the tenant or status in words', () => {
+    render(<SuiteCell visual={visual('1010')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const el = screen.getByTestId('suite-odt-1010')
+    expect(el).toHaveTextContent(/^1010 · 3,000 SFCommitted · starts 03\/2027$/)
+    expect(el).toHaveAttribute('data-compact', 'false')
+  })
+
+  it('a suite under 2,500 SF shows its number alone', () => {
+    render(<SuiteCell visual={visual('720')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const el = screen.getByTestId('suite-odt-720')
+    expect(el).toHaveTextContent(/^720$/)
+    expect(el).toHaveAttribute('data-compact', 'true')
+    expect(el).toHaveAccessibleName(/Halcyon Tide Realty/)
   })
 })

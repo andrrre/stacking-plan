@@ -14,8 +14,8 @@ test.describe('date slider', () => {
     await expect(page.getByTestId('date-label')).toContainText('Nov 2031')
   })
 
-  test('1010 reads Leased from 03/2027', async ({ page }) => {
-    await expect(suite(page, 1010)).toContainText('Leased from 03/2027')
+  test('1010 reads Committed · starts 03/2027', async ({ page }) => {
+    await expect(suite(page, 1010).getByText('Committed · starts 03/2027', { exact: true })).toBeVisible()
   })
 
   test('keyboard steps the date and Today resets it', async ({ page }) => {
@@ -37,9 +37,8 @@ test.describe('date slider', () => {
     await expect(s600).toHaveAttribute('data-overlay', 'potential')
     await expect(s600).toHaveAttribute('title', /Potential · Flamingo Row Media lease ends 04\/2027/)
     await expect(s600).toHaveAttribute('aria-label', /potential: Flamingo Row Media lease ends 30 Apr 2027/)
-    // The reason is on the cell itself, after the word "Potential", not only in the tooltip.
-    await expect(s600.getByText('Potential', { exact: false })).toBeVisible()
-    await expect(s600.getByText('Flamingo Row Media lease ends 04/2027', { exact: false })).toBeVisible()
+    // The status and the tenant it assumes leaves are on the cell itself (line 2), not only in the tooltip.
+    await expect(s600.getByText('Potential · was Flamingo Row Media', { exact: true })).toBeVisible()
   })
 
   test('suite colour transition exists, and is off under reduced motion', async ({ page }) => {

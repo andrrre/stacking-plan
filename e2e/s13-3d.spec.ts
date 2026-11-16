@@ -101,15 +101,18 @@ test.describe('3D building', () => {
       expect(await byStatus('vacant')).toEqual([...VACANT].sort())
       expect(await byStatus('expiring')).toEqual(Object.keys(EXPIRING).sort())
       const stage = await page.getByTestId('stack-3d').boundingBox()
-      for (const n of VACANT.filter((n) => n !== '1010')) {
+      // Every vacant, committed and expiring suite carries an upright label: its number and, at 1440 px, its SF
+      // (at 1280 px a few sloping faces keep the number alone). Line 2, the status in words, is in the label for
+      // when its face is tall enough.
+      for (const n of [...VACANT, ...Object.keys(EXPIRING)]) {
         await expect(label(page, n), n).toBeVisible()
-        expect(await label(page, n).evaluate((el) => (el as HTMLElement).innerText), n).toContain('VACANT')
+        await expect(label(page, n), n).toHaveAttribute('data-parts', w === 1440 ? /^number sf/ : /^number/)
+        const shown = await label(page, n).evaluate((el) => (el as HTMLElement).innerText)
+        expect(shown, n).toMatch(w === 1440 ? new RegExp(`^${n} · [\\d,]+ SF`) : new RegExp(`^${n}( · [\\d,]+ SF)?`))
       }
-      for (const [n, date] of Object.entries(EXPIRING)) {
-        await expect(label(page, n), n).toBeVisible()
-        expect(await label(page, n).evaluate((el) => (el as HTMLElement).innerText), n).toContain(date)
-      }
-      expect(await label(page, '1010').evaluate((el) => (el as HTMLElement).innerText)).toContain('03/2027') // committed: lock + start
+      for (const n of VACANT.filter((n) => n !== '1010')) await expect(label(page, n), n).toContainText('Vacant')
+      for (const [n, date] of Object.entries(EXPIRING)) await expect(label(page, n), n).toContainText(` · ends ${date}`)
+      await expect(label(page, '1010')).toContainText('Committed · starts 03/2027')
       for (const n of [...VACANT, ...Object.keys(EXPIRING)]) {
         const p = await pointOf(page, n)
         expect(stage && p.x > stage.x && p.x < stage.x + stage.width && p.y > stage.y && p.y < stage.y + stage.height, n).toBe(true)
@@ -131,7 +134,7 @@ test.describe('3D building', () => {
     await expect(page.locator('[data-testid^="suite3d-"][data-dimmed="true"]')).toHaveCount(29)
     await expect(label(page, '500')).toHaveAttribute('data-forced', 'true')
     await expect(label(page, '600')).toHaveAttribute('data-ghost', 'true')
-    // A ghosted suite keeps only its cue and number, faint: the matches are what the eye lands on.
+    // A ghosted suite keeps only its number, faint: the matches are what the eye lands on.
     await expect.poll(() => label(page, '600').evaluate((el) => (el as HTMLElement).innerText)).not.toContain('Flamingo')
     expect(Number(await label(page, '600').evaluate((el) => getComputedStyle(el).opacity))).toBeLessThan(0.5)
     expect(await label(page, '500').evaluate((el) => (el as HTMLElement).innerText)).toContain('10,250 SF')
@@ -234,7 +237,8 @@ test.describe('3D building', () => {
     await pointOf(page, '600')
     await page.getByTestId('date-slider').fill('8')
     await expect(suite3d(page, '600')).toHaveAttribute('data-overlay', 'potential')
-    await expect(label(page, '600')).toContainText('Potential')
+    await expect(label(page, '600')).toContainText('Potential · was Flamingo Row Media')
+    await expect(label(page, '600')).toHaveAttribute('data-fill', 'potential')
     await page.getByTestId('date-today').click()
     await page.getByTestId('mode-risk').click()
     await expect(page.getByTestId('legend-risk')).toBeVisible()
@@ -518,7 +522,8 @@ test.describe('3D building', () => {
       await expect(page.getByTestId('scene3d')).toHaveAttribute('data-labels', 'top')
       await pointOf(page, '700')
       await expect(label(page, '700')).toHaveAttribute('data-hidden', 'false')
-      expect(await label(page, '700').evaluate((el) => (el as HTMLElement).innerText)).toContain('VACANT')
+      // The floor's whole top face is free: both lines show, upright.
+      expect(await label(page, '700').evaluate((el) => (el as HTMLElement).innerText)).toMatch(/^700 · 4,300 SF\s+Vacant$/)
 
       await slider(page).focus()
       await page.keyboard.press('ArrowDown')
@@ -741,7 +746,8 @@ test.describe('the sketched city around the building', () => {
     await pointOf(page, '600')
     await page.getByTestId('date-slider').fill('8')
     await expect(suite3d(page, '600')).toHaveAttribute('data-overlay', 'potential')
-    await expect(label(page, '600')).toContainText('Potential')
+    await expect(label(page, '600')).toContainText('Potential · was Flamingo Row Media')
+    await expect(label(page, '600')).toHaveAttribute('data-fill', 'potential')
     await expect(label(page, '600')).toBeVisible()
   })
 

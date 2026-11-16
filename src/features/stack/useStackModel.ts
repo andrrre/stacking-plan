@@ -12,7 +12,7 @@ export function useStackModel(): StackModel {
   const { matches } = useMatches()
   const building = selectBuilding(state)
   const base = selectBaseBuilding(state)
-  const { asOf, today, mode, highlight, selection, changes } = state
+  const { asOf, today, mode, highlight, selection, changes, legend } = state
   const includePotential = state.req.includePotential
   const selectedSuiteId = selection?.kind === 'suite' ? selection.suiteId : null
 
@@ -25,8 +25,8 @@ export function useStackModel(): StackModel {
 
   return useMemo(
     () => buildStackModel({
-      building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId,
+      building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId, legend,
     }),
-    [building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId],
+    [building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId, legend],
   )
 }
