@@ -18,6 +18,7 @@ export type SceneProps = {
   floor: number | null // floor view: the floor shown (null: the whole building)
   focusedId: string | null
   city: boolean // the City switch: the sketched neighbourhood and its traffic around the building
+  wide: boolean // the stage's layout: controls down the right (see useStageWide)
   rig: RefObject<Rig | null>
   onSelect: (suiteId: string) => void
   onPoints: (points: ReadonlyMap<string, ScreenPoint>) => void

@@ -10,6 +10,7 @@ import { findFits } from '../../domain/findFits'
 import { statusAt } from '../../domain/status'
 import type { Candidate, Suite } from '../../domain/types'
 import { RightPanel } from '../layout/RightPanel'
+import { useDrawers } from '../layout/useDrawers'
 import { PlaceTenant } from './PlaceTenant'
 import { SuiteActions } from './SuiteActions'
 
@@ -25,6 +26,12 @@ function heroSuite(n: string): Suite {
   const s = hero.floors.flatMap((f) => f.suites).find((x) => x.number === n)
   if (!s) throw new Error(`no suite ${n}`)
   return s
+}
+
+/** The right drawer as the app mounts it. */
+function DrawerPanel() {
+  const { right } = useDrawers()
+  return <RightPanel {...right} />
 }
 
 /** Shows the reducer's changes and selection so a test can see what was dispatched. */
@@ -142,7 +149,7 @@ describe('PlaceTenant', () => {
       ...initState('', null, TODAY), req: { minSf: 10_000, maxSf: null, maxRentPsf: null, includePotential: true },
       selection: { kind: 'match', key: 'odt-500' },
     }
-    render(<StateProvider initialState={state}><RightPanel /></StateProvider>)
+    render(<StateProvider initialState={state}><DrawerPanel /></StateProvider>)
     await userEvent.click(screen.getByTestId('place-tenant'))
     await userEvent.click(screen.getByTestId('change-submit'))
     expect(screen.getByRole('heading', { name: 'Suite 500' })).toHaveFocus()

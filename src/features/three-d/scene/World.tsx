@@ -28,6 +28,7 @@ export type WorldProps = {
   spread: number // 0 floors together … 1 separated
   focusedId: string | null
   reduced: boolean
+  wide?: boolean // the stage's settled layout (see useStageWide); unset: from the canvas's own aspect
   refs: OverlayRefs
   rig: RefObject<Rig | null>
   onSelect: (id: string) => void
@@ -60,7 +61,7 @@ export function World(p: WorldProps) {
   const view = useMemo(() => (focus === null ? lerpView(DEFAULT_VIEW, SEPARATED_VIEW, p.spread) : FLOOR_VIEW), [focus, p.spread])
   return (
     <>
-      <CameraRig bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} rig={p.rig} />
+      <CameraRig bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} wide={p.wide} rig={p.rig} />
       {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
       <Ground bounds={layout.bounds} shapes={shapes} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} />

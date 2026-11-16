@@ -81,12 +81,12 @@ test.describe('space finder', () => {
     await expect(page.getByTestId('match-1').getByRole('button', { name: /^Match 1:/ })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  test('Clear restores the empty panel and undims the stack', async ({ page }) => {
+  test('Clear closes the details drawer and undims the stack', async ({ page }) => {
     await page.getByTestId('req-min-sf').fill('10k')
     await expect(page.getByTestId('match-list')).toBeVisible()
     await page.getByTestId('req-clear').click()
     await expect(page.getByTestId('req-min-sf')).toHaveValue('')
-    await expect(page.getByTestId('right-empty')).toBeVisible()
+    await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
     await expect(page.locator('[data-dimmed="true"]')).toHaveCount(0)
   })
 })

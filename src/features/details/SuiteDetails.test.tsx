@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { StateProvider } from '../../app/state/StateProvider'
 import { initState } from '../../app/state/init'
-import { useAppState } from '../../app/state/useAppState'
 import type { AppState } from '../../app/state/types'
 import { SuiteDetails } from './SuiteDetails'
 
@@ -102,20 +100,5 @@ describe('SuiteDetails', () => {
       </StateProvider>,
     )
     expect(container).toBeEmptyDOMElement()
-  })
-
-  it('Close clears the selection', async () => {
-    function Probe() {
-      return <output data-testid="probe">{String(useAppState().state.selection)}</output>
-    }
-    render(
-      <StateProvider initialState={{ ...initState('', null, TODAY), selection: { kind: 'suite', suiteId: 'odt-600' } }}>
-        <SuiteDetails suiteId="odt-600" />
-        <Probe />
-      </StateProvider>,
-    )
-    expect(screen.getByTestId('probe')).toHaveTextContent('[object Object]')
-    await userEvent.click(screen.getByRole('button', { name: 'Close details' }))
-    expect(screen.getByTestId('probe')).toHaveTextContent('null')
   })
 })

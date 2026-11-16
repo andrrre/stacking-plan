@@ -137,12 +137,14 @@ test('a dimmed suite drops its dimming while focused or selected, so the ring st
   await expect.poll(() => dimmed(1200)).toBe(true)
 })
 
-test('clicking a suite selects it and the right panel leaves its empty state', async ({ page }) => {
+test('clicking a suite selects it and opens the details drawer', async ({ page }) => {
   await gotoApp(page, 'stack')
-  await expect(page.getByTestId('right-empty')).toHaveText('Enter a size to find space · click a suite for details')
+  await expect(page.getByTestId('stage-hint')).toHaveText('Click a suite for details · enter a size to find space')
+  await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
   await suite(page, 500).click()
   await expect(suite(page, 500)).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByTestId('right-empty')).toHaveCount(0)
+  await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'true')
+  await expect(page.getByTestId('stage-hint')).toHaveCount(0)
 })
 
 test('shell: header, rails, main landmark and overlay attribute', async ({ page }) => {
@@ -150,7 +152,11 @@ test('shell: header, rails, main landmark and overlay attribute', async ({ page 
   await expect(page.getByTestId('building-switcher')).toHaveValue('odt')
   await expect(page.getByRole('button', { name: 'Print', exact: true })).toBeVisible()
   await expect(page.getByRole('main')).toBeVisible()
-  for (const id of ['left-rail', 'center-pane', 'right-panel']) await expect(page.getByTestId(id)).toBeVisible()
+  for (const id of ['left-rail', 'center-pane']) await expect(page.getByTestId(id)).toBeVisible()
+  await expect(page.getByTestId('right-panel')).toBeAttached() // the details drawer: closed until something is selected
+  await expect(page.getByRole('complementary', { name: 'Details' })).toHaveCount(0) // inert: not in the accessibility tree
+  await suite(page, 500).click()
+  await expect(page.getByRole('complementary', { name: 'Details' })).toBeVisible()
   await expect(page.locator('#root > [data-overlay]')).toHaveAttribute('data-overlay', 'none')
 })
 

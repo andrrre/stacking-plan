@@ -13,10 +13,11 @@ export const WIDE_STAGE = 1.5
 /**
  * Canvas px kept clear of the building: the control bar (across the top, or down the right on a wide stage,
  * where the building is height-bound and has room to the side), floor numbers (left), badges and rings.
- * Must match the container query in three-d.module.css.
+ * `wide` defaults to the stage's own aspect; the stage passes its settled one while a side drawer slides.
+ * Must match the `data-wide` rules in three-d.module.css.
  */
-export function insetsFor(width: number, height: number): Insets {
-  return width >= height * WIDE_STAGE
+export function insetsFor(width: number, height: number, wide = width >= height * WIDE_STAGE): Insets {
+  return wide
     ? { top: 16, right: 158, bottom: 16, left: 40 }
     : { top: 48, right: 18, bottom: 16, left: 40 }
 }
@@ -25,8 +26,8 @@ export const FLOOR_PANEL_W = 92
 /** The floor caption's band across the top-left, under the control bar when that runs across the top (CSS px). */
 const FLOOR_CAPTION_H = 34
 /** The floor view's insets: the usual ones, plus the floor slider on the left and its caption at the top. */
-export function floorInsets(width: number, height: number): Insets {
-  const base = insetsFor(width, height)
+export function floorInsets(width: number, height: number, wide = width >= height * WIDE_STAGE): Insets {
+  const base = insetsFor(width, height, wide)
   return { ...base, top: base.top + FLOOR_CAPTION_H, left: base.left + FLOOR_PANEL_W }
 }
 export const DEFAULT_VIEW: View = { azimuth: 16, elevation: 14.5 }

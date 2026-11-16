@@ -22,12 +22,12 @@ test.describe('why this works, no-fit, jump to date', () => {
     await expect(page.getByTestId('match-2').getByRole('button', { name: /^Match 2:/ })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  test('Clear while a match is selected returns to the empty panel', async ({ page }) => {
+  test('Clear while a match is selected closes the details drawer', async ({ page }) => {
     await page.getByTestId('req-min-sf').fill('10,000')
     await page.getByTestId('match-1').getByRole('button', { name: /^Match 1:/ }).click()
     await expect(page.getByTestId('match-why')).toBeVisible()
     await page.getByTestId('req-clear').click()
-    await expect(page.getByTestId('right-empty')).toBeVisible()
+    await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
   })
 
   test('min 12,000: reasons, then Jump to date lands on May 2027 with Suite 600', async ({ page }) => {

@@ -14,6 +14,7 @@ import type { StackModel } from '../stack/suiteVisual'
 import type { Rig, ScreenPoint } from './sceneTypes'
 import { Fallback, type FailReason } from './Fallback3D'
 import { usePrinting } from './usePrinting'
+import { useStageWide } from './useStageWide'
 import { canUseWebGL } from './webgl'
 import styles from './three-d.module.css'
 
@@ -118,19 +119,20 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
   const rig = useRef<Rig | null>(null)
   const printing = usePrinting()
   const [city, onCity] = useCitySwitch()
+  const [stageRef, wide] = useStageWide()
   const onReset = () => {
     rig.current?.reset() // drops the button turns and zooms, and reframes
     modes.leave()
   }
   return (
     <>
-      <div className={styles.stage} data-testid="stack-3d" data-separated={String(modes.separated)} data-floor={floor ?? undefined}
+      <div ref={stageRef} className={styles.stage} data-testid="stack-3d" data-wide={String(wide)} data-separated={String(modes.separated)} data-floor={floor ?? undefined}
         role="group" aria-label={`3D building, ${selectBuilding(state).name}`}>
         <Mirror model={shown} points={points} getItemProps={getItemProps} onSelect={onSelect} onFocusChange={setFocusedId} />
         <SceneBoundary onError={onLoadFailed}>
           <Suspense fallback={<Placeholder />}>
             <Scene
-              buildingId={state.buildingId} model={model} mode={state.mode} separated={modes.separated} floor={floor} focusedId={focusedId} city={city} rig={rig}
+              buildingId={state.buildingId} model={model} mode={state.mode} separated={modes.separated} floor={floor} focusedId={focusedId} city={city} wide={wide} rig={rig}
               onSelect={onSelect} onPoints={setPoints} onLost={onLost}
             />
           </Suspense>

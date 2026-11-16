@@ -33,6 +33,7 @@ function useDerived(model: SceneProps['model'], focusedId: string | null) {
 }
 
 const SPREAD_MS = 420
+const RESIZE = { scroll: false, debounce: 0 } as const
 
 /** 0 (floors together) … 1 (separated), easing between the two over SPREAD_MS; a jump under reduced motion. */
 function useSpread(separated: boolean, reduced: boolean): number {
@@ -64,7 +65,7 @@ function useCity(buildingId: string, model: SceneProps['model']) {
   }, [buildingId, halfW, halfD, height])
 }
 
-function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, rig, onSelect, onPoints, onLost }: SceneProps) {
+function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, wide, rig, onSelect, onPoints, onLost }: SceneProps) {
   const reduced = useReducedMotion()
   const spread = useSpread(separated, reduced)
   const root = useRef<HTMLDivElement>(null)
@@ -88,11 +89,15 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, r
         flat
         frameloop="demand"
         dpr={[1, 2]}
+        // Follow the stage's size every frame while a side drawer slides (the default debounces resizes by
+        // 50 ms, so the canvas would stay its old size, clipped or short, until the slide ended). Pointer
+        // events use offsetX/Y, so the scroll tracking the default adds is not needed.
+        resize={RESIZE}
         camera={{ fov: FOV_Y, near: 0.5, far: 2000, position: [0, 6, 60] }}
         gl={{ antialias: true, alpha: true }}
       >
         <World
-          {...derived} mode={mode} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced}
+          {...derived} mode={mode} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced} wide={wide}
           refs={refs} rig={rig} onSelect={onSelect} onPoints={onPoints} onLost={onLost}
           city={city ? { ...town, running, dim } : null}
         />

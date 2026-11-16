@@ -2,7 +2,7 @@
   height: 100%;
 }
 
-/* Header, KPI bar, then three columns that scroll on their own. */
+/* Header, KPI bar, then three columns that scroll on their own: the side drawers size their own columns. */
 .shell {
   display: flex;
   flex-direction: column;
@@ -12,9 +12,11 @@
 
 .body {
   display: grid;
-  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--panel-w);
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   flex: 1 1 0;
   min-height: 0;
+  overflow: clip;
 }
 
 @media print {

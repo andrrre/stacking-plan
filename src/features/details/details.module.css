@@ -4,21 +4,6 @@
 .title { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-semibold); line-height: var(--lh-tight); }
 .where { margin: 2px 0 0; color: var(--c-text-muted); font-size: var(--fs-sm); }
 
-.close {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--r-md);
-  color: var(--c-text-muted);
-  font-size: var(--fs-xl);
-  line-height: 1;
-  cursor: pointer;
-}
-.close:hover { background: var(--c-surface-2); color: var(--c-text); }
-.close:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
-
 .status {
   --s-bg: var(--c-surface-2); --s-ink: var(--c-text); --s-edge: var(--c-border-strong);
   margin: 0;

@@ -45,7 +45,7 @@ test.describe('scenario simulator', () => {
     // The placed suite is selected and its heading takes focus; the matches recompute on the scenario building.
     await expect(page.getByTestId('suite-details')).toContainText('Prospect')
     await expect(page.getByRole('heading', { name: 'Suite 500' })).toBeFocused()
-    await page.getByTestId('suite-details').getByRole('button', { name: 'Close details' }).click()
+    await page.getByTestId('right-drawer-close').click()
     await expect(page.getByTestId('match-1')).toHaveAttribute('data-key', 'odt-700+odt-710')
   })
 
@@ -88,7 +88,7 @@ test.describe('scenario simulator', () => {
     await expect(page.getByTestId('scenario-count')).toHaveText('1 change')
     await expect(suite(page, 600)).toHaveAttribute('data-modified', 'true')
 
-    await page.getByTestId('suite-details').getByRole('button', { name: 'Close details' }).click()
+    await page.getByTestId('right-drawer-close').click()
     await page.getByTestId('req-min-sf').fill('10,000')
     await page.getByTestId('date-slider').fill('8')
     await expect(page.getByTestId('date-label')).toContainText('Jul 2027')

@@ -24,7 +24,8 @@ it('renders the shell around a 32-suite stack with no overlay', () => {
   expect(container.firstElementChild).toHaveAttribute('data-overlay', 'none')
   expect(screen.getByRole('main')).toBeInTheDocument()
   expect(within(screen.getByTestId('stack')).getAllByRole('button')).toHaveLength(32)
-  expect(screen.getByTestId('right-empty')).toHaveTextContent('Enter a size to find space · click a suite for details')
+  expect(screen.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
+  expect(screen.getByTestId('stage-hint')).toHaveTextContent('Click a suite for details · enter a size to find space')
 })
 
 it('opens on the 3D building; without WebGL (jsdom) it shows the 2D stack with a note', () => {
@@ -33,11 +34,11 @@ it('opens on the 3D building; without WebGL (jsdom) it shows the 2D stack with a
   expect(screen.getByTestId('webgl-fallback')).toContainElement(screen.getByTestId('stack'))
 })
 
-it('selecting a suite replaces the empty right panel', async () => {
+it('selecting a suite opens the right drawer', async () => {
   renderApp()
   await userEvent.click(screen.getByTestId('suite-odt-500'))
   expect(screen.getByTestId('suite-odt-500')).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.queryByTestId('right-empty')).toBeNull()
+  expect(screen.getByTestId('right-panel')).toHaveAttribute('data-open', 'true')
 })
 
 it('Print calls window.print', async () => {

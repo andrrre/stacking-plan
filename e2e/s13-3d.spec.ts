@@ -137,6 +137,7 @@ test.describe('3D building', () => {
   test('a real click on the canvas selects the suite under the pointer, on any floor and after orbiting', async ({ page }) => {
     await gotoApp(page, '3d')
     for (const n of ['500', '220']) {
+      await settled(page, n) // the first selection opens the details drawer, which narrows the stage
       const p = await pointOf(page, n)
       await page.mouse.click(p.x, p.y)
       await expect(suite3d(page, n)).toHaveAttribute('aria-pressed', 'true')
@@ -666,12 +667,13 @@ test.describe('the sketched city around the building', () => {
     await gotoApp(page, '3d', MOVING)
     await pointOf(page, '500')
     await settled(page, '500')
-    const tag = page.getByTestId('floor3d-7')
-    const withCity = await tag.boundingBox()
-    const point = await pointKey(page, '500')
     const at = await pointOf(page, '500')
     await page.mouse.click(at.x, at.y)
     await expect(suite3d(page, '500')).toHaveAttribute('aria-pressed', 'true')
+    await settled(page, '500') // the selection opens the details drawer, which narrows the stage
+    const tag = page.getByTestId('floor3d-7')
+    const withCity = await tag.boundingBox()
+    const point = await pointKey(page, '500')
     await toggle(page).click()
     await expect(scene(page)).toHaveAttribute('data-city', 'off')
     await settled(page, '500')

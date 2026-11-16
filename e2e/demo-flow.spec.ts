@@ -97,7 +97,7 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await expect(suite3d(page, 500)).toHaveAttribute('aria-pressed', 'true')
 
   // saving during the scenario produces a what-if entry
-  await page.getByTestId('suite-details').getByRole('button', { name: 'Close details' }).click()
+  await page.getByTestId('right-drawer-close').click()
   await expect(page.getByTestId('match-1')).toHaveAttribute('data-key', 'odt-700+odt-710')
   await page.getByTestId('save-match-1').click()
   const entry2 = page.getByTestId('shortlist-entry-2')

@@ -1,20 +1,94 @@
+/*
+  The right drawer, mirroring the left one: on wide screens a grid column easing between the panel's width and
+  0 (pushing the stage), the panel anchored to its left edge so it slides out under the clip; on narrow
+  screens an overlay sliding with a transform.
+*/
+.drawer {
+  --drawer-dur: 240ms;
+  --drawer-w: var(--panel-w); /* read by drawerGeometry.ts */
+  position: relative;
+  z-index: 2;
+  width: var(--drawer-w);
+  min-height: 0;
+  transition: width var(--drawer-dur) var(--ease);
+}
+
+.drawer[data-open='false'] { width: 0; }
+
+.clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
 .panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  min-height: 0;
+  width: var(--panel-w);
   overflow-y: auto;
-  padding: var(--sp-4);
+  padding: var(--sp-2) var(--sp-4) var(--sp-4);
   background: var(--c-surface);
   border-left: 1px solid var(--c-border);
+  transition: visibility 0s;
 }
 
-.empty {
-  margin: var(--sp-8) var(--sp-2) 0;
-  padding: var(--sp-5) var(--sp-4);
-  border: 1px dashed var(--c-border-strong);
-  border-radius: var(--r-md);
+.drawer[data-open='false'] .panel { visibility: hidden; transition: visibility 0s var(--drawer-dur); }
+
+/* The drawer's own title bar: a quiet label and the close button. */
+.bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: calc(-1 * var(--sp-2));
+}
+
+.eyebrow {
   color: var(--c-text-muted);
-  font-size: var(--fs-md);
-  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: calc(-1 * var(--sp-1));
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--c-text-muted);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.close:hover { background: var(--c-surface-2); color: var(--c-text); }
+
+.icon { width: 14px; height: 14px; }
+
+@media (max-width: 1099.98px) {
+  .drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    transform: translateX(0);
+    transition: transform var(--drawer-dur) var(--ease);
+  }
+  .drawer[data-open='false'] { width: var(--panel-w); transform: translateX(100%); }
+  .clip { overflow: visible; }
+  .drawer[data-open='true'] .panel { box-shadow: -4px 0 16px rgba(16, 24, 40, .12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer { --drawer-dur: 0ms; }
 }

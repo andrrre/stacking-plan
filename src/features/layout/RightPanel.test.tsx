@@ -8,8 +8,17 @@ import type { Action, AppState, RequirementDraft, Selection } from '../../app/st
 import { AppStateContext, useAppState } from '../../app/state/useAppState'
 import { RequirementForm } from '../finder/RequirementForm'
 import { RightPanel } from './RightPanel'
+import { useDrawers } from './useDrawers'
 
 const TODAY = '2026-11-15'
+
+/** The panel as the app mounts it: its view and open state come from useDrawers. */
+function Panel() {
+  const { right } = useDrawers()
+  return <RightPanel {...right} />
+}
+
+const expectClosed = () => expect(screen.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
 
 function renderPanel(selection: Selection, req: Partial<RequirementDraft>, over: Partial<AppState> = {}) {
   const base = initState('', null, TODAY)
@@ -17,7 +26,7 @@ function renderPanel(selection: Selection, req: Partial<RequirementDraft>, over:
   const dispatch = vi.fn<(a: Action) => void>()
   render(
     <AppStateContext.Provider value={{ state, dispatch }}>
-      <RightPanel />
+      <Panel />
     </AppStateContext.Provider>,
   )
   return dispatch
@@ -40,10 +49,10 @@ describe('RightPanel match selection (A11)', () => {
     expect(screen.getByTestId('match-list')).toBeVisible()
   })
 
-  it('a match selection with no requirement (after Clear) dispatches select(null) and shows the empty state', () => {
+  it('a match selection with no requirement (after Clear) dispatches select(null) and closes the drawer', () => {
     const dispatch = renderPanel({ kind: 'match', key: 'odt-500' }, { minSf: null })
     expect(dispatch).toHaveBeenCalledWith(CLEAR)
-    expect(screen.getByTestId('right-empty')).toBeVisible()
+    expectClosed()
   })
 
   it('a match that still exists after a date move stays selected', () => {
@@ -84,7 +93,7 @@ function renderLive(over: Partial<AppState>, req: Partial<RequirementDraft>, wit
     <StateProvider initialState={state}>
       <Driver expose={expose} />
       {withForm && <RequirementForm />}
-      <SpyDispatch spy={spy}><RightPanel /></SpyDispatch>
+      <SpyDispatch spy={spy}><Panel /></SpyDispatch>
     </StateProvider>,
   )
   return { spy, send: (a: Action) => act(() => send(a)) }
@@ -100,11 +109,11 @@ async function expectSettled(spy: { mock: { calls: Action[][] } }) {
 }
 
 describe('RightPanel with the real reducer', () => {
-  it('match 2 selected at min 10,000, then req/clear: back to right-empty, one select(null), settled', async () => {
+  it('match 2 selected at min 10,000, then req/clear: the drawer closes, one select(null), settled', async () => {
     const { spy, send } = renderLive({ selection: { kind: 'match', key: 'odt-700+odt-710' } }, { minSf: 10_000 })
     expect(screen.getByTestId('match-why')).toBeVisible()
     send({ type: 'req/clear' })
-    expect(screen.getByTestId('right-empty')).toBeVisible()
+    expectClosed()
     await expectSettled(spy)
   })
 

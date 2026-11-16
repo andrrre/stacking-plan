@@ -1,91 +1,86 @@
-import { useEffect, useRef, type MouseEvent } from 'react'
-import { activeRequirement } from '../../app/state/selectors'
-import type { AppState } from '../../app/state/types'
-import { useAppState } from '../../app/state/useAppState'
-import type { Candidate } from '../../domain/types'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { SuiteDetails } from '../details/SuiteDetails'
 import { MatchList } from '../finder/MatchList'
 import { MatchWhy } from '../finder/MatchWhy'
-import { useMatches } from '../finder/useMatches'
+import { viewKey, type PanelView } from './drawers'
+import { usePanelFocus, useReturnFocus } from './drawerFocus'
+import type { RightDrawer } from './useDrawers'
 import styles from './RightPanel.module.css'
 
-type PanelView =
-  | { kind: 'match'; candidate: Candidate; rank: number }
-  | { kind: 'suite'; suiteId: string }
-  | { kind: 'list' }
-  | { kind: 'empty' }
+/** The longest a closing slide keeps its content if no transitionend arrives (240 ms slide, reduced motion: 0). */
+const SLIDE_MS = 320
 
-/** Right panel precedence (spec-technical §4): match → suite → requirement → empty. A stale match falls through. */
-function panelView(state: AppState, matches: readonly Candidate[]): PanelView {
-  const { selection } = state
-  const index = selection?.kind === 'match' ? matches.findIndex((c) => c.key === selection.key) : -1
-  const candidate = matches[index]
-  if (candidate) return { kind: 'match', candidate, rank: index + 1 }
-  if (selection?.kind === 'suite') return { kind: 'suite', suiteId: selection.suiteId }
-  if (activeRequirement(state)) return { kind: 'list' }
-  return { kind: 'empty' }
+/**
+ * What the drawer renders: the live view while open; while it slides shut, the last view it showed (inert),
+ * dropped when the slide ends.
+ */
+function useSlidingView(view: PanelView, open: boolean) {
+  const [last, setLast] = useState(view)
+  const [sliding, setSliding] = useState(false)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open && viewKey(last) !== viewKey(view)) setLast(view)
+  if (wasOpen !== open) {
+    setWasOpen(open)
+    setSliding(!open)
+  }
+  useEffect(() => {
+    if (!sliding) return undefined
+    const timer = setTimeout(() => setSliding(false), SLIDE_MS)
+    return () => clearTimeout(timer)
+  }, [sliding])
+  return { shown: open ? view : sliding ? last : null, onSlideEnd: () => setSliding(false) }
 }
 
-type FocusTarget = 'why' | 'list'
+function CloseIcon() {
+  return (
+    <svg className={styles.icon} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  )
+}
 
-const FOCUS_SELECTOR: Record<FocusTarget, string> = {
-  why: '[data-focus-target="why"]',
-  list: '[data-focus-target="list"] button',
+function Content({ view }: { view: PanelView | null }) {
+  if (view?.kind === 'match') return <MatchWhy candidate={view.candidate} rank={view.rank} />
+  if (view?.kind === 'suite') return <SuiteDetails suiteId={view.suiteId} />
+  if (view?.kind === 'list') return <MatchList />
+  return null
 }
 
 /**
- * Keeps keyboard focus in the panel when a click inside it swaps the content (match card → why, All matches or
- * Jump to date → list). The clicked control names the target in `data-focus-next`; nothing else moves focus,
- * so typing in the form or dragging the slider never loses it.
+ * The right drawer: match why → suite details → match list (or no fit). Closed and inert when there is nothing
+ * to show. Close (or Escape inside it) clears a selection, handing focus to the match list when a search takes
+ * over, or dismisses the list; once the drawer shuts, focus goes back to the stage.
  */
-function usePanelFocus() {
-  const ref = useRef<HTMLElement>(null)
-  const pending = useRef<FocusTarget | null>(null)
-  const onClick = (e: MouseEvent) => {
-    const next = e.target instanceof Element ? e.target.closest('[data-focus-next]')?.getAttribute('data-focus-next') : null
-    if (next === 'why' || next === 'list') pending.current = next
+export function RightPanel({ view, open, onClose }: RightDrawer) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const { panelRef, onPanelClick, focusNext } = usePanelFocus(() => closeRef.current)
+  const returnFocus = useReturnFocus(viewKey(view))
+  const { shown, onSlideEnd } = useSlidingView(view, open)
+  const close = () => {
+    if (onClose()) returnFocus()
+    else focusNext('list')
   }
-  useEffect(() => {
-    if (!pending.current) return
-    const target = ref.current?.querySelector<HTMLElement>(FOCUS_SELECTOR[pending.current])
-    pending.current = null
-    target?.focus()
-  })
-  return { panelRef: ref, onPanelClick: onClick }
-}
-
-export function RightPanel() {
-  const { state, dispatch } = useAppState()
-  const { matches } = useMatches()
-  const view = panelView(state, matches)
-  // A11: a match selection whose suites no longer form a current candidate (date move, Clear) is cleared.
-  const stale = state.selection?.kind === 'match' && view.kind !== 'match'
-  useEffect(() => {
-    if (stale) dispatch({ type: 'select', selection: null })
-  }, [stale, dispatch])
-  const { panelRef, onPanelClick } = usePanelFocus()
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape' || e.defaultPrevented) return
+    if (e.target instanceof Element && e.target.closest('dialog, [role=dialog]')) return // a dialog owns its Escape
+    e.preventDefault() // the KPI bar leaves its highlight alone
+    close()
+  }
   return (
-    <aside ref={panelRef} onClick={onPanelClick} className={styles.panel} data-testid="right-panel" data-print="hide" aria-label="Details">
-      {view.kind === 'match' && (
-        <>
-          <MatchWhy candidate={view.candidate} rank={view.rank} />
-        </>
-      )}
-      {view.kind === 'suite' && (
-        <>
-          <SuiteDetails suiteId={view.suiteId} />
-        </>
-      )}
-      {view.kind === 'list' && (
-        <>
-          <MatchList />
-        </>
-      )}
-      {view.kind === 'empty' && (
-        <p className={styles.empty} data-testid="right-empty">
-          Enter a size to find space · click a suite for details
-        </p>
-      )}
-    </aside>
+    <div className={styles.drawer} data-drawer="right" data-open={String(open)} data-print="hide"
+      onTransitionEnd={(e) => { if (e.target === e.currentTarget && !open) onSlideEnd() }}>
+      <div className={styles.clip}>
+        <aside ref={panelRef} onClick={onPanelClick} onKeyDown={onKeyDown} className={styles.panel} data-testid="right-panel"
+          data-open={String(open)} aria-label="Details" inert={!open}>
+          <div className={styles.bar}>
+            <span className={styles.eyebrow}>Details</span>
+            <button ref={closeRef} type="button" className={styles.close} data-testid="right-drawer-close" aria-label="Close details" title="Close details" onClick={close}>
+              <CloseIcon />
+            </button>
+          </div>
+          <Content view={shown} />
+        </aside>
+      </div>
+    </div>
   )
 }

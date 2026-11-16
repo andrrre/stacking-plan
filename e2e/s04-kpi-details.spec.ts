@@ -32,7 +32,7 @@ test('a second click on a tile restores the overlay', async ({ page }) => {
   await expect(suite(page, 600)).toHaveAttribute('data-dimmed', 'false')
 })
 
-test('selecting suite 600 shows its details; Close returns to the empty panel', async ({ page }) => {
+test('selecting suite 600 shows its details; Close clears the selection and closes the drawer', async ({ page }) => {
   await gotoApp(page, 'stack')
   await suite(page, 600).click()
   const panel = page.getByTestId('suite-details')
@@ -43,7 +43,8 @@ test('selecting suite 600 shows its details; Close returns to the empty panel', 
   await expect(panel).toContainText('Expiring')
   await expect(panel).toContainText('5 months')
   await page.getByRole('button', { name: 'Close details' }).click()
-  await expect(page.getByTestId('right-empty')).toBeVisible()
+  await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
+  await expect(suite(page, 600)).toHaveAttribute('aria-pressed', 'false')
 })
 
 test('suite 700 says it can combine with 710', async ({ page }) => {

@@ -50,7 +50,7 @@ function FactRows({ suite, st, neighbours, asOf }: FactProps) {
 }
 
 export function SuiteDetails({ suiteId }: Props) {
-  const { state, dispatch } = useAppState()
+  const { state } = useAppState()
   const headingRef = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
     if (takeDetailsFocus(suiteId)) headingRef.current?.focus()
@@ -69,7 +69,6 @@ export function SuiteDetails({ suiteId }: Props) {
           <h2 ref={headingRef} className={styles.title} tabIndex={-1}>Suite {suite.number}</h2>
           <p className={styles.where}>Floor {floor}{suite.name ? ` · ${suite.name}` : ''}</p>
         </div>
-        <button type="button" className={styles.close} aria-label="Close details" onClick={() => dispatch({ type: 'select', selection: null })}>×</button>
       </header>
       <p className={styles.status} data-status={st.status} data-overlay={st.status === 'vacant' ? st.overlay : undefined}>
         {statusText(st, today)}

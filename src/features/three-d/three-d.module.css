@@ -183,12 +183,12 @@
 
 .hint { margin-right: var(--sp-1); padding: 2px 6px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--c-surface) 85%, transparent); color: var(--c-text-muted); font-size: var(--fs-xs); }
 
-/* A wide stage (see WIDE_STAGE in camera.ts) has room beside the building: the controls stack down the right. */
-@container stage (aspect-ratio >= 3 / 2) {
-  .controls { flex-direction: column; align-items: stretch; width: 142px; }
-  .ctlGroup > .ctl { flex: 1 1 0px; }
-  .hint { order: 1; margin: 2px 0 0; text-align: center; white-space: normal; }
-}
+/* A wide stage (see WIDE_STAGE in camera.ts) has room beside the building: the controls stack down the right.
+   `data-wide` is decided in script (useStageWide), from the size the stage will have once a side drawer has
+   finished sliding, so the layout does not switch half-way through a slide. */
+.stage[data-wide='true'] .controls { flex-direction: column; align-items: stretch; width: 142px; }
+.stage[data-wide='true'] .ctlGroup > .ctl { flex: 1 1 0px; }
+.stage[data-wide='true'] .hint { order: 1; margin: 2px 0 0; text-align: center; white-space: normal; }
 
 .ctlGroup {
   display: inline-flex;
@@ -232,8 +232,14 @@
 .icon { width: 16px; height: 16px; flex: none; }
 
 /* On a narrow stage the control bar has no room for the City switch's word: it keeps its icon (and its name). */
-@container stage (width < 720px) and (aspect-ratio < 3 / 2) {
-  .ctlLabel { display: none; }
+@container stage (width < 720px) {
+  .stage[data-wide='false'] .ctlLabel { display: none; }
+}
+
+/* Narrow screens: the details drawer overlays the stage's right side (panel width, less the 16px pane gutter
+   and the card's 1px border and 4px padding); the controls move clear of it so they stay reachable. */
+@media (max-width: 1099.98px) {
+  :global(main[data-details='open']) .controls { right: calc(var(--panel-w) - 21px + var(--sp-2)); }
 }
 
 /* ---------- floor view: the vertical floor slider down the left edge ---------- */
@@ -253,9 +259,7 @@
   pointer-events: none;
 }
 
-@container stage (aspect-ratio >= 3 / 2) {
-  .floorPanel { top: var(--sp-2); }
-}
+.stage[data-wide='true'] .floorPanel { top: var(--sp-2); }
 
 .floorCaption {
   width: max-content;

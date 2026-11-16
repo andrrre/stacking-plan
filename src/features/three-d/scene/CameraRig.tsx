@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { MOUSE, TOUCH, Vector3, type PerspectiveCamera } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import {
-  AZIMUTH_LIMIT, ELEVATION_RANGE, floorInsets, framePose, insetsFor, viewOf, viewShift, zoomedIn,
+  AZIMUTH_LIMIT, ELEVATION_RANGE, WIDE_STAGE, floorInsets, framePose, insetsFor, viewOf, viewShift, zoomedIn,
   NO_OFFSET, applyOffset, offsetBetween, type Insets, type Offset, type Pose, type Vec3, type View, type Zoom,
 } from '../camera'
 import { MAX_ZOOM_OUT, glideAt, limitsAfter, limitsDuring, limitsFor, retarget, type Glide, type Limits } from '../glide'
@@ -92,9 +92,9 @@ function restingPose(camera: PerspectiveCamera, c: OrbitControls, fit: Pose, d: 
 }
 
 /** `view` is the framing angle; `focus` the floor shown in floor view (null: the whole building). */
-type Props = { bounds: Bounds; view: View; focus: number | null; reduced: boolean; rig: RefObject<Rig | null> }
+type Props = { bounds: Bounds; view: View; focus: number | null; reduced: boolean; wide?: boolean; rig: RefObject<Rig | null> }
 
-export function CameraRig({ bounds, view, focus, reduced, rig }: Props) {
+export function CameraRig({ bounds, view, focus, reduced, wide, rig }: Props) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const gl = useThree((s) => s.gl)
   const width = useThree((s) => s.size.width)
@@ -104,7 +104,7 @@ export function CameraRig({ bounds, view, focus, reduced, rig }: Props) {
   // second, unconfigured instance listening on the canvas.
   const controls = useMemo(() => new OrbitControls(camera), [camera])
   const glide = useGlide(camera, controls, invalidate)
-  const insets = useMemo(() => (focus === null ? insetsFor : floorInsets)(width, height), [focus, width, height])
+  const insets = useMemo(() => (focus === null ? insetsFor : floorInsets)(width, height, wide ?? width >= height * WIDE_STAGE), [focus, width, height, wide])
   // Refit only when the outline changes, not on every new layout object (a search must not reset the view).
   const [fitted, setFitted] = useState(bounds)
   if (boundsKey(fitted) !== boundsKey(bounds)) setFitted(bounds)
@@ -126,8 +126,21 @@ export function CameraRig({ bounds, view, focus, reduced, rig }: Props) {
     return to
   }, [camera, controls, fitted, width, height, insets, reduced, invalidate, glide])
   useControlEvents(controls, gl.domElement, invalidate, settle, begin)
-  useRigHandle(rig, { camera, controls, framing, frame, begin, settle, focus, reduced })
+  useRigHandle(rig, { camera, controls, framing, frame, begin, settle, focus, reduced, gliding: glide.running })
+  useCameraReport(gl.domElement, camera, controls, framing)
   return null
+}
+
+/**
+ * Writes the camera's angle and zoom against the current framing onto the canvas, after every rendered frame
+ * (`data-camera-azimuth` in degrees, `data-camera-zoom` as a distance factor; 1 = framed), for tests.
+ */
+function useCameraReport(el: HTMLElement, camera: PerspectiveCamera, c: OrbitControls, framing: () => Pose): void {
+  useFrame(() => {
+    const o = offsetBetween(framing(), placed(camera, c))
+    el.setAttribute('data-camera-azimuth', o.azimuth.toFixed(1))
+    el.setAttribute('data-camera-zoom', o.factor.toFixed(3))
+  })
 }
 
 const placed = (camera: PerspectiveCamera, c: OrbitControls) =>
@@ -181,6 +194,7 @@ type Handle = {
   settle: () => Pose | null
   focus: number | null
   reduced: boolean
+  gliding: () => boolean
 }
 
 /**
@@ -188,17 +202,22 @@ type Handle = {
  * commands. After each button press the camera's actual offset from the framing is kept (read back after
  * the controls clamped it, at the place the glide will come to rest), so every later reframe, one per frame
  * during a separate / rejoin move, puts the camera exactly where the user left it. Reset view clears it.
+ * A drag orbit or wheel zoom is read back the same way before each reframe (unless a glide is under way, which
+ * reframing retargets), so a side drawer resizing the stage keeps the user's view relative to the new framing.
  */
 function useRigHandle(rig: RefObject<Rig | null>, h: Handle): void {
-  const { camera, controls, framing, frame, begin, settle, focus, reduced } = h
+  const { camera, controls, framing, frame, begin, settle, focus, reduced, gliding } = h
   const offset = useRef<Offset>(NO_OFFSET)
   const shown = useRef(focus)
+  const lastFraming = useRef<(() => Pose) | null>(null)
   useEffect(() => {
     const moved = shown.current !== focus
     if (moved && (shown.current === null || focus === null)) offset.current = NO_OFFSET // into or out of floor view
+    else if (!moved && lastFraming.current && !gliding()) offset.current = offsetBetween(lastFraming.current(), placed(camera, controls))
+    lastFraming.current = framing
     shown.current = focus
     frame(offset.current, moved && !reduced)
-  }, [frame, focus, reduced])
+  }, [frame, framing, focus, reduced, gliding, camera, controls])
   useImperativeHandle(rig, () => {
     const press = (degrees: number, factor: number) => {
       begin()
@@ -239,6 +258,7 @@ function useGlide(camera: PerspectiveCamera, controls: OrbitControls, invalidate
     invalidate()
   })
   return useMemo(() => ({
+    running: () => glide.current !== null,
     begin: (g: Glide) => {
       glide.current = g
       putLimits(controls, limitsDuring(g))

@@ -3,6 +3,7 @@ import { CenterPane } from '../features/layout/CenterPane'
 import { Header } from '../features/layout/Header'
 import { LeftRail } from '../features/layout/LeftRail'
 import { RightPanel } from '../features/layout/RightPanel'
+import { useDrawers } from '../features/layout/useDrawers'
 import { KpiBar } from '../features/kpi/KpiBar'
 import { Overlays } from '../features/shortlist/Overlays'
 import { useAppState } from './state/useAppState'
@@ -14,16 +15,17 @@ import styles from './App.module.css'
 export function App() {
   const { state } = useAppState()
   useUrlSync()
+  const { left, right } = useDrawers()
   return (
     <div className={styles.app} data-overlay={state.overlay}>
       <div className={styles.shell} data-print="shell">
         <Header />
         <KpiBar />
-        <main className={styles.body}>
+        <main className={styles.body} data-details={right.open ? 'open' : 'closed'}>
           <FormValidityProvider>
-            <LeftRail />
+            <LeftRail {...left} />
             <CenterPane />
-            <RightPanel />
+            <RightPanel {...right} />
           </FormValidityProvider>
         </main>
       </div>
