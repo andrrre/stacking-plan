@@ -24,6 +24,7 @@ describe('initState', () => {
       legend: null,
       presenting: false,
       movePreview: null,
+      tour: null,
     })
   })
 

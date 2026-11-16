@@ -36,5 +36,6 @@ export function initState(search: string, storage: StorageLike | null, clockToda
     legend: url.legend ?? null,
     presenting: false,
     movePreview: null,
+    tour: null,
   }
 }

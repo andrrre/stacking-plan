@@ -32,6 +32,7 @@ function makeState(overrides: Partial<AppState> = {}): AppState {
     legend: null,
     presenting: false,
     movePreview: null,
+    tour: null,
     ...overrides,
   })
 }
@@ -389,6 +390,92 @@ describe('reducer', () => {
 
     it.each(keepingActions)('the preview survives %s', (_name, action) => {
       expect(reducer(previewing, action).movePreview).toBe(option)
+    })
+  })
+
+  describe('suite tour', () => {
+    const second: Candidate = { ...candidate, key: 'odt-700+odt-710', suiteIds: ['odt-700', 'odt-710'], suiteNumbers: ['700', '710'], floor: 7 }
+    const third: Candidate = { ...candidate, key: 'odt-410', suiteIds: ['odt-410'], suiteNumbers: ['410'], floor: 4 }
+    const stops = [candidate, second, third]
+    const option: MoveOption = {
+      key: 'l1>odt-300', lease: lease(), freed: candidate,
+      from: { suiteId: 'odt-500', number: '500', floor: 5, areaSf: 5000 }, to: { suiteId: 'odt-300', number: '300', floor: 3, areaSf: 5200 },
+    }
+    const touring = (over: Partial<NonNullable<AppState['tour']>> = {}, state: Partial<AppState> = {}) =>
+      makeState({ presenting: true, view: '3d', tour: { stops, index: 1, phase: 'look', playing: true, ...over }, ...state })
+
+    it('tour/start presents, shows the 3D building and flies to the chosen stop; floor view, highlight, filter, preview and overlays end', () => {
+      const s = makeState({ floor: 5, highlight: 'vacant', legend: 'vacant', overlay: 'summary', movePreview: option })
+      const next = run(s, { type: 'tour/start', stops, index: 1, playing: true })
+      expect(next.tour).toEqual({ stops, index: 1, phase: 'fly', playing: true })
+      expect([next.presenting, next.view, next.floor, next.highlight, next.legend, next.overlay, next.movePreview])
+        .toEqual([true, '3d', null, null, null, 'none', null])
+    })
+
+    it('tour/start with no stops changes nothing', () => {
+      const s = makeState()
+      expect(reducer(s, { type: 'tour/start', stops: [], index: 0, playing: true })).toBe(s)
+    })
+
+    it('tour/start clamps the index into the stops', () => {
+      expect(run(makeState(), { type: 'tour/start', stops, index: 9, playing: false }).tour?.index).toBe(2)
+    })
+
+    it('tour/go moves to another stop and flies again; past either end it stays', () => {
+      const next = run(touring(), { type: 'tour/go', index: 2 })
+      expect(next.tour).toMatchObject({ index: 2, phase: 'fly', playing: true })
+      expect(reducer(touring({ index: 2 }), { type: 'tour/go', index: 3 }).tour?.index).toBe(2)
+      expect(reducer(touring({ index: 0 }), { type: 'tour/go', index: -1 }).tour?.index).toBe(0)
+      const same = touring()
+      expect(reducer(same, { type: 'tour/go', index: 1 })).toBe(same)
+    })
+
+    it('tour/phase advances the current stop only (a late report from a stop already left is ignored)', () => {
+      expect(run(touring({ phase: 'fly' }), { type: 'tour/phase', index: 1, phase: 'enter' }).tour?.phase).toBe('enter')
+      const s = touring({ phase: 'fly' })
+      expect(reducer(s, { type: 'tour/phase', index: 0, phase: 'enter' })).toBe(s)
+    })
+
+    it('tour/play plays and pauses', () => {
+      expect(run(touring(), { type: 'tour/play', playing: false }).tour?.playing).toBe(false)
+      expect(run(touring({ playing: false }), { type: 'tour/play', playing: true }).tour?.playing).toBe(true)
+    })
+
+    it('tour/exit ends the tour, keeps presenting and leaves the last toured suite selected', () => {
+      const next = run(touring(), { type: 'tour/exit' })
+      expect(next.tour).toBeNull()
+      expect(next.presenting).toBe(true)
+      expect(next.selection).toEqual({ kind: 'suite', suiteId: 'odt-700' })
+    })
+
+    it('tour actions without a tour change nothing', () => {
+      const s = makeState()
+      for (const a of [{ type: 'tour/go', index: 1 }, { type: 'tour/phase', index: 0, phase: 'look' }, { type: 'tour/play', playing: true }, { type: 'tour/exit' }] as Action[]) {
+        expect(reducer(s, a)).toBe(s)
+      }
+    })
+
+    const ending: [string, Action][] = [
+      ['building/set', { type: 'building/set', buildingId: 'pbp' }],
+      ['asOf/set', { type: 'asOf/set', asOf: '2027-06-01' }],
+      ['noFit/jump', { type: 'noFit/jump', asOf: '2027-06-01' }],
+      ['shortlist/add', { type: 'shortlist/add', entry: entry(1) }],
+      ['shortlist/remove', { type: 'shortlist/remove', id: 'x' }],
+      ['scenario/add', { type: 'scenario/add', change: { kind: 'vacate', leaseId: 'odt-600-l1', on: '2027-01-31' } }],
+      ['req/set', { type: 'req/set', patch: { minSf: 5000 } }],
+      ['view/set stack', { type: 'view/set', view: 'stack' }],
+      ['present/set off', { type: 'present/set', on: false }],
+      ['floor/set', { type: 'floor/set', floor: 5 }],
+    ]
+
+    it.each(ending)('the tour ends on %s', (_name, action) => {
+      expect(reducer(touring(), action).tour).toBeNull()
+    })
+
+    it('the tour survives what does not change its stops', () => {
+      expect(reducer(touring(), { type: 'present/set', on: true }).tour).not.toBeNull()
+      expect(reducer(touring(), { type: 'view/set', view: '3d' }).tour).not.toBeNull()
+      expect(reducer(touring(), { type: 'building/set', buildingId: 'odt' }).tour).not.toBeNull()
     })
   })
 })

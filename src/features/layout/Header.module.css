@@ -82,8 +82,10 @@
   color: var(--c-accent-ink);
 }
 
-.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 85%, var(--c-surface)); }
-.primary:disabled { border-color: var(--c-btn-border); background: var(--c-surface-2); color: var(--c-text-muted); }
+.primary:hover:not(:disabled, [aria-disabled='true']) { background: color-mix(in srgb, var(--c-accent) 85%, var(--c-surface)); }
+.primary:disabled, .primary[aria-disabled='true'] { border-color: var(--c-btn-border); background: var(--c-surface-2); color: var(--c-text-muted); }
+.button[aria-disabled='true'] { color: var(--c-text-muted); }
+.button[aria-disabled='true']:hover { background: var(--c-btn); }
 
 .iconButton {
   display: inline-grid;

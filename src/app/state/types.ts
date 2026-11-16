@@ -1,4 +1,4 @@
-import type { Building, Change, ISODate, KpiKey, MoveOption, ParsedQuery, ShortlistEntry } from '../../domain/types'
+import type { Building, Candidate, Change, ISODate, KpiKey, MoveOption, ParsedQuery, ShortlistEntry } from '../../domain/types'
 import type { FillKey } from './legendKeys'
 
 export type { KpiKey }
@@ -17,6 +17,11 @@ export type Selection = { kind: 'suite'; suiteId: string } | { kind: 'match'; ke
 
 export type Overlay = 'none' | 'compare' | 'summary'
 
+/** A suite tour's stop: flying to its floor from outside, going in, then standing inside looking out. */
+export type TourPhase = 'fly' | 'enter' | 'look'
+/** The suite tour in presentation mode: its stops (one per option), the one shown, how far in, auto-advancing or not. */
+export type Tour = { stops: Candidate[]; index: number; phase: TourPhase; playing: boolean }
+
 export type AppState = {
   today: ISODate
   buildingId: string
@@ -34,6 +39,7 @@ export type AppState = {
   legend: FillKey | null // the legend pill pressed: suites painted otherwise are dimmed; null = no filter
   presenting: boolean // presentation mode (drawers shut, fullscreen where the browser allows); never saved
   movePreview: MoveOption | null // the move shown on the building; never saved, never in the URL
+  tour: Tour | null // the suite tour (presentation mode only); never saved, never in the URL
 }
 
 export type Action =
@@ -58,3 +64,8 @@ export type Action =
   | { type: 'legend/toggle'; key: FillKey } // the pressed key again clears; a key the colour mode does not show is ignored
   | { type: 'present/set'; on: boolean }
   | { type: 'move/preview'; option: MoveOption | null } // a non-null option also clears floor, highlight and legend; any action that changes what it was computed from ends it
+  | { type: 'tour/start'; stops: Candidate[]; index: number; playing: boolean } // no stops: ignored; presents the 3D building, ends floor view, highlight, filter, preview, overlays
+  | { type: 'tour/go'; index: number } // another stop (clamped), flown to afresh
+  | { type: 'tour/phase'; index: number; phase: TourPhase } // ignored unless `index` is the stop shown
+  | { type: 'tour/play'; playing: boolean }
+  | { type: 'tour/exit' } // presentation mode stays; the last toured suite is selected

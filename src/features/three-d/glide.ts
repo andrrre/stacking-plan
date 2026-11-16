@@ -42,3 +42,27 @@ export const limitsAfter = (g: Glide | null): Limits | null => (g === null || g.
 export function retarget(g: Glide, to: Pose, limit: number): Glide | null {
   return g.limit === null ? null : { ...g, to, limit }
 }
+
+/** Where a suite tour's camera is and looks, and its lens (vertical field of view, degrees). */
+export type Shot = { position: Vec3; target: Vec3; fov: number }
+
+/** A suite tour flight: position, aim and lens move together, eased in and out over `ms` from `start`. */
+export type TourGlide = { from: Shot; to: Shot; start: number; ms: number }
+
+const easeInOut = (k: number) => (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2)
+
+function lerpInto(out: Vec3, a: Readonly<Vec3>, b: Readonly<Vec3>, e: number): void {
+  out[0] = a[0] + (b[0] - a[0]) * e
+  out[1] = a[1] + (b[1] - a[1]) * e
+  out[2] = a[2] + (b[2] - a[2]) * e
+}
+
+/** Writes where a tour flight is at `now` into `out` (no allocation: it runs every frame); true once it has arrived. */
+export function tourGlideAt(g: TourGlide, now: number, out: Shot): boolean {
+  const k = g.ms <= 0 ? 1 : Math.min(Math.max((now - g.start) / g.ms, 0), 1)
+  const e = easeInOut(k)
+  lerpInto(out.position, g.from.position, g.to.position, e)
+  lerpInto(out.target, g.from.target, g.to.target, e)
+  out.fov = g.from.fov + (g.to.fov - g.from.fov) * e
+  return k >= 1
+}

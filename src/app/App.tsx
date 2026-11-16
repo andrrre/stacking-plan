@@ -11,7 +11,8 @@ import { useUrlSync } from './state/useUrlSync'
 import styles from './App.module.css'
 
 // The shell (data-print="shell") holds the whole working screen. Overlays such as the client summary
-// sit outside it, so printing the summary can hide the shell (global.css).
+// sit outside it, so printing the summary can hide the shell (global.css). A suite tour hides the KPI bar
+// (and the centre pane its own bars), so the building has the screen.
 export function App() {
   const { state } = useAppState()
   useUrlSync()
@@ -20,7 +21,7 @@ export function App() {
     <div className={styles.app} data-overlay={state.overlay}>
       <div className={styles.shell} data-print="shell">
         <Header />
-        <KpiBar />
+        {state.tour === null && <KpiBar />}
         <main className={styles.body} data-details={right.open ? 'open' : 'closed'}>
           <FormValidityProvider>
             <LeftRail {...left} />

@@ -20,23 +20,27 @@ function useStageHint(): boolean {
   return !done && state.floor === null
 }
 
+/** A suite tour gives the stage the whole pane: the toolbar, legend, date slider and scenario bar wait until it ends. */
 export function CenterPane() {
   const { state } = useAppState()
   const hint = useStageHint()
+  const touring = state.tour !== null
   return (
     <section className={styles.pane} data-testid="center-pane" aria-label="Stacking plan">
-      <StackToolbar />
+      {!touring && <StackToolbar />}
       <div className={styles.card} data-view={state.view}>
         <div className={styles.stackArea}>
           <ViewSwitch />
-          {hint && <p className={styles.hint} data-testid="stage-hint" data-print="hide">Click a suite for details · enter a size to find space</p>}
+          {hint && !touring && <p className={styles.hint} data-testid="stage-hint" data-print="hide">Click a suite for details · enter a size to find space</p>}
         </div>
-        <div className={styles.legendRow}>
-          <Legend />
-        </div>
+        {!touring && (
+          <div className={styles.legendRow}>
+            <Legend />
+          </div>
+        )}
       </div>
-      <DateSlider />
-      <ScenarioBar />
+      {!touring && <DateSlider />}
+      {!touring && <ScenarioBar />}
     </section>
   )
 }

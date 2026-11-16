@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Pose } from './camera'
-import { MAX_ZOOM_IN, MAX_ZOOM_OUT, OPEN_LIMITS, glideAt, limitsAfter, limitsDuring, limitsFor, retarget, type Glide } from './glide'
+import { MAX_ZOOM_IN, MAX_ZOOM_OUT, OPEN_LIMITS, glideAt, limitsAfter, limitsDuring, limitsFor, retarget, tourGlideAt, type Glide, type TourGlide } from './glide'
 
 const pose = (x: number, d: number): Pose => ({ position: [x, 10, 40], target: [x, 5, 0], distance: d })
 const from = { position: [0, 20, 80] as [number, number, number], target: [0, 4, 0] as [number, number, number] }
@@ -73,5 +73,37 @@ describe('retarget', () => {
 
   it('does not take over a settle glide (a refit then places the camera at once, as before)', () => {
     expect(retarget(settleGlide, pose(9, 80), 80)).toBeNull()
+  })
+})
+
+describe('tourGlideAt', () => {
+  const shot = (x: number, fov: number) => ({ position: [x, 1, 2] as [number, number, number], target: [x, 0, 9] as [number, number, number], fov })
+  const flight: TourGlide = { from: shot(0, 20), to: shot(10, 60), start: 1000, ms: 1000 }
+
+  it('carries position, aim and lens together from start to end, eased in and out', () => {
+    const out = shot(0, 0)
+    expect(tourGlideAt(flight, 1000, out)).toBe(false)
+    expect(out).toEqual(shot(0, 20))
+    tourGlideAt(flight, 1250, out)
+    expect(out.position[0]).toBeLessThan(2.5) // slow out of the start
+    tourGlideAt(flight, 1500, out)
+    expect(out.position[0]).toBeCloseTo(5, 6)
+    expect(out.fov).toBeCloseTo(40, 6)
+    expect(tourGlideAt(flight, 2000, out)).toBe(true)
+    expect(out).toEqual(shot(10, 60))
+  })
+
+  it('writes into the shot it is given (no allocation per frame)', () => {
+    const out = shot(0, 0)
+    const { position, target } = out
+    tourGlideAt(flight, 1300, out)
+    expect(out.position).toBe(position)
+    expect(out.target).toBe(target)
+  })
+
+  it('a zero-length flight arrives at once', () => {
+    const out = shot(0, 0)
+    expect(tourGlideAt({ ...flight, ms: 0 }, 1000, out)).toBe(true)
+    expect(out).toEqual(shot(10, 60))
   })
 })

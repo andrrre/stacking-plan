@@ -35,6 +35,8 @@ function useDerived(model: SceneProps['model'], focusedId: string | null) {
 }
 
 const SPREAD_MS = 420
+/** The city's strength on a suite tour (1: as drawn around the building; its fills and lines grow more opaque). */
+const TOUR_CITY = 1.4
 const RESIZE = { scroll: false, debounce: 0 } as const
 
 /** 0 (floors together) … 1 (separated), easing between the two over SPREAD_MS; a jump under reduced motion. */
@@ -67,25 +69,32 @@ function useCity(buildingId: string, model: SceneProps['model']) {
   }, [buildingId, halfW, halfD, height])
 }
 
-function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, wide, rig, onSelect, onPoints, onLost }: SceneProps) {
+/** Inside a suite on the tour, the floors above it are gone, as in floor view (null: no floor taken away). */
+const tourFloor = (tour: SceneProps['tour']) => (tour && tour.phase !== 'fly' ? tour.floor : null)
+
+function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, wide, rig, onSelect, onPoints, onLost, tour = null, onTourPhase, onTourLook }: SceneProps) {
   const reduced = useReducedMotion()
   const { theme } = useTheme()
   const spread = useSpread(separated, reduced)
   const root = useRef<HTMLDivElement>(null)
   const running = useCityMotion(root, city, reduced)
   const town = useCity(buildingId, model)
-  // Floor view and separated floors push the city further back, so the floor being read stands clear.
-  const dim = cityDim(floor, spread)
+  // Floor view and separated floors push the city further back, so the floor being read stands clear. The tour
+  // draws it a little stronger than usual: it is the view out of the suite's windows.
+  const dim = tour ? TOUR_CITY : cityDim(floor, spread)
+  const shownFloor = tourFloor(tour) ?? floor
   // Floor view ignores the spread, so a floors-moving animation does not rebuild its layout every step.
-  const wholeSpread = floor === null ? spread : 0
-  const layout = useMemo(() => (floor === null ? buildingLayout(model, wholeSpread) : floorLayout(model, floor)), [model, wholeSpread, floor])
+  const wholeSpread = shownFloor === null ? spread : 0
+  const layout = useMemo(
+    () => (shownFloor === null ? buildingLayout(model, wholeSpread) : floorLayout(model, shownFloor)), [model, wholeSpread, shownFloor],
+  )
   const derived = useDerived(model, focusedId)
   const [refs] = useState(createOverlayRefs)
   return (
     <div ref={root} className={styles.scene} data-testid="scene3d" data-theme={theme} data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
       data-floors-moving={String(spread > 0 && spread < 1)} data-colour-transition-ms={reduced ? 0 : COLOUR_MS}
       data-city={city ? 'on' : 'off'} data-city-motion={running ? 'on' : 'off'}
-      data-city-dim={city ? dim.toFixed(2) : undefined}>
+      data-city-dim={city ? dim.toFixed(2) : undefined} data-tour-phase={tour?.phase}>
       <Canvas
         className={styles.canvas}
         aria-hidden="true"
@@ -102,7 +111,7 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
         <World
           {...derived} mode={mode} theme={theme} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced} wide={wide}
           refs={refs} rig={rig} onSelect={onSelect} onPoints={onPoints} onLost={onLost}
-          city={city ? { ...town, running, dim } : null}
+          city={city ? { ...town, running, dim } : null} tour={tour} onTourPhase={onTourPhase} onTourLook={onTourLook}
         />
       </Canvas>
       <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />

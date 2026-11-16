@@ -11,7 +11,9 @@ import { FloorSlider } from './FloorSlider'
 import { initialFloor } from './floorView'
 import { Mirror } from './Mirror'
 import type { StackModel } from '../stack/suiteVisual'
-import type { Rig, ScreenPoint } from './sceneTypes'
+import type { Rig, ScreenPoint, TourStop } from './sceneTypes'
+import type { Tour, TourPhase } from '../../app/state/types'
+import { TourOverlay } from '../tour/TourOverlay'
 import { Fallback, type FailReason } from './Fallback3D'
 import { usePrinting } from './usePrinting'
 import { useStageWide } from './useStageWide'
@@ -104,12 +106,32 @@ function useCitySwitch(): [boolean, (on: boolean) => void] {
   return [city, onCity]
 }
 
-function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
-  const model = useStackModel()
-  const { state, dispatch } = useAppState()
-  const selectedId = state.selection?.kind === 'suite' ? state.selection.suiteId : null
-  const modes = useViewModes(model, selectedId)
-  const { shown, floor } = modes
+const NO_SELECT = () => undefined
+
+/** The tour's stop as the scene needs it (kept while the same stop and phase show), and its phase reports. */
+function useSceneTour(tour: Tour | null) {
+  const { dispatch } = useAppState()
+  const stop = tour?.stops[tour.index]
+  const index = tour?.index ?? -1
+  const phase = tour?.phase
+  const floor = stop?.floor
+  const ids = stop?.suiteIds
+  const shown = useMemo((): TourStop | null => (
+    phase && ids && floor !== undefined ? { index, phase, suiteIds: ids, floor } : null
+  ), [index, phase, ids, floor])
+  const onPhase = useCallback((i: number, p: TourPhase) => dispatch({ type: 'tour/phase', index: i, phase: p }), [dispatch])
+  const onLook = useCallback(() => dispatch({ type: 'tour/play', playing: false }), [dispatch])
+  return { shown, onPhase, onLook }
+}
+
+/** The stage's own controls, or during a suite tour the tour's caption and bar in their place. */
+function StageChrome({ tour, children }: { tour: Tour | null; children: ReactNode }) {
+  return tour ? <TourOverlay tour={tour} /> : <>{children}</>
+}
+
+/** Selecting a suite by click or from the keyboard (the mirror's roving focus over the floors shown). */
+function useStageSelect(shown: StackModel, selectedId: string | null) {
+  const { dispatch } = useAppState()
   const grid = useMemo(() => shown.floors.map((f) => f.suites.map((v) => v.suite.id)), [shown])
   const onSelectOrClear = useCallback(
     (id: string | null) => dispatch({ type: 'select', selection: id === null ? null : { kind: 'suite', suiteId: id } }),
@@ -117,12 +139,23 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
   )
   const onSelect = useCallback((id: string) => onSelectOrClear(id), [onSelectOrClear])
   const { getItemProps } = useRovingFocus(grid, { selectedId, onSelect: onSelectOrClear })
+  return { onSelect, getItemProps }
+}
+
+function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
+  const model = useStackModel()
+  const { state } = useAppState()
+  const selectedId = state.selection?.kind === 'suite' ? state.selection.suiteId : null
+  const modes = useViewModes(model, selectedId)
+  const { shown, floor } = modes
+  const { onSelect, getItemProps } = useStageSelect(shown, selectedId)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [points, setPoints] = useState(NO_POINTS)
   const rig = useRef<Rig | null>(null)
   const printing = usePrinting()
   const [city, onCity] = useCitySwitch()
   const [stageRef, wide] = useStageWide()
+  const tour = useSceneTour(state.tour)
   const onReset = () => {
     rig.current?.reset() // drops the button turns and zooms, and reframes
     modes.leave()
@@ -130,21 +163,25 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
   return (
     <>
       <div ref={stageRef} className={styles.stage} data-testid="stack-3d" data-wide={String(wide)} data-separated={String(modes.separated)} data-floor={floor ?? undefined}
+        data-tour-phase={state.tour?.phase} data-tour-stop={state.tour ? state.tour.index + 1 : undefined}
         role="group" aria-label={`3D building, ${selectBuilding(state).name}`}>
         <Mirror model={shown} points={points} getItemProps={getItemProps} onSelect={onSelect} onFocusChange={setFocusedId} />
         <SceneBoundary onError={onLoadFailed}>
           <Suspense fallback={<Placeholder />}>
             <Scene
               buildingId={state.buildingId} model={model} mode={state.mode} separated={modes.separated} floor={floor} focusedId={focusedId} city={city} wide={wide} rig={rig}
-              onSelect={onSelect} onPoints={setPoints} onLost={onLost}
+              onSelect={tour.shown ? NO_SELECT : onSelect} onPoints={setPoints} onLost={onLost}
+              tour={tour.shown} onTourPhase={tour.onPhase} onTourLook={tour.onLook}
             />
           </Suspense>
         </SceneBoundary>
-        {floor !== null && <FloorSlider model={model} floor={floor} onFloor={modes.setFloor} />}
-        <Controls3D
-          rig={rig} separated={modes.separated} onSeparate={modes.onSeparate}
-          floorView={floor !== null} onFloorView={modes.onFloorView} city={city} onCity={onCity} onReset={onReset}
-        />
+        <StageChrome tour={state.tour}>
+          {floor !== null && <FloorSlider model={model} floor={floor} onFloor={modes.setFloor} />}
+          <Controls3D
+            rig={rig} separated={modes.separated} onSeparate={modes.onSeparate}
+            floorView={floor !== null} onFloorView={modes.onFloorView} city={city} onCity={onCity} onReset={onReset}
+          />
+        </StageChrome>
       </div>
       {printing && (
         <div className={styles.printOnly}>

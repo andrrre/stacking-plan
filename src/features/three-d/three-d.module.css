@@ -32,6 +32,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- suite tour ---------- */
+
+/* Inside a suite the facade labels, floor numbers and rings would float over the room: they wait outside. */
+.scene[data-tour-phase='enter'] .overlay, .scene[data-tour-phase='look'] .overlay { visibility: hidden; }
+/* The open sky over the suite (its floors above are lifted away): the stage's grid gives way to a soft horizon. */
+.stage[data-tour-phase='enter'], .stage[data-tour-phase='look'] {
+  background-image: linear-gradient(to bottom, color-mix(in srgb, var(--c-match) 24%, var(--c-surface)) 0%, color-mix(in srgb, var(--c-match) 12%, var(--c-surface)) 50%, var(--c-bg) 100%);
+  background-size: auto;
+}
+
 /* ---------- rings (SVG polygons following the projected faces) ---------- */
 
 .rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }

@@ -5,6 +5,7 @@ import { MAX_SHORTLIST } from '../../domain/constants'
 import { suiteCandidate } from '../../domain/findFits'
 import type { Candidate, Floor, ShortlistEntry, Suite } from '../../domain/types'
 import { createEntry, entryId } from '../shortlist/entryId'
+import { useStartTour } from '../tour/useTour'
 import styles from './details.module.css'
 
 type Props = { floor: Floor; suite: Suite }
@@ -48,6 +49,7 @@ function standing(state: AppState, p: Props): Standing {
 export function DetailsActions({ floor, suite }: Props) {
   const { state, dispatch } = useAppState()
   const reasonId = useId()
+  const startTour = useStartTour()
   const s = standing(state, { floor, suite })
   const toggle = () => {
     if (s.blocked) return
@@ -68,6 +70,11 @@ export function DetailsActions({ floor, suite }: Props) {
         <button type="button" className={styles.secondary} data-testid="open-floor-plan" onClick={openFloor}>
           Floor plan
         </button>
+        {s.candidate && (
+          <button type="button" className={styles.secondary} data-testid="tour-suite" onClick={() => startTour(suite.id, s.candidate)}>
+            Tour suite
+          </button>
+        )}
       </div>
       {s.blocked && <p id={reasonId} className={styles.reason} data-testid="add-to-summary-reason">{s.blocked}</p>}
     </div>

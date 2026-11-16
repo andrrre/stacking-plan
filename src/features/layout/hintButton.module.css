@@ -1,0 +1,44 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Under the button, its right edge on the button's: the header's right end keeps it inside the viewport. */
+.tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: none;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 8px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: var(--shadow-1);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh);
+  text-align: left;
+  white-space: normal;
+}
+
+/* Bridges the gap to the button, so the pointer can move onto the tooltip without it closing (hoverable). */
+.tip::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: 9px;
+  content: '';
+}
+
+.tip[data-open='true'] { display: block; }
+
+.wrap button[aria-disabled='true'] { cursor: not-allowed; }
+
+@media print {
+  .tip { display: none !important; }
+}

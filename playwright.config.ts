@@ -12,7 +12,7 @@ const browser = { ...devices['Desktop Chrome'], viewport: { width: 1440, height:
  * specs run at most two at a time, with 15 s for each assertion and 60 s for each test; the DOM-only specs fill
  * the other workers with the defaults.
  */
-const WEBGL = /(s13-3d|s16-drawers|s17-theme|s18-night-b|s19-night-review|s20-review-c|s21-labels-orbit|demo-[a-z-]+)\.spec\.ts$/
+const WEBGL = /(s13-3d|s16-drawers|s17-theme|s18-night-b|s19-night-review|s20-review-c|s21-labels-orbit|s22-tour|demo-[a-z-]+)\.spec\.ts$/
 
 export default defineConfig({
   testDir: 'e2e',

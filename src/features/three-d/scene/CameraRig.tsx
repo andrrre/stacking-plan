@@ -9,6 +9,8 @@ import {
 import { MAX_ZOOM_OUT, glideAt, limitsAfter, limitsDuring, limitsFor, retarget, type Glide, type Limits } from '../glide'
 import { boundsKey, type Bounds } from '../layout3d'
 import type { Rig } from '../sceneTypes'
+import type { TourPhase } from '../../../app/state/types'
+import { useTourCamera, type TourCue } from './useTourCamera'
 
 // Orbit controls limited to the front half (labels are on the front faces) and above the ground, with no
 // pan, damping or auto-rotation. The camera frames the whole building whenever its outline, the canvas size
@@ -20,7 +22,7 @@ import type { Rig } from '../sceneTypes'
 // In floor view the framing is the shown floor's plate from high above the front; a change of floor glides
 // there (a jump under reduced motion), and entering or leaving floor view drops the kept offset. A refit
 // during such a glide (the floors moving apart as floor view is left for Separate floors) moves its end
-// rather than cutting it short.
+// rather than cutting it short. A suite tour takes the camera over (useTourCamera) and hands it back framed.
 
 const rad = (deg: number) => (deg * Math.PI) / 180
 const UP = new Vector3(0, 1, 0)
@@ -91,10 +93,13 @@ function restingPose(camera: PerspectiveCamera, c: OrbitControls, fit: Pose, d: 
   return { target: t, distance, position: [t[0] + dir.x * distance, t[1] + dir.y * distance, t[2] + dir.z * distance] }
 }
 
-/** `view` is the framing angle; `focus` the floor shown in floor view (null: the whole building). */
-type Props = { bounds: Bounds; view: View; focus: number | null; reduced: boolean; wide?: boolean; rig: RefObject<Rig | null> }
+/** `view` is the framing angle; `focus` the floor shown in floor view (null: the whole building); `tour` the suite tour's stop. */
+type Props = {
+  bounds: Bounds; view: View; focus: number | null; reduced: boolean; wide?: boolean; rig: RefObject<Rig | null>
+  tour?: TourCue | null; onTourPhase?: (index: number, phase: TourPhase) => void; onTourLook?: () => void
+}
 
-export function CameraRig({ bounds, view, focus, reduced, wide, rig }: Props) {
+export function CameraRig({ bounds, view, focus, reduced, wide, rig, tour = null, onTourPhase, onTourLook }: Props) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const gl = useThree((s) => s.gl)
   const width = useThree((s) => s.size.width)
@@ -109,6 +114,10 @@ export function CameraRig({ bounds, view, focus, reduced, wide, rig }: Props) {
   const [fitted, setFitted] = useState(bounds)
   if (boundsKey(fitted) !== boundsKey(bounds)) setFitted(bounds)
   const { framing, frame } = useFraming({ camera, controls, glide, invalidate, fitted, view, width, height, insets })
+  const tourCam = useTourCamera({
+    camera, controls, el: gl.domElement, invalidate, cue: tour, reduced, size: { width, height }, framing,
+    stopOrbit: glide.stop, restore: () => frame(NO_OFFSET), onPhase: onTourPhase, onLook: onTourLook,
+  })
   const began = useRef<Zoom | null>(null)
   const begin = useMemo(() => () => {
     glide.stop()
@@ -126,7 +135,7 @@ export function CameraRig({ bounds, view, focus, reduced, wide, rig }: Props) {
     return to
   }, [camera, controls, fitted, width, height, insets, reduced, invalidate, glide])
   useControlEvents(controls, gl.domElement, invalidate, settle, begin)
-  useRigHandle(rig, { camera, controls, framing, frame, begin, settle, focus, reduced, gliding: glide.running })
+  useRigHandle(rig, { camera, controls, framing, frame, begin, settle, focus, reduced, gliding: glide.running, tour: tourCam })
   useCameraReport(gl.domElement, camera, controls, framing)
   return null
 }
@@ -143,6 +152,7 @@ function useCameraReport(el: HTMLElement, camera: PerspectiveCamera, c: OrbitCon
     el.setAttribute('data-camera-azimuth', o.azimuth.toFixed(1))
     el.setAttribute('data-camera-zoom', o.factor.toFixed(3))
     el.setAttribute('data-camera-elevation', viewOf(now.position.map((v, i) => v - (now.target[i] ?? 0)) as Vec3).elevation.toFixed(1))
+    el.setAttribute('data-camera-fov', camera.fov.toFixed(1))
   })
 }
 
@@ -198,6 +208,7 @@ type Handle = {
   focus: number | null
   reduced: boolean
   gliding: () => boolean
+  tour: { owns: RefObject<boolean>; reframe: () => void } // a suite tour has the camera: it reframes its own flights
 }
 
 /**
@@ -209,18 +220,25 @@ type Handle = {
  * reframing retargets), so a side drawer resizing the stage keeps the user's view relative to the new framing.
  */
 function useRigHandle(rig: RefObject<Rig | null>, h: Handle): void {
-  const { camera, controls, framing, frame, begin, settle, focus, reduced, gliding } = h
+  const { camera, controls, framing, frame, begin, settle, focus, reduced, gliding, tour } = h
   const offset = useRef<Offset>(NO_OFFSET)
   const shown = useRef(focus)
   const lastFraming = useRef<(() => Pose) | null>(null)
   useEffect(() => {
+    if (tour.owns.current) { // the tour flies back to the plain framing: the kept turns and zooms are dropped
+      offset.current = NO_OFFSET
+      lastFraming.current = framing
+      shown.current = focus
+      tour.reframe()
+      return
+    }
     const moved = shown.current !== focus
     if (moved && (shown.current === null || focus === null)) offset.current = NO_OFFSET // into or out of floor view
     else if (!moved && lastFraming.current && !gliding()) offset.current = offsetBetween(lastFraming.current(), placed(camera, controls))
     lastFraming.current = framing
     shown.current = focus
     frame(offset.current, moved && !reduced)
-  }, [frame, framing, focus, reduced, gliding, camera, controls])
+  }, [frame, framing, focus, reduced, gliding, camera, controls, tour])
   useImperativeHandle(rig, () => {
     const press = (degrees: number, factor: number) => {
       begin()
