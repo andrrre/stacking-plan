@@ -6,14 +6,6 @@ import styles from './LeftRail.module.css'
 
 const RAIL_ID = 'left-rail'
 
-function Chevron() {
-  return (
-    <svg className={styles.chevron} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 /** The sign that the panel behind the handle has the AI requirement box: a large four-point spark and a small one. */
 function Spark() {
   return (
@@ -50,7 +42,6 @@ export function LeftRail({ open, count, onToggle, onFocusWithin }: LeftDrawer) {
         aria-expanded={open} aria-controls={RAIL_ID} aria-label={toggleName(open, count)} title={toggleName(open, count)}
       >
         <Spark />
-        <Chevron />
         {!open && count > 0 && <span className={styles.badge} data-testid="left-drawer-badge" aria-hidden="true">{count}</span>}
       </button>
     </div>
