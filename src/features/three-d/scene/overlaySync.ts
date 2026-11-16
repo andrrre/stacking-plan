@@ -24,6 +24,7 @@ export type OverlayState = {
   faded: ReadonlySet<string> // left out by the legend filter
   hoverId: string | null
   focusedId: string | null
+  hidden?: string | null // a suite whose label is not shown (the previewed move's destination, until its block lands)
   refs: OverlayRefs
 }
 
@@ -129,7 +130,7 @@ function syncLabels(s: OverlayState): void {
     write(el, 'data-focused', String(p.id === s.focusedId))
     // The hovered suite's box ignores the filter (suiteMaterial's uHover), so its label does too.
     write(el, 'data-filtered', String(s.faded.has(p.id) && p.id !== s.hoverId))
-    write(el, 'data-hidden', String(hidden.has(p.id) || p.parts === ''))
+    write(el, 'data-hidden', String(hidden.has(p.id) || p.parts === '' || p.id === s.hidden))
   }
 }
 

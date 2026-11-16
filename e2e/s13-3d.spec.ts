@@ -422,6 +422,27 @@ test.describe('3D building', () => {
     expect(violet, 'the canvas is drawn, in the new colours').toBeGreaterThan(300)
   })
 
+  for (const reduced of [false, true]) {
+    test(`Show move frees 500 + 510 as match 1 and puts Northpier Engineering in 410${reduced ? ', under reduced motion' : ''}`, async ({ page }) => {
+      const problems: string[] = []
+      page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
+      page.on('pageerror', (e) => problems.push(e.message))
+      if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
+      await gotoApp(page, '3d')
+      await page.getByTestId('req-min-sf').fill('12000')
+      await page.getByTestId('show-move').click()
+      for (const n of ['500', '510']) await expect(suite3d(page, n)).toHaveAttribute('aria-label', /match 1/)
+      await expect(suite3d(page, '410')).toHaveAttribute('aria-label', /Northpier Engineering/)
+      await expect(suite3d(page, '410')).toHaveAttribute('data-move', 'in')
+      await expect(suite3d(page, '510')).toHaveAttribute('data-move', 'out')
+      // The block lands (or, under reduced motion, never flies): 410's label shows the tenant.
+      await expect(label(page, '410')).toHaveAttribute('data-hidden', 'false')
+      await expect(label(page, '410')).toContainText('Northpier Engineering')
+      await expect(page.getByTestId('badge3d-1')).toBeVisible()
+      expect(problems).toEqual([])
+    })
+  }
+
   test('without WebGL the 2D stack takes its place with a short note', async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(window, 'WebGL2RenderingContext', { value: undefined })

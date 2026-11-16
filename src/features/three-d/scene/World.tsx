@@ -12,9 +12,11 @@ import { Ground, Suites } from './Building'
 import { CameraRig } from './CameraRig'
 import { City, type CityScene } from './City'
 import { useContextWatch, usePicker, useFrameSync } from './interaction'
+import { MoveFlight } from './MoveFlight'
 import type { OverlayRefs } from './overlayRefs'
 import { useSharedGeometry } from './resources'
 import { SuiteMaterials } from './suiteMaterials'
+import { useMoveFlight } from './useMoveFlight'
 
 // Everything inside the <Canvas>: camera rig, ground, building, picking, the overlay sync and the city. The
 // city is not in the picking group and plays no part in the framing (the rig frames the building's bounds).
@@ -76,7 +78,9 @@ export function World(p: WorldProps) {
   const pick = useMemo(() => ({ group, hover, mats, tooltip: refs.tooltip, visuals, onSelect }), [mats, refs, visuals, onSelect])
   usePicker(pick)
   useContextWatch(p.onLost)
-  useFrameSync({ layout, visuals, contents, ghosts, faded, refs, focusedId, hover, mats, group, onPoints })
+  const flight = useMoveFlight(visuals, layout, reduced)
+  const hidden = flight.flying && flight.pair ? flight.pair.inId : null // until the block lands
+  useFrameSync({ layout, visuals, contents, ghosts, faded, refs, focusedId, hover, mats, group, onPoints, hidden })
   const focus = layout.focus?.floor ?? null
   // The framing angle: floor view's own, or part-way between the default and the separated view.
   const view = useMemo(() => (focus === null ? lerpView(DEFAULT_VIEW, SEPARATED_VIEW, p.spread) : FLOOR_VIEW), [focus, p.spread])
@@ -85,7 +89,8 @@ export function World(p: WorldProps) {
       <CameraRig bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} wide={p.wide} rig={p.rig} />
       {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
       <Ground bounds={layout.bounds} shapes={shapes} shadow={palette.shadow} />
-      <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} />
+      <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} hidden={hidden} />
+      <MoveFlight flight={flight} layout={layout} looks={looks} palette={palette} shapes={shapes} />
     </>
   )
 }

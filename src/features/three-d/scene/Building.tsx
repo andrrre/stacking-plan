@@ -31,9 +31,10 @@ type SuitesProps = {
   shapes: Shapes
   group: RefObject<Group | null>
   animateAt: () => number | null
+  hidden?: string | null // a suite not drawn (the previewed move's destination, until its block lands)
 }
 
-export function Suites({ layout, looks, palette, mats, shapes, group, animateAt }: SuitesProps) {
+export function Suites({ layout, looks, palette, mats, shapes, group, animateAt, hidden = null }: SuitesProps) {
   const invalidate = useThree((s) => s.invalidate)
   const lines = useLineMaterials(palette)
   useLayoutEffect(() => {
@@ -49,12 +50,12 @@ export function Suites({ layout, looks, palette, mats, shapes, group, animateAt 
     <>
       <group ref={group}>
         {layout.suites.map((b) => (
-          <mesh key={b.id} dispose={null} geometry={shapes.box} material={mats.get(b.id)} position={[b.x, b.y, b.z]} scale={[b.w, b.h, b.d]} userData={{ suiteId: b.id }} />
+          <mesh key={b.id} dispose={null} geometry={shapes.box} material={mats.get(b.id)} visible={b.id !== hidden} position={[b.x, b.y, b.z]} scale={[b.w, b.h, b.d]} userData={{ suiteId: b.id }} />
         ))}
       </group>
       {layout.suites.map((b) => (
         <lineSegments
-          key={b.id} dispose={null} geometry={shapes.edges} material={lines.solid} visible={!looks.get(b.id)?.ghost && !looks.get(b.id)?.faded}
+          key={b.id} dispose={null} geometry={shapes.edges} material={lines.solid} visible={!looks.get(b.id)?.ghost && !looks.get(b.id)?.faded && b.id !== hidden}
           position={[b.x, b.y, b.z]} scale={[b.w, b.h, b.d]}
         />
       ))}
