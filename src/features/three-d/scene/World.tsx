@@ -84,7 +84,7 @@ export function World(p: WorldProps) {
     <>
       <CameraRig bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} wide={p.wide} rig={p.rig} />
       {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
-      <Ground bounds={layout.bounds} shapes={shapes} />
+      <Ground bounds={layout.bounds} shapes={shapes} shadow={palette.shadow} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} />
     </>
   )

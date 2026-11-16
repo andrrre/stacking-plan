@@ -8,8 +8,8 @@ import { overlayActive } from './palette'
 
 export const PLATE_W = 18 // the largest floor plate
 export const DEPTH = 8.2 // suite depth, the same on every floor: under half the widest plate, an office floor
-export const SUITE_H = 0.78
-export const SLAB_T = 0.1
+export const SUITE_H = 0.87 // tall in the pitch, so the default view's faces hold a two-line label
+export const SLAB_T = 0.08 // thin, so a suite can be tall and still clear the slab above (a 0.05 gap)
 export const PITCH = 1 // floor to floor, floors together
 export const SPREAD_PITCH = 3.2 // floor to floor, floors separated
 export const SUITE_GAP = 0.08
@@ -20,9 +20,9 @@ export const PLINTH_MARGIN = 0.5
 export const CAP_T = 0.08 // roof cap (top floor, and a terrace where a floor is wider than the one above)
 /**
  * With floors separated, labels lie on the front strip of each suite's top face: the part the floor above
- * leaves in view from the separated viewpoint ((SPREAD_PITCH - SLAB_T - SUITE_H) / tan(32°) ≈ 3.7).
+ * leaves in view from the separated viewpoint ((SPREAD_PITCH - SLAB_T - SUITE_H) / tan(32°) ≈ 3.6).
  */
-export const TOP_LABEL_DEPTH = 3.4
+export const TOP_LABEL_DEPTH = 3.25
 
 export type Box = { x: number; y: number; z: number; w: number; h: number; d: number } // centre and size
 

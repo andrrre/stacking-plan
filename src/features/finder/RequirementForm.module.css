@@ -35,7 +35,7 @@
   box-sizing: border-box;
   padding: 7px var(--sp-3);
   background: var(--c-surface);
-  border: 1px solid var(--c-border-strong);
+  border: 1px solid var(--c-input-border);
   border-radius: var(--r-md);
   color: var(--c-text);
   font: inherit;

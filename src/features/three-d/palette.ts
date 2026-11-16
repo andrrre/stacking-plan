@@ -21,6 +21,7 @@ export type Palette = {
   border: string
   roof: string // slabs, roof caps and the sketched city
   roofEdge: string
+  shadow: Rgba // the contact shadow under the building
 }
 
 export type PatternKind = 'hatch' | 'none'
@@ -110,6 +111,7 @@ export function readPalette(read: (name: string) => string): Palette {
     border: hex('--c-border'),
     roof: hex('--c-roof'),
     roofEdge: hex('--c-roof-edge'),
+    shadow: parseRgba(read('--c-shadow'), { hex: '#000000', alpha: 0.12 }),
   }
 }
 

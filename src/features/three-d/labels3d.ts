@@ -22,8 +22,11 @@ export type Parts = { number: boolean; sf: boolean; tenant: boolean; lines: 0 | 
 export type Size = { w: number; h: number }
 
 export const LINE_H = 14
-/** Two lines: line 1's 12px line box (digits and capitals) over line 2's 14px (the overlay CSS sets the same). */
-export const TWO_LINES_H = 26
+/**
+ * Two lines: line 1's 12px line box (digits and capitals) over line 2's 13px, which still holds 12px Inter's
+ * ascenders and descenders (the overlay CSS sets the same).
+ */
+export const TWO_LINES_H = 25
 /**
  * The least height a single line's box needs. Line 1 is digits and capitals, ~8px tall in the middle of its
  * 14px line box, so the box may lose 2px a side to a sloping face without clipping a glyph.

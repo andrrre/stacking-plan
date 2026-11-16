@@ -68,7 +68,7 @@ describe('kpis lease count and block suite numbers', () => {
 
   it('follows the as-of date', () => {
     const k = kpis(hero, '2027-07-01', TODAY, true)
-    expect(k.expiringCount).toBe(k.ids.expiring.length)
+    expect(k.expiringCount).toBe(6) // 220, 1000 (2027), 200, 210, 1130, 800 (to 06/2028)
     expect(k.largestBlockSuiteNumbers).toEqual(['600'])
   })
 

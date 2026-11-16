@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber'
 import {
   DataTexture, LineBasicMaterial, LinearFilter, MeshBasicMaterial, SRGBColorSpace, type Group,
 } from 'three'
-import { lookColours, lookKey, type Palette, type SuiteLook } from '../palette'
+import { lookColours, lookKey, type Palette, type Rgba, type SuiteLook } from '../palette'
 import type { Bounds, Layout3D } from '../layout3d'
 import type { Shapes } from './resources'
 import { SuiteMaterial } from './suiteMaterial'
@@ -93,15 +93,17 @@ function Slabs({ layout, palette, shapes, line }: { layout: Layout3D; palette: P
 }
 
 const SHADOW_PX = 64
+/** The light theme's --c-shadow alpha (.12) times this is the 0.3 peak the contact shadow was drawn at. */
+const SHADOW_GAIN = 2.5
 
-/** A radial falloff computed once into a small texture: the soft contact shadow under the building. */
+/** A radial falloff computed once into a small texture (white, the falloff in alpha): the contact shadow's shape. */
 function shadowTexture(): DataTexture {
   const data = new Uint8Array(SHADOW_PX * SHADOW_PX * 4)
   const mid = (SHADOW_PX - 1) / 2
   for (let i = 0; i < SHADOW_PX * SHADOW_PX; i++) {
     const r = Math.hypot((i % SHADOW_PX) - mid, Math.floor(i / SHADOW_PX) - mid) / mid
-    const a = Math.max(0, 1 - r) ** 1.6 * 0.3
-    data.set([16, 24, 40, Math.round(a * 255)], i * 4)
+    const a = Math.max(0, 1 - r) ** 1.6
+    data.set([255, 255, 255, Math.round(a * 255)], i * 4)
   }
   const t = new DataTexture(data, SHADOW_PX, SHADOW_PX)
   t.colorSpace = SRGBColorSpace
@@ -111,12 +113,14 @@ function shadowTexture(): DataTexture {
   return t
 }
 
-export function Ground({ bounds, shapes }: { bounds: Bounds; shapes: Shapes }) {
-  const material = useMemo(() => new MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }), [])
-  useEffect(() => () => {
-    material.map?.dispose()
-    material.dispose()
-  }, [material])
+/** The soft contact shadow under the building, in the theme's --c-shadow colour and strength. */
+export function Ground({ bounds, shapes, shadow }: { bounds: Bounds; shapes: Shapes; shadow: Rgba }) {
+  const texture = useMemo(() => shadowTexture(), [])
+  useEffect(() => () => texture.dispose(), [texture])
+  const material = useMemo(() => new MeshBasicMaterial({
+    map: texture, color: shadow.hex, opacity: Math.min(1, shadow.alpha * SHADOW_GAIN), transparent: true, depthWrite: false,
+  }), [texture, shadow])
+  useEffect(() => () => material.dispose(), [material])
   const w = (bounds.max[0] - bounds.min[0]) * 1.35
   const d = (bounds.max[2] - bounds.min[2]) * 2.6
   return <mesh dispose={null} geometry={shapes.plane} material={material} rotation-x={-Math.PI / 2} position={[0, -0.01, 0]} scale={[w, d, 1]} renderOrder={-1} />

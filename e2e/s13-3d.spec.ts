@@ -36,10 +36,12 @@ async function settled(page: Page, n: string): Promise<void> {
 
 const pointKey = (page: Page, n: string) => suite3d(page, n).evaluate((el) => `${el.getAttribute('data-screen-x')},${el.getAttribute('data-screen-y')}`)
 
-/** Counts pixels of the element's screenshot within `tol` of each hex colour. */
 /** The expiring front face: an availability-only colour (lease risk has none of it), the same in both themes. */
 const EXPIRING_GOLD = '#E8C25A'
+/** The light occupied front face; tolerance 2 keeps it apart from the #E9ECF0 slabs and roofs. */
+const OCCUPIED_GREY = '#E3E6EA'
 
+/** Counts pixels of the element's screenshot within `tol` of each hex colour. */
 async function colourCounts(page: Page, target: Locator, hexes: readonly string[], tol = 10): Promise<number[]> {
   const png = (await target.screenshot()).toString('base64')
   return page.evaluate(async ({ png, hexes, tol }) => {
@@ -85,9 +87,11 @@ test.describe('3D building', () => {
     await pointOf(page, '500')
     const [crimson, band] = await colourCounts(page, canvas(page), ['#C62F3B', '#B82A35'], 6)
     const [gold] = await colourCounts(page, canvas(page), [EXPIRING_GOLD], 6)
+    const [grey] = await colourCounts(page, canvas(page), [OCCUPIED_GREY], 2)
     expect(crimson, 'vacant crimson pixels').toBeGreaterThan(1000)
     expect(band, 'vacant hatch band pixels').toBeGreaterThan(1000)
     expect(gold, 'expiring gold pixels').toBeGreaterThan(1500)
+    expect(grey, 'occupied grey pixels').toBeGreaterThan(5000)
     expect(problems).toEqual([])
   })
 
@@ -101,18 +105,19 @@ test.describe('3D building', () => {
       expect(await byStatus('vacant')).toEqual([...VACANT].sort())
       expect(await byStatus('expiring')).toEqual(Object.keys(EXPIRING).sort())
       const stage = await page.getByTestId('stack-3d').boundingBox()
-      // Every vacant, committed and expiring suite carries an upright label: its number and, at 1440 px, its SF
-      // (at 1280 px a few sloping faces keep the number alone). Line 2, the status in words, is in the label for
-      // when its face is tall enough.
+      // Every vacant, committed and expiring suite carries an upright label. At 1440 px both lines show on the
+      // facade at the default view: "number · SF" over the status in words (at 1280 px a few faces keep line 1).
+      const line2: Record<string, string> = { '1010': 'Committed · starts 03/2027' }
+      for (const n of VACANT.filter((n) => n !== '1010')) line2[n] = 'Vacant'
+      for (const [n, date] of Object.entries(EXPIRING)) line2[n] = ` · ends ${date}`
       for (const n of [...VACANT, ...Object.keys(EXPIRING)]) {
         await expect(label(page, n), n).toBeVisible()
-        await expect(label(page, n), n).toHaveAttribute('data-parts', w === 1440 ? /^number sf/ : /^number/)
+        await expect(label(page, n), n).toHaveAttribute('data-parts', w === 1440 ? 'number sf tenant' : /^number/)
         const shown = await label(page, n).evaluate((el) => (el as HTMLElement).innerText)
-        expect(shown, n).toMatch(w === 1440 ? new RegExp(`^${n} · [\\d,]+ SF`) : new RegExp(`^${n}( · [\\d,]+ SF)?`))
+        expect(shown, n).toMatch(w === 1440 ? new RegExp(`^${n} · [\\d,]+ SF\\n`) : new RegExp(`^${n}( · [\\d,]+ SF)?`))
+        if (w === 1440) expect(shown, n).toContain(line2[n])
+        await expect(label(page, n), n).toContainText(line2[n] ?? '')
       }
-      for (const n of VACANT.filter((n) => n !== '1010')) await expect(label(page, n), n).toContainText('Vacant')
-      for (const [n, date] of Object.entries(EXPIRING)) await expect(label(page, n), n).toContainText(` · ends ${date}`)
-      await expect(label(page, '1010')).toContainText('Committed · starts 03/2027')
       for (const n of [...VACANT, ...Object.keys(EXPIRING)]) {
         const p = await pointOf(page, n)
         expect(stage && p.x > stage.x && p.x < stage.x + stage.width && p.y > stage.y && p.y < stage.y + stage.height, n).toBe(true)

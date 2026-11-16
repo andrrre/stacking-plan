@@ -32,7 +32,13 @@ export function floorInsets(width: number, height: number, wide = width >= heigh
   const base = insetsFor(width, height, wide)
   return { ...base, top: Math.max(base.top, FLOOR_PANEL_TOP) + FLOOR_CAPTION_H, left: base.left + FLOOR_PANEL_W }
 }
-export const DEFAULT_VIEW: View = { azimuth: 16, elevation: 14.5 }
+/**
+ * The resting view: a little from the right and just above. Low and shallow on purpose: the facade's floor lines
+ * slope on screen roughly with sin(azimuth) × the eye's height above them, and an upright two-line label needs a
+ * face that stays TWO_LINES_H tall across its first line, so a steeper view would cost the tenant line (measured
+ * at 1440×900: 16°/14.5° showed it on no suite of a 12-floor building, 9°/6° on all that are wide enough).
+ */
+export const DEFAULT_VIEW: View = { azimuth: 9, elevation: 6 }
 /** Floor view: high above the front, looking down onto one plate. */
 export const FLOOR_VIEW: View = { azimuth: 4, elevation: 60 }
 export const SEPARATED_VIEW: View = { azimuth: 12, elevation: 32 }

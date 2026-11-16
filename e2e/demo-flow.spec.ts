@@ -28,14 +28,15 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await page.route('**/api/ask', (route) => route.abort())
   await page.route('**/api/summary', (route) => route.abort())
 
-  // 1. First paint: the 3D building, vacant and expiring space labelled upright on the facade (line 1 at this
-  // zoom; line 2, the status in words, waits for a face tall enough for it)
+  // 1. First paint: the 3D building, vacant and expiring space labelled upright on the facade, both lines:
+  // "suite · SF" over the status in words
   await gotoApp(page, '3d')
   await expect(page.getByTestId('view-3d')).toBeChecked()
   await expect(suite3d(page, 500)).toHaveAttribute('data-screen-hit', 'true')
-  expect(await visibleText(page, 500)).toContain('500 · 10,250 SF')
-  expect(await visibleText(page, 600)).toContain('600 · 12,400 SF')
-  await expect(label(page, 600)).toContainText('Flamingo Row Media · ends 04/2027')
+  await expect(label(page, 500)).toHaveAttribute('data-parts', 'number sf tenant')
+  await expect(label(page, 600)).toHaveAttribute('data-parts', 'number sf tenant')
+  expect(await visibleText(page, 500)).toBe('500 · 10,250 SF\nVacant')
+  expect(await visibleText(page, 600)).toBe('600 · 12,400 SF\nFlamingo Row Media · ends 04/2027')
   await expect(page.getByTestId('kpi-occupancy-value')).toHaveText('72%')
   await expect(page.getByTestId('kpi-vacant')).toContainText('38,150 SF')
   await expect(page.getByTestId('kpi-expiring')).toContainText('26,500 SF')

@@ -43,6 +43,7 @@ describe('readPalette', () => {
       expect(p.fills[k], k).toBe(resolve(`--c-${k}`).toLowerCase())
       expect(p.sides[k], k).toBe(resolve(`--c-${k}-side`).toLowerCase())
       expect(d.fills[k], k).toBe(resolveDark(`--c-${k}`).toLowerCase())
+      expect(d.sides[k], k).toBe(resolveDark(`--c-${k}-side`).toLowerCase())
     }
   })
 
@@ -74,6 +75,16 @@ describe('readPalette', () => {
     expect(p.roofEdge).toBe('#cdd2d9')
     expect(p.muted).toBe('#5b636e')
     expect(p.surface).toBe('#ffffff')
+  })
+
+  it('reads the contact shadow from --c-shadow, so the dark theme gets its own', () => {
+    expect(p.shadow).toEqual({ hex: '#101828', alpha: 0.12 })
+    expect(d.shadow).toEqual({ hex: '#000000', alpha: 0.45 })
+  })
+
+  it('writes a token the same in both themes as one colour, not light-dark() of it twice', () => {
+    const twice = [...TOKENS].filter(([, v]) => [...v.matchAll(LIGHT_DARK)].some((m) => m[1]?.toLowerCase() === m[2]?.toLowerCase()))
+    expect(twice.map(([k]) => k)).toEqual([])
   })
 
   it('falls back to grey for a missing or malformed token instead of failing', () => {

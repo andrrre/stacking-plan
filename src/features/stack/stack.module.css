@@ -78,9 +78,11 @@
 .suite:hover { filter: brightness(1.07); }
 .suite:focus-visible { z-index: 3; outline-offset: 1px; }
 
+/* The 2px selection ring, with a 1px ring in the page colour just inside it: white alone on the gold expiring fill
+   is 1.7:1 in dark, the page-colour ring keeps the outline readable on every fill (the first shadow paints on top). */
 .suite[aria-pressed='true'] {
   z-index: 2;
-  box-shadow: inset 0 0 0 2px var(--c-outline-selected);
+  box-shadow: inset 0 0 0 2px var(--c-outline-selected), inset 0 0 0 3px var(--c-bg);
 }
 
 .suite[data-dimmed='true'] {

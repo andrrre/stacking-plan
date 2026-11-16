@@ -57,7 +57,7 @@ test.describe('legend filter on the 3D building', () => {
 })
 
 test.describe('building labels', () => {
-  test('sit upright on the facade (no skew or rotation) and say "number · SF"', async ({ page }) => {
+  test('sit upright on the facade (no skew or rotation) and say "number · SF" over the status, at the default view', async ({ page }) => {
     await gotoApp(page, '3d')
     await settled(page, '500')
     await expect(label(page, '500')).toHaveAttribute('data-hidden', 'false')
@@ -67,7 +67,7 @@ test.describe('building labels', () => {
       expect(m.is2D, m.id ?? '').toBe(true)
       expect(m.abcd, m.id ?? '').toEqual([1, 0, 0, 1])
     }
-    expect(await label(page, '500').evaluate((el) => (el as HTMLElement).innerText)).toBe('500 · 10,250 SF')
+    expect(await label(page, '500').evaluate((el) => (el as HTMLElement).innerText)).toBe('500 · 10,250 SF\nVacant')
   })
 
   test('show two lines where the face is tall enough: zoomed in, line 2 is the tenant or status', async ({ page }) => {

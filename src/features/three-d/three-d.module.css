@@ -42,7 +42,8 @@
 .ring[data-kind='run-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
 .ring[data-kind='selected'] { stroke: var(--c-outline-selected); stroke-width: 3px; }
 .ring[data-kind='selected-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
-.ring[data-kind='focus'] { stroke: var(--c-focus); stroke-width: 3px; }
+/* Dashed, so keyboard focus never reads as the solid selection ring. */
+.ring[data-kind='focus'] { stroke: var(--c-focus); stroke-width: 3px; stroke-dasharray: 6 4; }
 
 /* ---------- floor numbers and rank badges ---------- */
 
@@ -100,9 +101,11 @@
 .label[data-forced='true'] { z-index: 1; overflow: visible; }
 
 .lLine1 { font-size: var(--fs-xs); line-height: 14px; font-weight: var(--fw-semibold); }
-/* Two lines fit in TWO_LINES_H (labels3d.ts): line 1 tightens to 12px, which digits and capitals allow. */
+/* Two lines fit in TWO_LINES_H (labels3d.ts): line 1 tightens to 12px, which digits and capitals allow, and
+   line 2 to 13px, which still holds its ascenders and descenders. */
 .label[data-lines='2'] .lLine1 { line-height: 12px; }
 .lTenant { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-sm); line-height: 14px; font-weight: var(--fw-regular); }
+.label[data-lines='2'] .lTenant { line-height: 13px; }
 
 .label:not([data-parts~='number']) .lNumber,
 .label:not([data-parts~='sf']) .lSf,
@@ -248,7 +251,7 @@
   width: 30px;
   height: 18px;
   border-radius: 9px;
-  background: var(--c-roof-edge);
+  background: var(--c-text-muted); /* off: 3:1 or more on the card in both themes; on: the accent, thumb right */
   transition: background-color 160ms ease;
 }
 

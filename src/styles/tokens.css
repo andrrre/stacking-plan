@@ -2,8 +2,11 @@
   StackMatch design tokens: the Night theme (.omc/handoffs/night-theme.md), light and dark.
   Every colour is light-dark(LIGHT, DARK); `color-scheme` on the root picks the side. With no data-theme the
   root follows the system (prefers-color-scheme); data-theme='light' | 'dark' (set by src/features/theme)
-  overrides it; print is always light. The 3D building reads these same tokens (readPalette), so the two views
-  cannot drift. Contrast ratios (WCAG) are noted as light / dark; ✓ meets 4.5:1 for text, 3:1 for UI.
+  overrides it; print is always light. Browsers without light-dark() (Safari < 17.5, Chrome < 123, Firefox < 120)
+  still get both themes: the production build (Vite's CSS minifier, for its default browser targets) rewrites
+  each light-dark() into a pair of custom-property toggles keyed to the same color-scheme rules; the served CSS
+  is checked in e2e/s19-night-review.spec.ts. The 3D building reads these same tokens (readPalette), so the two
+  views cannot drift. Contrast ratios (WCAG) are noted as light / dark; ✓ meets 4.5:1 for text, 3:1 for UI.
 */
 :root{
   color-scheme:light dark;
@@ -12,6 +15,7 @@
   --c-border:light-dark(#E2E5EA,#2A3038) /*rule*/; --c-border-strong:light-dark(#D3D8DF,#353C45) /*secondary button border: 1.4 / 1.5, decorative only (handoff)*/;
   --c-text:light-dark(#121518,#ECEEF1) /*16.8 / 14.6 on bg ✓*/; --c-text-muted:light-dark(#5B636E,#9AA3AE) /*5.6 on bg, 5.2 on seg / 7.2 on bg, 5.9 on seg ✓*/;
   --c-btn:light-dark(#FFFFFF,#22272E); --c-btn-border:var(--c-border-strong);
+  --c-input-border:#8B939D /*text fields only: 3.1 on card / 5.4 on card ✓ (buttons keep --c-btn-border)*/;
   --c-seg:light-dark(#ECEEF1,#22272E); --c-seg-on:light-dark(#FFFFFF,#353C45);
   --c-grid:light-dark(#F0F2F5,#1F242A) /*24px canvas grid*/; --c-track:light-dark(#E6E9ED,#2A3038) /*progress track*/;
   --c-roof:light-dark(#E9ECF0,#2A3038); --c-roof-edge:light-dark(#CDD2D9,#3A424C) /*slabs, roof caps and the sketched city*/;
@@ -43,7 +47,7 @@
   --c-risk-le24:light-dark(#A78BFA,#6D4BC9); --c-risk-le24-side:light-dark(#9078D7,#573CA1); --c-risk-le24-ink:light-dark(#1A1033,#FFFFFF);  /* 6.6 / 6.0 ✓*/
   --c-risk-le36:light-dark(#D4C9FB,#4A3485); --c-risk-le36-side:light-dark(#B6ADD8,#3B2A6A); --c-risk-le36-ink:light-dark(#1A1033,#E9E3FD);  /*11.6 / 8.0 ✓*/
   --c-risk-gt36:light-dark(#E9E3FD,#2E2650); --c-risk-gt36-side:light-dark(#C8C3DA,#251E40); --c-risk-gt36-ink:light-dark(#0D061E,#D4C9FB); /*15.9 / 9.0 ✓*/
-  --c-risk-gt36-edge:light-dark(#8A74D8,#8A74D8) /*3.8 / 4.4 vs card ✓: the palest step keeps a visible edge*/;
+  --c-risk-gt36-edge:#8A74D8 /*3.8 / 4.4 vs card ✓: the palest step keeps a visible edge*/;
   --c-risk-open:light-dark(#CBD2DC,#353C45); --c-risk-open-side:light-dark(#AFB5BD,#2A3037); --c-risk-open-ink:light-dark(#1F2733,#C9CFD6); /*9.9 / 7.1 ✓*/
   /* ---------- patterns and edges ---------- */
   --pat-hatch:repeating-linear-gradient(135deg,var(--c-vacant) 0 7px,var(--c-vacant-2) 7px 14px);

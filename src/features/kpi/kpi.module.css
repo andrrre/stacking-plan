@@ -1,11 +1,18 @@
-/* Four cells divided by 1px rules: the gaps of a grid laid on the rule colour. Cells wrap on narrow screens. */
+/*
+  Four cells divided by 1px rules: the gaps of a grid laid on the rule colour. The column count always divides
+  the four cells (4, then 2, then 1), so no row has an empty slot showing the rule colour as a grey block.
+*/
 .bar {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   background: var(--c-border);
   border-bottom: 1px solid var(--c-border);
 }
+
+/* Four 200px cells and their rules need 803px; two per row need 401px. */
+@media (max-width: 819.98px) { .bar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 439.98px) { .bar { grid-template-columns: minmax(0, 1fr); } }
 
 .tile {
   --kpi-ink: var(--c-text);
