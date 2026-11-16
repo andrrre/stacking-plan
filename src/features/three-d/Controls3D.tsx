@@ -35,8 +35,9 @@ function CityToggle({ city, onCity }: Pick<Props, 'city' | 'onCity'>) {
   return (
     <button
       type="button"
-      className={styles.ctlText}
-      aria-pressed={city}
+      className={styles.ctlSwitch}
+      role="switch"
+      aria-checked={city}
       aria-label="City"
       data-testid="city-toggle"
       title="Sketched streets and neighbours around the building"
@@ -44,6 +45,7 @@ function CityToggle({ city, onCity }: Pick<Props, 'city' | 'onCity'>) {
     >
       <Icon d={CITY} />
       <span className={styles.ctlLabel}>City</span>
+      <span className={styles.switchTrack} aria-hidden="true" />
     </button>
   )
 }

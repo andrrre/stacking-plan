@@ -647,20 +647,20 @@ test.describe('the sketched city around the building', () => {
 
   test('the City switch is on by default; turned off it stays off after a reload', async ({ page }) => {
     await gotoApp(page, '3d', MOVING)
-    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(toggle(page)).toHaveAttribute('aria-checked', 'true')
     await expect(scene(page)).toHaveAttribute('data-city', 'on')
     await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
     await toggle(page).click()
-    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+    await expect(toggle(page)).toHaveAttribute('aria-checked', 'false')
     await expect(scene(page)).toHaveAttribute('data-city', 'off')
     await expect(scene(page)).toHaveAttribute('data-city-motion', 'off')
     expect([...new URL(page.url()).searchParams.keys()]).not.toContain('city') // a local preference, not in the URL
     await page.reload()
-    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+    await expect(toggle(page)).toHaveAttribute('aria-checked', 'false')
     await expect(scene(page)).toHaveAttribute('data-city', 'off')
     await toggle(page).click()
     await page.reload()
-    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(toggle(page)).toHaveAttribute('aria-checked', 'true')
   })
 
   test('with the city on, the building is framed exactly as without it and a click on the facade selects', async ({ page }) => {
