@@ -1,8 +1,8 @@
 import type { SuiteVisual } from '../stack/suiteVisual'
 
-// What a suite's facade label says, which parts fit on its face at the current zoom, where it sits (upright,
-// inside the projected face) and which labels give way when they would overlap. Pure: the scene feeds it
-// projected face corners in CSS pixels.
+// What a suite's facade label says, which parts fit on its face at the current zoom, where it sits (flat text
+// turned to run along the projected face, from its left end, inside it) and which labels give way when they
+// would overlap. Pure: the scene feeds it projected face corners in CSS pixels.
 
 /**
  * The model's two-line label: "number · SF" over the tenant or status in words (the label's non-colour status
@@ -34,7 +34,7 @@ export const WRAPPED_H = TWO_LINES_H + 13
  * 14px line box, so the box may lose 2px a side to a sloping face without clipping a glyph.
  */
 export const ONE_LINE_H = LINE_H - 4
-/** A face thinner than this where its label would start carries none (unless forced): it would read as noise. */
+/** A band thinner than this at both ends carries no label (unless forced): it would read as noise. */
 export const MIN_FACE_H = LINE_H - 1
 const PAD_X = 5
 const CHAR = 6 // average advance at 11–12px Inter (tabular digits measure ~5.8)
@@ -95,7 +95,7 @@ export function labelSize(c: LabelContent, parts: Parts, faceW: number, wrap = f
 }
 
 export type Rect = { x: number; y: number; w: number; h: number }
-/** A label's outline on screen as a convex polygon (an upright rectangle's four corners). */
+/** A label's outline on screen as a convex polygon (its turned rectangle's four corners). */
 export type Placed = { id: string; quad: readonly Pt2[]; priority: number }
 
 /** Separating-axis test for two convex polygons; touching edges do not count as overlap. */
@@ -202,50 +202,105 @@ function reach(q: Quad, from: number, to: number, h: number): number {
 const spanOf = (q: Quad) => ({ left: Math.max(q[0].x, q[3].x), right: Math.min(q[1].x, q[2].x) })
 
 /**
- * The widest upright box at least `h` tall inside the face; null when none is. A face seen at an angle slopes on
- * screen, so the full-width inner bounds can be too thin for a line even where a shorter box (all a label needs)
- * fits easily. The box grows from the face's left side and from its right side and the wider wins (the left on a
- * tie), so a face and its mirror image (the camera orbits either way) get the same box, mirrored.
+ * The box at least `h` tall that a label fills on a face (in the face's own frame, where it runs level), anchored
+ * at the face's left end and reaching as far right as the face stays `h` thick (a face seen in perspective
+ * tapers); null when its left end is thinner than `h`. Every label starts at the same place on its face.
  */
-export function uprightBox(q: Quad, h: number): Rect | null {
+export function leftBox(q: Quad, h: number): Rect | null {
   const { left, right } = spanOf(q)
   if (right <= left) return null
-  const fromLeft = reach(q, left, right, h)
-  const fromRight = reach(q, right, left, h)
-  if (fromLeft < 0 && fromRight < 0) return null
-  const a = fromLeft >= fromRight ? left : right - fromRight
-  const b = fromLeft >= fromRight ? left + fromLeft : right
-  const [tl, tr] = q
-  return { x: a, y: Math.max(edgeY(tl, tr, a), edgeY(tl, tr, b)), w: b - a, h: Math.max(spanHeight(q, a, b), 0) }
+  const w = reach(q, left, right, h)
+  return w < 0 ? null : columnBox(q, left, w, left + w)
 }
 
-/** Whether the face's tallest column (an end: the edges are straight) is at least `h` tall. */
-function tallEnough(q: Quad, h: number): boolean {
+/** A box from `x` `w` wide whose top and height are the face's thickness over [x, end] (the label's own extent). */
+function columnBox(q: Quad, x: number, w: number, end: number): Rect {
+  const [tl, tr] = q
+  return { x, y: Math.max(edgeY(tl, tr, x), edgeY(tl, tr, end)), w, h: Math.max(spanHeight(q, x, end), 0) }
+}
+
+/**
+ * Whether the band is at least `h` thick at its thicker end (a face seen in perspective tapers a little; a label
+ * needs only ONE_LINE_H where it actually sits, from the left end, which leftBox checks).
+ */
+function thickEnough(q: Quad, h: number): boolean {
   const { left, right } = spanOf(q)
   return right > left && Math.max(spanHeight(q, left, left), spanHeight(q, right, right)) >= h
+}
+
+/**
+ * How far (radians, clockwise on screen) a label turns to lie along its face: the mean direction of the face's
+ * top and bottom edges, at every angle (no upright mode, so nothing snaps while orbiting). A pure rotation, never
+ * a skew. Always within a quarter turn, so text never reads upside down; a face seen mirrored (an edge running
+ * right to left) gets 0.
+ */
+export function labelAngle(q: Quad): number {
+  const [tl, tr, br, bl] = q
+  if (tr.x <= tl.x || br.x <= bl.x) return 0
+  return (Math.atan2(tr.y - tl.y, tr.x - tl.x) + Math.atan2(br.y - bl.y, br.x - bl.x)) / 2
+}
+
+/** `p` in a frame turned by `angle` (the face's frame, where the face runs level), and back. */
+const turn = (p: Pt2, cos: number, sin: number): Pt2 => ({ x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos })
+
+/** The face in its own frame (turned back by `angle` about the screen origin), where fitLabel fits it level. */
+export function toFaceFrame(q: Quad, angle: number): [Pt2, Pt2, Pt2, Pt2] {
+  if (angle === 0) return [q[0], q[1], q[2], q[3]]
+  const cos = Math.cos(angle)
+  const sin = -Math.sin(angle)
+  return [turn(q[0], cos, sin), turn(q[1], cos, sin), turn(q[2], cos, sin), turn(q[3], cos, sin)]
+}
+
+/** A point of the face's frame back on screen. */
+export function fromFaceFrame(p: Pt2, angle: number): Pt2 {
+  return angle === 0 ? p : turn(p, Math.cos(angle), Math.sin(angle))
 }
 
 export type Fit = { box: Rect; parts: Parts }
 
 /**
- * The upright box and parts that show the most of a label on a face: a box tall enough for two lines, one
- * for a single line, or the face's inner bounds, whichever shows more (the first on a tie). A face thinner
- * than MIN_FACE_H gets only its inner bounds, so it shows a label only when forced. Runs per suite per frame:
- * a box is only computed when it can be used (a full-width two-line box makes the one-line box the same).
+ * The box and parts that show the most of a label on a face (in the face's own frame): a box from the face's
+ * left end tall enough for two lines, one for a single line, or the face's inner bounds, whichever shows more
+ * (two lines on a tie). The chosen box's height is then the face's thickness over the label's own extent, so the
+ * label is centred in the band where it actually sits. A band thinner than MIN_FACE_H at both ends gets only
+ * its inner bounds, so it shows a label only when forced. Runs per suite per frame.
  */
 export function fitLabel(c: LabelContent, q: Quad, forced: boolean): Fit {
   const inner = innerRect(q)
-  const thick = tallEnough(q, MIN_FACE_H)
+  const thick = thickEnough(q, MIN_FACE_H)
   let best: Fit = { box: inner, parts: thick || forced ? chooseParts(c, inner, forced) : NONE }
-  if (!thick) return best
-  const consider = (box: Rect | null) => {
-    if (!box) return
-    const parts = chooseParts(c, box, forced)
-    if (shown(c, parts, box.w) >= shown(c, best.parts, best.box.w)) best = { box, parts }
+  if (thick) {
+    for (const box of [leftBox(q, ONE_LINE_H), leftBox(q, TWO_LINES_H)]) {
+      if (!box) continue
+      const parts = chooseParts(c, box, forced)
+      if (shown(c, parts, box.w) >= shown(c, best.parts, best.box.w)) best = { box, parts }
+    }
   }
-  const two = uprightBox(q, TWO_LINES_H)
-  const { left, right } = spanOf(q)
-  if (!two || two.w < right - left) consider(uprightBox(q, ONE_LINE_H))
-  consider(two)
-  return best
+  if (best.parts.lines === 0 || best.box.w <= 0) return best
+  const { x, w } = best.box
+  return { box: columnBox(q, x, w, x + Math.min(labelSize(c, best.parts, w).w, w)), parts: best.parts }
+}
+
+/**
+ * How close floor numbers may stand, top to bottom (px): a tag is 11px digits (line-height 1) in 2px of padding
+ * (.floorTag in three-d.module.css), so at 11px apart their backgrounds overlap but the digits stay clear.
+ */
+export const TAG_H = 11
+type TagAt = { floor: number; x: number; y: number } // x, y: the point the tag's right-middle stands beside
+
+/**
+ * The floor numbers to hide so the rest do not overlap: seen from high up the floors crowd together on screen.
+ * From the lowest floor up (tags come highest first), a tag shows when it clears the last one shown.
+ */
+export function thinTags(tags: readonly TagAt[]): Set<number> {
+  const hidden = new Set<number>()
+  let kept: TagAt | null = null
+  for (let i = tags.length - 1; i >= 0; i--) {
+    const t = tags[i] as TagAt
+    const w = (k: TagAt) => textWidth(String(k.floor)) + 8
+    const clash = kept !== null && Math.abs(kept.y - t.y) < TAG_H && t.x - w(t) < kept.x && kept.x - w(kept) < t.x
+    if (clash) hidden.add(t.floor)
+    else kept = t
+  }
+  return hidden
 }

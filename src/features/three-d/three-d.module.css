@@ -58,6 +58,8 @@
   font-weight: var(--fw-semibold);
   line-height: 1;
 }
+/* Seen from high up the floors crowd together on screen: the frame loop hides the floor numbers that would overlap. */
+.floorTag[data-hidden='true'] { visibility: hidden; }
 
 .badge {
   position: absolute;
@@ -78,8 +80,9 @@
 
 /* ---------- facade labels ---------- */
 
-/* A label is an upright box inside its suite's projected face (never skewed onto it): the frame loop sets the
-   box, a translate (and in floor view, for a narrow deep suite, a quarter turn) and which parts show. Two
+/* A label is a flat box inside its suite's projected face, turned to run along it (never skewed onto it) and
+   starting at the face's left end: the frame loop sets the box, a translate and turn (in floor view, for a
+   narrow deep suite, a further quarter turn) and which parts show. Two
    left-aligned lines, centred top to bottom: "number · SF" (11px semibold) over the tenant or status (12px). */
 .label {
   --ink: var(--c-text);

@@ -133,13 +133,16 @@ export function CameraRig({ bounds, view, focus, reduced, wide, rig }: Props) {
 
 /**
  * Writes the camera's angle and zoom against the current framing onto the canvas, after every rendered frame
- * (`data-camera-azimuth` in degrees, `data-camera-zoom` as a distance factor; 1 = framed), for tests.
+ * (`data-camera-azimuth` in degrees, `data-camera-zoom` as a distance factor; 1 = framed), and the camera's own
+ * elevation above the horizon (`data-camera-elevation`, degrees), for tests.
  */
 function useCameraReport(el: HTMLElement, camera: PerspectiveCamera, c: OrbitControls, framing: () => Pose): void {
   useFrame(() => {
-    const o = offsetBetween(framing(), placed(camera, c))
+    const now = placed(camera, c)
+    const o = offsetBetween(framing(), now)
     el.setAttribute('data-camera-azimuth', o.azimuth.toFixed(1))
     el.setAttribute('data-camera-zoom', o.factor.toFixed(3))
+    el.setAttribute('data-camera-elevation', viewOf(now.position.map((v, i) => v - (now.target[i] ?? 0)) as Vec3).elevation.toFixed(1))
   })
 }
 

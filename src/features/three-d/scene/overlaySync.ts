@@ -1,17 +1,18 @@
 import { Vector3, type Camera } from 'three'
 import {
-  chooseParts, fitLabel, hideCollisions, innerRect, labelPriority, labelSize, turnLabel, type Fit, type LabelContent, type Placed, type Rect,
-  type Size,
+  chooseParts, fitLabel, fromFaceFrame, hideCollisions, innerRect, labelAngle, labelPriority, labelSize, thinTags, toFaceFrame, turnLabel, type Fit,
+  type LabelContent, type Placed, type Pt2, type Rect, type Size,
 } from '../labels3d'
 import { labelDepth, labelFace, suiteRect, type Corner, type FaceRect, type Layout3D, type SuiteBox } from '../layout3d'
 import type { SuiteVisual } from '../../stack/suiteVisual'
 import { write, type OverlayRefs } from './overlayRefs'
 
 // Each rendered frame: project every suite's label face (the front face, or the top face with floors
-// separated and in floor view) to the canvas, fit an upright box inside it, choose what its label can say at
-// that size, hide labels that would collide, and move the floor numbers, rank badges and rings with the
-// camera. Labels are never skewed onto the face: they stay flat, screen-aligned text (in floor view a narrow,
-// deep suite may turn its label a quarter). Only changed values touch the DOM.
+// separated and in floor view) to the canvas, turn it level by its slope on screen (labelAngle), fit a box
+// inside it there, choose what its label can say at that size, hide labels that would collide, and move the
+// floor numbers, rank badges and rings with the camera. Labels are never skewed onto the face: they stay flat
+// text, only turned to run along a sloping face (in floor view a narrow, deep suite may turn its label a
+// further quarter). Only changed values touch the DOM.
 
 export type OverlayState = {
   camera: Camera
@@ -64,31 +65,46 @@ type LabelPlan = { id: string; w: number; h: number; transform: string; parts: s
 
 const EMPTY: Rect = { x: 0, y: 0, w: 0, h: 0 }
 
-const corners = (r: Rect) => [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }]
+/** The rectangle's corners carried from the face's frame (turned by `angle`) back to the screen. */
+const corners = (r: Rect, angle: number): Pt2[] =>
+  [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }].map((p) => fromFaceFrame(p, angle))
 
 /**
- * Where the label's box goes and what it covers on screen. Upright: the face box itself, its text left-aligned
- * and centred top to bottom. Turned (floor view): the box rotated a quarter about its bottom-left corner, so
- * the text runs up the face from its front edge.
+ * Where the label's box goes and what it covers, in the face's frame, as a CSS transform about the box's
+ * top-left corner. Along the face: the face box itself, its text left-aligned and centred top to bottom.
+ * Turned (floor view): the box rotated a further quarter about its bottom-left corner, so the text runs up the
+ * face from its front edge. A box on a level face (angle 0) snaps to whole pixels, for crisp text.
  */
-function placeBox(face: Rect, size: Size, turned: boolean): { transform: string; text: Rect } {
-  const x = Math.round(face.x)
-  const y = Math.round(face.y)
-  if (!turned) return { transform: `translate(${x}px, ${y}px)`, text: { x, y: y + (face.h - size.h) / 2, w: size.w, h: size.h } }
-  const bottom = Math.round(face.y + face.h)
-  return { transform: `translate(${x}px, ${bottom}px) rotate(-90deg)`, text: { x: x + (face.w - size.h) / 2, y: bottom - size.w, w: size.h, h: size.w } }
+function placeBox(face: Rect, size: Size, turned: boolean, angle: number): { transform: string; text: Rect } {
+  const level = angle === 0
+  const x = level ? Math.round(face.x) : face.x
+  const top = level ? Math.round(face.y) : face.y
+  const y = turned ? (level ? Math.round(face.y + face.h) : face.y + face.h) : top
+  const at = fromFaceFrame({ x, y }, angle)
+  const along = level ? '' : ` rotate(${((angle * 180) / Math.PI).toFixed(2)}deg)`
+  const transform = `translate(${px(at.x)}, ${px(at.y)})${along}${turned ? ' rotate(-90deg)' : ''}`
+  if (!turned) return { transform, text: { x, y: y + (face.h - size.h) / 2, w: size.w, h: size.h } }
+  return { transform, text: { x: x + (face.w - size.h) / 2, y: y - size.w, w: size.h, h: size.w } }
 }
 
 /**
- * Where a label goes on its face and what it shows: upright, the widest box that shows the most; in floor view a
- * narrow, deep suite's label may run along the face's depth instead (the face's inner bounds, turned).
+ * Where a label goes on its face (`pts`, in the face's frame) and what it shows: from the face's left end, the
+ * box that shows the most (fitLabel); in floor view a narrow, deep suite's label may run along the face's depth instead (the face's inner
+ * bounds, turned).
  */
-function fitOnFace(s: OverlayState, b: SuiteBox, c: LabelContent, pts: [Pt, Pt, Pt, Pt], forced: boolean): Fit & { turned: boolean } {
+function fitOnFace(s: OverlayState, b: SuiteBox, c: LabelContent, pts: [Pt2, Pt2, Pt2, Pt2], forced: boolean): Fit & { turned: boolean } {
   const face = innerRect(pts)
   const turned = s.layout.focus?.floor === b.floor && turnLabel(c, face, forced)
   if (turned) return { box: face, parts: chooseParts(c, { w: face.h, h: face.w }, forced), turned }
   return { ...fitLabel(c, pts, forced), turned }
 }
+
+/** How far a floor-view label sits in from its top face's back edge (px). */
+const TOP_INSET = 8
+
+/** Floor view: a label on a whole top face sits at its top-left (the face's left end, just in from the back). */
+const topLeft = (face: Rect, size: Size): Rect =>
+  face.h >= size.h + 2 * TOP_INSET ? { ...face, y: face.y + TOP_INSET, h: size.h } : face
 
 function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Placed } | null {
   const v = s.visuals.get(b.id)
@@ -97,7 +113,8 @@ function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Pla
   const strip = stripOf(s, b)
   const pts = faceQuad(s, suiteRect(b), 0, ringDepth(strip)) as [Pt, Pt, Pt, Pt]
   const forced = v.matchRank !== null || v.selected || b.id === s.hoverId || b.id === s.focusedId
-  const fit = pts.some((q) => q.behind) || strip === 0 ? null : fitOnFace(s, b, c, pts, forced)
+  const angle = labelAngle(pts)
+  const fit = pts.some((q) => q.behind) || strip === 0 ? null : fitOnFace(s, b, c, toFaceFrame(pts, angle), forced)
   const face = fit?.box ?? EMPTY
   const turned = fit?.turned ?? false
   const box: Size = turned ? { w: face.h, h: face.w } : face
@@ -106,10 +123,11 @@ function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Pla
   const ghost = s.ghosts.has(b.id)
   // Floor view wraps a long line 2 (not a ghost's: it shows only its number), so the collision box counts it.
   const size = p ? labelSize(c, p, box.w, s.layout.focus !== null && !ghost) : { w: 0, h: 0 }
-  const { transform, text } = placeBox(face, size, turned)
+  const at = s.layout.focus !== null && !turned ? topLeft(face, size) : face
+  const { transform, text } = placeBox(at, size, turned, angle)
   return {
-    plan: { id: b.id, w: box.w, h: box.h, transform, parts: parts.join(' '), lines: String(p?.lines ?? 0), forced, turned },
-    placed: { id: b.id, quad: size.w > 0 ? corners(text) : [], priority: labelPriority(c, forced, ghost || s.faded.has(b.id)) },
+    plan: { id: b.id, w: box.w, h: turned ? box.h : at.h, transform, parts: parts.join(' '), lines: String(p?.lines ?? 0), forced, turned },
+    placed: { id: b.id, quad: size.w > 0 ? corners(text, angle) : [], priority: labelPriority(c, forced, ghost || s.faded.has(b.id)) },
   }
 }
 
@@ -133,13 +151,24 @@ function syncLabels(s: OverlayState): void {
   }
 }
 
+/**
+ * Floor numbers stand level with their floor's front band, just left of its slab's front-left corner. When the
+ * camera has come round to see the building's left side, they line up in one column left of that whole side
+ * (else they would lie over its floors). Where the floors crowd together (seen from high up), some give way
+ * (thinTags).
+ */
 function syncTags(s: OverlayState): void {
-  for (const t of s.layout.tags) {
-    const el = s.refs.tags.get(t.floor)
+  const ends = s.layout.tags.map((t) => ({ t, front: project(s, t.x, t.y, t.z), back: project(s, t.x, t.y, t.back) }))
+  const side = ends.some((e) => e.back.x < e.front.x)
+  const column = Math.min(...ends.map((e) => e.back.x))
+  const at = ends.map(({ t, front }) => ({ floor: t.floor, x: side ? Math.min(column, front.x) : front.x, y: front.y }))
+  const hidden = thinTags(at)
+  for (const p of at) {
+    const el = s.refs.tags.get(p.floor)
     if (!el) continue
-    const p = project(s, t.x, t.y, t.z)
     write(el, 'left', px(p.x))
     write(el, 'top', px(p.y))
+    write(el, 'data-hidden', String(hidden.has(p.floor)))
   }
 }
 
@@ -182,6 +211,11 @@ export function syncOverlay(s: OverlayState): void {
   syncTags(s)
   syncRuns(s)
   syncStateRings(s)
+}
+
+/** The corners of a suite's label face on the canvas, as "x,y x,y x,y x,y" (the face the label is fitted to). */
+export function faceCorners(s: Projector & { layout: Layout3D }, b: SuiteBox): string {
+  return points(faceQuad(s, suiteRect(b), 0, ringDepth(stripOf(s, b))))
 }
 
 /** The canvas point at the centre of a suite's label face (where a click lands on that suite). */
