@@ -28,7 +28,9 @@ StackMatch opens on a 3D building: floors as stacked plates, suites as blocks si
 
 Then the broker moves the date. At mid-2027 a 12,400 SF suite whose lease ends in April 2027 appears as **potential** space, and the match list re-ranks. Matches that look good go into a shortlist, which prints as a client-ready page.
 
-The hero workflow is: requirement, matches with reasons, move the date, shortlist, client summary.
+When nothing fits, the building can propose a move. Type "12,000" and the app offers to move Northpier Engineering (2,150 SF) from Suite 510 to the vacant Suite 410 (4,000 SF), which frees Suites 500 and 510: 12,400 SF on floor 5. **Show move** flies the tenant's block to its new suite on the 3D building. **Apply as scenario** moves occupancy from 72% to 73% and rent roll by +$86,950.
+
+The hero workflow is: requirement, matches with reasons (or a proposed move when nothing fits), move the date, shortlist, client summary.
 
 ## Features
 
@@ -59,6 +61,14 @@ All fifteen planned stories are built, including CSV import and the AI summary i
 - "Why this works" for each match: suites, total SF, excess, blended asking rent, the date all space is free, and plain-word caveats.
 - When nothing fits, the app says why (largest block, space split across floors, a limit that is too tight) and names the earliest date a fit appears, with a **Jump to date** button. If potential space is switched off and a potential fit exists on the date shown, it offers **Include potential space** instead.
 - While a requirement field is invalid, the list keeps the last valid results and says so above them.
+
+**Make room**
+- When nothing fits on the date shown, the no-fit panel offers up to three moves. Each one moves a single tenant to a vacant suite in the same building, so that the space it leaves joins its neighbours into a block that meets the requirement.
+- Rules: one tenant per move. The destination must be plainly vacant (not potential, not committed), at least as large as the tenant's current suite, and not part of the freed block. The freed block must respect the minimum SF, maximum SF and maximum rent. Tenants with an open-ended lease are not offered.
+- Each option reads as a sentence, for example: "Move Northpier Engineering (2,150 SF) from Suite 510 to Suite 410 (4,000 SF). Frees Suites 500 + 510: 12,400 SF on floor 5."
+- **Show move** previews the move without changing any data. On the 3D building the tenant's block flies out of its suite and into the new one, and the freed block gets the match ring. The 2D stack tags the two suites "Moves out" and "Moves in". With reduced motion there is no flight.
+- **Apply as scenario** adds two ordinary scenario changes: the tenant's lease ends the day before the date shown, and a new lease for the same tenant starts in the destination on the date shown, with the same rent per SF and the same end date. The scenario bar then shows the before and after figures. In the hero building, as of 15 Nov 2026, the move above takes occupancy from 72% to 73% and rent roll by +$86,950.
+- A move is a proposal. It assumes the tenant agrees to relocate, and the app never presents it as agreed.
 
 **Time machine**
 - A date slider from today to five years out, in monthly steps (61 positions). Statuses, KPIs, matches and both views recompute.
@@ -201,6 +211,7 @@ From the design:
 - **Rate limit is best-effort.** `/api/ask` and `/api/summary` deploy as separate functions, so each has its own budget of 10 requests per minute per client, counted per serverless instance; they do not share one. It trusts the platform's forwarded-IP headers. Real spend control is a budget cap on the provider key.
 - **No authentication** on the API endpoints. They accept only same-site JSON requests.
 - **Unverified on Vercel.** The `api/` functions have only been run in tests. Whether their imports resolve on Vercel is unknown until a deploy. If they fail, the AI paths return errors and the offline fallback keeps the app working.
+- **Make room is one move, inside one building.** It does not chain moves, move tenants between buildings, or split suites. On the 3D building at the default zoom the destination's face is too short to show the tenant's name; zoom in to read it.
 - **WebGL 2 is required for the 3D building.** Without it the 2D stack is shown.
 - **The 3D chunk is large:** `npm run build` gives 969 kB (259 kB gzipped) for the lazy three.js chunk, on top of a 459 kB (140 kB gzipped) main bundle.
 - **Small facade labels:** on short windows or very tall buildings the labels get small. Zoom in, use **Separate floors**, or switch to the 2D stack.

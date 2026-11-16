@@ -175,6 +175,7 @@ Fictional. 12 floors, 32 suites (29 leasable, 3 common), 134,800 leasable SF. Le
 - min 10,000 @ today → `[500 (10,250, +250), 700+710 (10,500, +500, $52.18)]`. 300/310 never returned.
 - min 10,000 @ 2027-07-01 → `[400+410 (10,100, firm), 500, 700+710, 600 (potential)]`.
 - min 12,000 @ today → no fit; "Largest block is 10,500 SF on floor 7"; "Earliest fit: May 2027 — Suite 600 (potential)".
+- min 12,000 @ today → Make room: Northpier Engineering 510 → 410, frees 500 + 510 (12,400); applied: occupancy 72% → 73%, rent roll +$86,950.
 - Ask "Law firm, roughly 9–11k SF, moving in by Q2 next year, under $60" → min 9,000, max 11,000, rent 60, `D` = 2027-06-01 → `[400+410, 500, 700+710]`.
 - Place tenant on 500 @ today → occupancy 72% → 79%, rent roll +$492,000.
 
