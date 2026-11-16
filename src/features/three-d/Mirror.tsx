@@ -36,6 +36,7 @@ export function Mirror({ model, points, getItemProps, onSelect, onFocusChange }:
                 data-screen-x={p?.x}
                 data-screen-y={p?.y}
                 data-screen-hit={p ? String(p.hit) : undefined}
+                data-screen-face={p?.face}
                 aria-pressed={v.selected}
                 aria-label={v.ariaLabel}
                 title={v.tooltip}

@@ -108,7 +108,7 @@ describe('DOM mirror', () => {
   })
 
   it('carries each suite’s screen point once the scene reports it', () => {
-    renderWith(<MirrorHarness points={new Map([['odt-500', { x: 120, y: 340, hit: true }]])} />)
+    renderWith(<MirrorHarness points={new Map([['odt-500', { x: 120, y: 340, hit: true, face: '' }]])} />)
     const b = screen.getByTestId('suite3d-odt-500')
     expect(b).toHaveAttribute('data-screen-x', '120')
     expect(b).toHaveAttribute('data-screen-y', '340')

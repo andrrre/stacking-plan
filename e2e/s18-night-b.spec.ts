@@ -1,7 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
 import { gotoApp, suite, suite3d } from './helpers'
 
-// The night theme's second phase: the legend as a filter (3D), upright two-line building labels, the suite
+// The night theme's second phase: the legend as a filter (3D), flat two-line building labels, the suite
 // details card with Floor N at a glance and Floor plan, and presentation mode.
 
 const label = (page: Page, n: string) => page.getByTestId(`label3d-odt-${n}`)
@@ -19,6 +19,13 @@ const shownLabelMatrices = (page: Page) =>
     const m = new DOMMatrixReadOnly(getComputedStyle(el).transform)
     return { id: el.getAttribute('data-testid'), turned: el.getAttribute('data-turned'), abcd: [m.a, m.b, m.c, m.d], is2D: m.is2D }
   }))
+
+/**
+ * Whether a label's matrix is a pure rotation within a quarter turn either way (flat text turned along a sloping
+ * face: never skewed, scaled or upside down). A floor-view label turned a further quarter is checked by its own test.
+ */
+const flatTurn = ([a, b, c, d]: number[]) =>
+  Math.abs((a ?? 0) - (d ?? 0)) < 1e-4 && Math.abs((b ?? 0) + (c ?? 0)) < 1e-4 && Math.abs(Math.hypot(a ?? 0, b ?? 0) - 1) < 1e-4 && (a ?? 0) > 0
 
 test.describe('legend filter on the 3D building', () => {
   test('a pill fades every other suite and its label to 28%; pressing it again clears', async ({ page }) => {
@@ -57,7 +64,7 @@ test.describe('legend filter on the 3D building', () => {
 })
 
 test.describe('building labels', () => {
-  test('sit upright on the facade (no skew or rotation) and say "number · SF" over the status, at the default view', async ({ page }) => {
+  test('lie flat along the facade (turned with each face, never skewed) and say "number · SF" over the status, at the default view', async ({ page }) => {
     await gotoApp(page, '3d')
     await settled(page, '500')
     await expect(label(page, '500')).toHaveAttribute('data-hidden', 'false')
@@ -65,18 +72,19 @@ test.describe('building labels', () => {
     expect(matrices.length).toBeGreaterThan(20)
     for (const m of matrices) {
       expect(m.is2D, m.id ?? '').toBe(true)
-      expect(m.abcd, m.id ?? '').toEqual([1, 0, 0, 1])
+      expect(flatTurn(m.abcd), `${m.id}: ${m.abcd}`).toBe(true)
+      expect(Math.abs(Math.atan2(m.abcd[1] ?? 0, m.abcd[0] ?? 1)), `${m.id}: the resting view's faces slope a few degrees at most`).toBeLessThan(0.06)
     }
     expect(await label(page, '500').evaluate((el) => (el as HTMLElement).innerText)).toBe('500 · 10,250 SF\nVacant')
   })
 
-  test('show two lines where the face is tall enough: zoomed in, line 2 is the tenant or status', async ({ page }) => {
+  test('show two lines where the face is tall enough: zoomed in, line 2 is the tenant or status, the text flat', async ({ page }) => {
     await gotoApp(page, '3d')
     await settled(page, '900')
     for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Zoom in' }).click()
     await expect(label(page, '900')).toHaveAttribute('data-lines', '2')
     await expect.poll(() => label(page, '900').evaluate((el) => (el as HTMLElement).innerText)).toMatch(/^900 · 12,400 SF\s+Coralstone Insurance$/)
-    for (const m of await shownLabelMatrices(page)) expect(m.abcd, m.id ?? '').toEqual([1, 0, 0, 1])
+    for (const m of await shownLabelMatrices(page)) expect(flatTurn(m.abcd), `${m.id}: ${m.abcd}`).toBe(true)
   })
 
   test('a suite under 2,500 SF shows only its number', async ({ page }) => {
@@ -87,14 +95,14 @@ test.describe('building labels', () => {
     expect(await label(page, '720').evaluate((el) => (el as HTMLElement).innerText)).toBe('720')
   })
 
-  test('stay upright with floors separated too', async ({ page }) => {
+  test('stay flat with floors separated too: never skewed, at most turned along their strip', async ({ page }) => {
     await gotoApp(page, '3d')
     await page.getByTestId('separate-floors').click()
     await expect(page.getByTestId('scene3d')).toHaveAttribute('data-floors-moving', 'false')
     await settled(page, '1200')
     const matrices = await shownLabelMatrices(page)
     expect(matrices.length).toBeGreaterThan(10)
-    for (const m of matrices) expect(m.abcd, m.id ?? '').toEqual([1, 0, 0, 1])
+    for (const m of matrices) expect(flatTurn(m.abcd), `${m.id}: ${m.abcd}`).toBe(true)
   })
 })
 

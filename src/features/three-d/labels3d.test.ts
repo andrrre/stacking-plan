@@ -3,7 +3,7 @@ import { BUNDLED_BUILDINGS } from '../../data'
 import { buildStackModel, type SuiteVisual } from '../stack/suiteVisual'
 import {
   LINE_H, MIN_FACE_H, ONE_LINE_H, TWO_LINES_H, WRAPPED_H, chooseParts, convexOverlap, fitLabel, hideCollisions, innerRect, labelContent, labelForced, labelPriority, labelSize, line1Text, textWidth, turnLabel,
-  uprightBox,
+  TAG_H, fromFaceFrame, labelAngle, leftBox, thinTags, toFaceFrame,
   type LabelContent, type Pt2,
 } from './labels3d'
 
@@ -175,8 +175,8 @@ describe('collisions', () => {
   })
 })
 
-describe('uprightBox and fitLabel (a face seen at an angle slopes on screen)', () => {
-  // A long facade face 22px thick whose edges fall 20px over its 400px width.
+describe('leftBox and fitLabel (in the face\'s own frame, the label starts at the face\'s left end)', () => {
+  // A long face 22px thick whose edges fall 20px over its 400px width (as if not yet turned level).
   const sloped: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 120 }, { x: 400, y: 142 }, { x: 0, y: 122 }]
   const c: LabelContent = { number: '700', sf: '4,300 SF', text: 'Vacant', compact: false, notable: true }
 
@@ -184,23 +184,23 @@ describe('uprightBox and fitLabel (a face seen at an angle slopes on screen)', (
     expect(innerRect(sloped).h).toBe(2)
   })
 
-  it('finds the widest box of a given height from the face\'s left side', () => {
-    const box = uprightBox(sloped, 14) as { x: number; y: number; w: number; h: number }
+  it('reaches from the left end as far as the face stays thick enough', () => {
+    const box = leftBox(sloped, 14) as { x: number; y: number; w: number; h: number }
     expect(box.x).toBe(0)
     expect(box.h).toBeGreaterThanOrEqual(14)
     expect(box.w).toBeCloseTo(160, 0) // 22px thick, 14 needed: 8px of fall = 160px
-    expect(uprightBox(sloped, 23)).toBeNull()
+    expect(leftBox(sloped, 23)).toBeNull()
   })
 
-  it('takes the whole face when it is upright and tall enough', () => {
-    const upright: [Pt2, Pt2, Pt2, Pt2] = [{ x: 5, y: 5 }, { x: 105, y: 5 }, { x: 105, y: 35 }, { x: 5, y: 35 }]
-    expect(uprightBox(upright, 14)).toEqual({ x: 5, y: 5, w: 100, h: 30 })
+  it('takes the whole face when it is level and tall enough', () => {
+    const level: [Pt2, Pt2, Pt2, Pt2] = [{ x: 5, y: 5 }, { x: 105, y: 5 }, { x: 105, y: 35 }, { x: 5, y: 35 }]
+    expect(leftBox(level, 14)).toEqual({ x: 5, y: 5, w: 100, h: 30 })
   })
 
-  it('fitLabel shows line 1 upright on the sloped face', () => {
-    const fit = fitLabel(c, sloped, false)
-    expect(fit.parts).toEqual({ number: true, sf: true, tenant: false, lines: 1 })
-    expect(fit.box.h).toBeGreaterThanOrEqual(ONE_LINE_H)
+  it('a face whose left end is too thin gets no box, even where its right end is thick', () => {
+    const wedge: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 130 }, { x: 0, y: 109 }]
+    expect(leftBox(wedge, ONE_LINE_H)).toBeNull()
+    expect(fitLabel(c, wedge, false).parts.lines).toBe(0)
   })
 
   it('fitLabel leaves a face thinner than MIN_FACE_H unlabelled unless forced', () => {
@@ -210,46 +210,153 @@ describe('uprightBox and fitLabel (a face seen at an angle slopes on screen)', (
   })
 
   it('fitLabel prefers two lines where the face is tall enough for them', () => {
-    const tall: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 110 }, { x: 400, y: 150 }, { x: 0, y: 140 }]
+    const tall: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 100 }, { x: 400, y: 140 }, { x: 0, y: 140 }]
     expect(fitLabel(c, tall, false).parts).toEqual({ number: true, sf: true, tenant: true, lines: 2 })
+  })
+
+  it('on a tapering face the label is centred in the thickness over its own extent, not the whole face\'s', () => {
+    // 30px thick at the left end, 16px at the right: over the label's first ~90px it is ~27px thick.
+    const taper: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 107 }, { x: 400, y: 123 }, { x: 0, y: 130 }]
+    const fit = fitLabel(c, taper, false)
+    const extent = textWidth(line1Text(c)) + 10
+    expect(fit.box.x).toBe(0)
+    expect(fit.box.y).toBeCloseTo(100 + (7 * extent) / 400, 6) // the top edge at the label's right end
+    expect(fit.box.y + fit.box.h).toBeCloseTo(130 - (7 * extent) / 400, 6) // the bottom edge there
   })
 })
 
-describe('uprightBox and fitLabel are mirror-symmetric (the camera orbits either way)', () => {
+describe('labels follow a sloping face by rotation (labelAngle, toFaceFrame, fromFaceFrame)', () => {
   type Quad = [Pt2, Pt2, Pt2, Pt2]
-  /** The face reflected about x = 0, re-ordered so it is still [top-left, top-right, bottom-right, bottom-left]. */
-  const mirror = ([tl, tr, br, bl]: Quad): Quad => [{ x: -tr.x, y: tr.y }, { x: -tl.x, y: tl.y }, { x: -bl.x, y: bl.y }, { x: -br.x, y: br.y }]
   const c: LabelContent = { number: '700', sf: '4,300 SF', text: 'Vacant', compact: false, notable: true }
-  // 200px wide, 12px tall on the left and 30px on the right (a face seen from its right).
-  const wedge: Quad = [{ x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 130 }, { x: 0, y: 112 }]
-  // A long face whose edges fall the other way, 14px tall at its left end and 20px at its right.
-  const fall: Quad = [{ x: 0, y: 120 }, { x: 300, y: 100 }, { x: 300, y: 120 }, { x: 0, y: 134 }]
+  const rad = (deg: number) => (deg * Math.PI) / 180
+  const toRad = rad
+  /** A band `len` px long and `thick` px thick whose baseline runs at `deg` degrees (screen y down), from (x, y). */
+  const band = (len: number, thick: number, deg: number, x = 100, y = 200): Quad => {
+    const u = { x: Math.cos(rad(deg)), y: Math.sin(rad(deg)) }
+    const n = { x: -u.y, y: u.x }
+    const at = (a: number, b: number) => ({ x: x + u.x * a + n.x * b, y: y + u.y * a + n.y * b })
+    return [at(0, 0), at(len, 0), at(len, thick), at(0, thick)]
+  }
+  const mirror = ([tl, tr, br, bl]: Quad): Quad => [{ x: -tr.x, y: tr.y }, { x: -tl.x, y: tl.y }, { x: -bl.x, y: bl.y }, { x: -br.x, y: br.y }]
+  /** Whether `p` lies inside the convex quad (clockwise on screen), within `eps` px. */
+  const inside = (q: Quad, p: Pt2, eps = 0.01) => q.every((a, i) => {
+    const b = q[(i + 1) % 4] as Pt2
+    return (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x) >= -eps * Math.hypot(b.x - a.x, b.y - a.y)
+  })
+  /** Where the fitted box lands on screen: its four corners carried back from the face's frame. */
+  const onScreen = (q: Quad, forced = false) => {
+    const angle = labelAngle(q)
+    const fit = fitLabel(c, toFaceFrame(q, angle), forced)
+    const { x, y, w, h } = fit.box
+    return { angle, fit, corners: [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }].map((p) => fromFaceFrame(p, angle)) as Quad }
+  }
 
-  it.each([['wedge', wedge], ['fall', fall]] as const)('%s: a face and its mirror image give boxes of the same size', (_, q) => {
-    for (const h of [MIN_FACE_H, ONE_LINE_H, TWO_LINES_H]) {
-      const a = uprightBox(q, h)
-      const b = uprightBox(mirror(q), h)
-      expect(a === null, `h ${h}`).toBe(b === null)
-      if (!a || !b) continue
-      expect(b.w, `h ${h}`).toBeCloseTo(a.w, 3)
-      expect(b.h, `h ${h}`).toBeCloseTo(a.h, 3)
-      expect(b.x + b.w, `h ${h}: the mirrored box mirrors the box`).toBeCloseTo(-a.x, 3)
+  it('a thin band sloping 7° gets line 1, turned to the band and wholly inside it', () => {
+    const q = band(400, 18, 7)
+    expect(fitLabel(c, q, false).parts.sf).toBe(false) // upright, a 7° slope leaves room for the number at most
+    const { angle, fit, corners } = onScreen(q)
+    expect((angle * 180) / Math.PI).toBeCloseTo(7, 3)
+    expect(fit.parts).toEqual({ number: true, sf: true, tenant: false, lines: 1 })
+    expect(fit.box.h).toBeGreaterThanOrEqual(ONE_LINE_H)
+    expect(fit.box.w).toBeGreaterThanOrEqual(textWidth(line1Text(c)) + 10)
+    for (const p of corners) expect(inside(q, p), JSON.stringify(p)).toBe(true)
+  })
+
+  it('a level face gets angle 0 and its frame is the screen', () => {
+    const level: Quad = [{ x: 5, y: 5 }, { x: 105, y: 5 }, { x: 105, y: 35 }, { x: 5, y: 35 }]
+    const converging: Quad = [{ x: 0, y: 100 }, { x: 400, y: 110 }, { x: 400, y: 140 }, { x: 0, y: 150 }]
+    expect(labelAngle(level)).toBe(0)
+    expect(labelAngle(converging)).toBe(0) // edges converging in perspective about a level middle line
+    expect(toFaceFrame(level, 0)).toEqual(level)
+    expect(fromFaceFrame({ x: 3, y: 4 }, 0)).toEqual({ x: 3, y: 4 })
+  })
+
+  it('turns by the face\'s own slope at every angle, however small: no upright mode, so nothing snaps', () => {
+    const deg = (q: Quad) => (labelAngle(q) * 180) / Math.PI
+    for (const d of [0.5, 1, 2, 3, 12, -0.5, -2]) expect(deg(band(400, 30, d)), `${d}°`).toBeCloseTo(d, 6)
+  })
+
+  it('every label starts at its face\'s left end, centred in the band: a wide and a narrow suite on one floor alike', () => {
+    // Two suites side by side on one band sloping 9°: 420px and 60px long.
+    const wide = band(420, 30, 9, 100, 200)
+    const at = fromFaceFrame({ x: 426, y: 0 }, toRad(9))
+    const narrow = band(60, 30, 9, 100 + at.x, 200 + at.y)
+    for (const [name, q] of [['wide', wide], ['narrow', narrow]] as const) {
+      const { fit, corners } = onScreen(q)
+      const mid = { x: (q[0].x + q[3].x) / 2, y: (q[0].y + q[3].y) / 2 } // the middle of the face's left end
+      const start = { x: (corners[0].x + corners[3].x) / 2, y: (corners[0].y + corners[3].y) / 2 } // the box's
+      expect(fit.parts.lines, name).toBeGreaterThan(0)
+      expect(Math.hypot(start.x - mid.x, start.y - mid.y), name).toBeLessThan(0.01)
     }
   })
 
-  it('the wedge gets a label from its tall right side, as its mirror does from its tall left side', () => {
-    const fit = fitLabel(c, wedge, false)
-    const mirrored = fitLabel(c, mirror(wedge), false)
-    expect(fit.parts).toEqual(mirrored.parts)
-    expect(fit.parts).toMatchObject({ number: true, sf: true, lines: 1 })
-    expect(fit.box.x + fit.box.w).toBeCloseTo(200, 3) // anchored at the tall (right) end; the text starts at its left
-    expect(fit.box.w).toBeCloseTo(mirrored.box.w, 3)
-    expect(fit.box.h).toBeGreaterThanOrEqual(ONE_LINE_H)
+  it('mirrored faces give mirrored angles, with the label at the left end in both', () => {
+    for (const d of [3, 9, 20]) {
+      const q = band(300, 20, d)
+      const m = mirror(q)
+      expect(labelAngle(m), `${d}°`).toBeCloseTo(-labelAngle(q), 9)
+      for (const face of [q, m]) {
+        const { corners } = onScreen(face)
+        expect(Math.hypot(corners[0].x - face[0].x, corners[0].y - face[0].y), `${d}°`).toBeLessThan(0.01)
+      }
+    }
   })
 
-  it('an upright face too thin at both ends gets no box', () => {
-    const thin: Quad = [{ x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 109 }, { x: 0, y: 109 }]
-    expect(uprightBox(thin, ONE_LINE_H)).toBeNull()
-    expect(uprightBox(mirror(thin), ONE_LINE_H)).toBeNull()
+  it('mirrored slopes give mirrored angles and the same parts', () => {
+    for (const deg of [3, 7, 15, 25]) {
+      const q = band(300, 20, deg)
+      expect(labelAngle(mirror(q)), `${deg}°`).toBeCloseTo(-labelAngle(q), 9)
+      expect(onScreen(mirror(q)).fit.parts, `${deg}°`).toEqual(onScreen(q).fit.parts)
+    }
+  })
+
+  it('never turns text past a quarter: a face seen mirrored (its edges run right to left) keeps angle 0', () => {
+    const q = band(300, 20, 7)
+    const reversed: Quad = [q[1], q[0], q[3], q[2]]
+    expect(labelAngle(reversed)).toBe(0)
+    expect(Math.abs(labelAngle(band(300, 20, 60)))).toBeLessThan(Math.PI / 2)
+  })
+
+  it('a band thinner than a line carries no label, unless forced', () => {
+    const q = band(400, MIN_FACE_H - 1, 7)
+    expect(onScreen(q).fit.parts.lines).toBe(0)
+    expect(onScreen(q, true).fit.parts).toMatchObject({ number: true, lines: 1 })
+  })
+
+  it('a band tall enough for two lines shows both, turned', () => {
+    const { fit, corners } = onScreen(band(400, 30, -12))
+    const q = band(400, 30, -12)
+    expect(fit.parts).toEqual({ number: true, sf: true, tenant: true, lines: 2 })
+    for (const p of corners) expect(inside(q, p)).toBe(true)
+  })
+
+  it('collisions compare the turned labels\' real outlines, not their bounding boxes', () => {
+    const a = band(200, 14, 20, 0, 0)
+    const below = band(200, 14, 20, 0, 16) // the next floor down: bounding boxes overlap, outlines do not
+    const across = band(200, 14, -20, 60, 60) // crosses `a`
+    expect(hideCollisions([{ id: 'a', quad: a, priority: 2 }, { id: 'b', quad: below, priority: 2 }]).size).toBe(0)
+    expect([...hideCollisions([{ id: 'a', quad: a, priority: 3 }, { id: 'x', quad: across, priority: 2 }])]).toEqual(['x'])
+  })
+})
+
+describe('thinTags (floor numbers that would overlap give way)', () => {
+  const column = (gap: number, n = 12) => Array.from({ length: n }, (_, i) => ({ floor: n - i, x: 300, y: 100 + i * gap }))
+
+  it('keeps every floor number when they stand a tag apart', () => {
+    expect(thinTags(column(TAG_H)).size).toBe(0)
+  })
+
+  it('where floors crowd, keeps the lowest and every floor number that clears the last one kept', () => {
+    const hidden = thinTags(column(TAG_H / 2 + 1))
+    expect([...hidden].sort((a, b) => a - b)).toEqual([2, 4, 6, 8, 10, 12])
+  })
+
+  it('floor numbers side by side do not clash', () => {
+    expect(thinTags([{ floor: 2, x: 340, y: 100 }, { floor: 1, x: 300, y: 104 }]).size).toBe(0)
+    expect(thinTags([{ floor: 2, x: 310, y: 100 }, { floor: 1, x: 300, y: 104 }])).toEqual(new Set([2]))
+  })
+
+  it('nothing to thin', () => {
+    expect(thinTags([]).size).toBe(0)
   })
 })

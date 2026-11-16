@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: center;
   width: 24px;
-  min-height: 72px;
+  min-height: 56px;
   padding: var(--sp-2) 0;
   margin: 0;
   transform: translateY(-50%);
@@ -86,15 +86,7 @@
   70%, 100% { box-shadow: 2px 1px 3px var(--c-shadow), 0 0 0 7px transparent; }
 }
 
-.chevron {
-  width: 14px;
-  height: 14px;
-  transition: transform var(--drawer-dur) var(--ease);
-}
-
-.drawer[data-open='false'] .chevron { transform: rotate(180deg); }
-
-/* The shortlist count while the drawer is closed: a small pink badge under the chevron. */
+/* The shortlist count while the drawer is closed: a small badge under the spark. */
 .badge {
   display: grid;
   place-items: center;

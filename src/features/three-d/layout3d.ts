@@ -33,8 +33,11 @@ export type SuiteBox = Box & { id: string; floor: number; row: number; col: numb
 export type SlabBox = Box & { floor: number }
 /** A match outline: the front rectangle around a run of suites, at the run's front plane. */
 export type RunRect = { floor: number; rank: number; x0: number; x1: number; y0: number; y1: number; z: number }
-/** Where a floor number sits: just left of the plate, level with its suites' mid-height. */
-export type FloorTag = { floor: number; x: number; y: number; z: number }
+/**
+ * Where a floor number sits: just left of the plate, level with its suites' mid-height, by the slab's front-left
+ * corner (z) or, when the camera sees the left side, its back-left corner (z = back), whichever shows further left.
+ */
+export type FloorTag = { floor: number; x: number; y: number; z: number; back: number }
 
 export type Bounds = { min: [number, number, number]; max: [number, number, number] }
 
@@ -146,7 +149,7 @@ export function buildingLayout(model: StackModel, spread = 0): Layout3D {
     const plateW = (PLATE_W * f.widthPct) / 100
     const suites = floorBoxes(f, row, y0, active)
     const slab: SlabBox = { floor: f.number, x: 0, y: y0 + SLAB_T / 2, z: 0, w: plateW + 2 * SLAB_MARGIN, h: SLAB_T, d: DEPTH + 2 * SLAB_MARGIN }
-    const tag: FloorTag = { floor: f.number, x: -plateW / 2 - SLAB_MARGIN, y: y0 + SLAB_T + SUITE_H / 2, z: DEPTH / 2 + SLAB_MARGIN }
+    const tag: FloorTag = { floor: f.number, x: -plateW / 2 - SLAB_MARGIN, y: y0 + SLAB_T + SUITE_H / 2, z: DEPTH / 2 + SLAB_MARGIN, back: -DEPTH / 2 - SLAB_MARGIN }
     return { suites, slab, tag, runs: runRects(f, suites) }
   })
   const slabs = perFloor.map((p) => p.slab)

@@ -113,6 +113,16 @@ describe('buildingLayout (hero building)', () => {
     expect(cap && cap.y - cap.h / 2).toBeGreaterThan(top12.y + top12.h / 2)
     expect(layout.onTop).toBe(false)
   })
+
+  it('stands each floor number by its slab\'s left edge, front and back corners, at its suites\' mid-height', () => {
+    for (const t of layout.tags) {
+      const slab = layout.slabs.find((s) => s.floor === t.floor)
+      const suite = layout.suites.find((b) => b.floor === t.floor)
+      expect(slab && t.x).toBeCloseTo(slab ? slab.x - slab.w / 2 : 0, 9)
+      expect([t.z, t.back]).toEqual([slab ? slab.d / 2 : 0, slab ? -slab.d / 2 : 0])
+      expect(suite && t.y).toBeCloseTo(suite?.y ?? 0, 9)
+    }
+  })
 })
 
 describe('buildingLayout with a search', () => {

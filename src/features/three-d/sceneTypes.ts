@@ -8,7 +8,8 @@ import type { StackModel } from '../stack/suiteVisual'
 export type Rig = { reset: () => void; rotate: (degrees: number) => void; zoom: (factor: number) => void }
 
 /** Where a suite's front face centre is on the canvas (CSS px from its top-left), and whether a click there hits it. */
-export type ScreenPoint = { x: number; y: number; hit: boolean }
+/** A suite's label-face centre on the canvas, whether a click there lands on it, and the face's corners (tests). */
+export type ScreenPoint = { x: number; y: number; hit: boolean; face: string }
 
 export type SceneProps = {
   buildingId: string // seeds the sketched city around the building

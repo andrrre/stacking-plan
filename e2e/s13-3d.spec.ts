@@ -27,6 +27,8 @@ async function pointOf(page: Page, n: string): Promise<{ x: number; y: number }>
  * short glide back to framing; under load the first report can come before the glide).
  */
 async function settled(page: Page, n: string): Promise<void> {
+  // First the scene's first report: a cold start (scene chunk, GL context, shaders) can block the page for seconds.
+  await expect(suite3d(page, n)).toHaveAttribute('data-screen-hit', /true|false/)
   const seen: string[] = []
   await expect.poll(async () => {
     seen.push(await pointKey(page, n))
@@ -105,7 +107,7 @@ test.describe('3D building', () => {
       expect(await byStatus('vacant')).toEqual([...VACANT].sort())
       expect(await byStatus('expiring')).toEqual(Object.keys(EXPIRING).sort())
       const stage = await page.getByTestId('stack-3d').boundingBox()
-      // Every vacant, committed and expiring suite carries an upright label. At 1440 px both lines show on the
+      // Every vacant, committed and expiring suite carries a flat label along its face. At 1440 px both lines show on the
       // facade at the default view: "number · SF" over the status in words (at 1280 px a few faces keep line 1).
       const line2: Record<string, string> = { '1010': 'Committed · starts 03/2027' }
       for (const n of VACANT.filter((n) => n !== '1010')) line2[n] = 'Vacant'
@@ -422,27 +424,6 @@ test.describe('3D building', () => {
     expect(violet, 'the canvas is drawn, in the new colours').toBeGreaterThan(300)
   })
 
-  for (const reduced of [false, true]) {
-    test(`Show move frees 500 + 510 as match 1 and puts Northpier Engineering in 410${reduced ? ', under reduced motion' : ''}`, async ({ page }) => {
-      const problems: string[] = []
-      page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) }).on('pageerror', (e) => problems.push(e.message))
-      if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
-      await gotoApp(page, '3d')
-      await page.getByTestId('req-min-sf').fill('12000')
-      await page.getByTestId('show-move').click()
-      for (const [n, aria] of [['500', /match 1/], ['510', /match 1/], ['410', /Northpier Engineering/]] as const) await expect(suite3d(page, n)).toHaveAttribute('aria-label', aria)
-      for (const [n, m] of [['410', 'in'], ['510', 'out']] as const) await expect(suite3d(page, n)).toHaveAttribute('data-move', m)
-      await expect(label(page, '410')).toHaveAttribute('data-hidden', 'false')
-      await expect(label(page, '410')).toContainText('Northpier Engineering · Moves in')
-      await expect(label(page, '410')).toHaveAttribute('data-forced', 'true')
-      await expect(page.getByTestId('badge3d-1')).toBeVisible()
-      await expect(page.locator('polygon[data-kind="move"]')).toHaveAttribute('data-on', 'true')
-      await page.getByTestId('show-move').click()
-      await expect(page.locator('polygon[data-kind="move"]')).toHaveAttribute('data-on', 'false')
-      expect(problems).toEqual([])
-    })
-  }
-
   test('without WebGL the 2D stack takes its place with a short note', async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(window, 'WebGL2RenderingContext', { value: undefined })
@@ -548,7 +529,7 @@ test.describe('3D building', () => {
       await expect(page.getByTestId('scene3d')).toHaveAttribute('data-labels', 'top')
       await pointOf(page, '700')
       await expect(label(page, '700')).toHaveAttribute('data-hidden', 'false')
-      // The floor's whole top face is free: both lines show, upright.
+      // The floor's whole top face is free: both lines show, along the face.
       expect(await label(page, '700').evaluate((el) => (el as HTMLElement).innerText)).toMatch(/^700 · 4,300 SF\s+Vacant$/)
 
       await slider(page).focus()

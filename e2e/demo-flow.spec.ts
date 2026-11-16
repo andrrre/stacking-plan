@@ -28,7 +28,7 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await page.route('**/api/ask', (route) => route.abort())
   await page.route('**/api/summary', (route) => route.abort())
 
-  // 1. First paint: the 3D building, vacant and expiring space labelled upright on the facade, both lines:
+  // 1. First paint: the 3D building, vacant and expiring space labelled flat along the facade, both lines:
   // "suite · SF" over the status in words
   await gotoApp(page, '3d')
   await expect(page.getByTestId('view-3d')).toBeChecked()

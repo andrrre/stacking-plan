@@ -5,7 +5,7 @@ import { IDLE, captureLost, pointerCancel, pointerDown, pointerUp, type PointerI
 import type { Layout3D } from '../layout3d'
 import type { ScreenPoint } from '../sceneTypes'
 import type { SuiteVisual } from '../../stack/suiteVisual'
-import { faceCentre, syncOverlay, type OverlayState } from './overlaySync'
+import { faceCentre, faceCorners, syncOverlay, type OverlayState } from './overlaySync'
 import type { SuiteMaterials } from './suiteMaterials'
 import { syncNeeded, type SyncMark } from './syncGate'
 
@@ -27,17 +27,21 @@ function raycastAt(ray: Raycaster, camera: Camera, group: Group, x: number, y: n
   return suiteHit(ray.intersectObjects(group.children, false))
 }
 
-/** Each suite's front-face centre on the canvas, and whether a click there would land on that suite. */
+/**
+ * Each suite's label-face centre on the canvas, whether a click there would land on that suite, and the face's
+ * corners ("x,y x,y x,y x,y": top-left, top-right, bottom-right, bottom-left), which tests check labels against.
+ */
 export function screenPoints(camera: Camera, width: number, height: number, layout: Layout3D, group: Group): Map<string, ScreenPoint> {
   const ray = new Raycaster()
   return new Map(layout.suites.map((b) => {
     const c = faceCentre({ camera, width, height, layout }, b)
-    return [b.id, { ...c, hit: raycastAt(ray, camera, group, c.x, c.y, width, height) === b.id }]
+    const face = faceCorners({ camera, width, height, layout }, b)
+    return [b.id, { ...c, hit: raycastAt(ray, camera, group, c.x, c.y, width, height) === b.id, face }]
   }))
 }
 
 const samePoints = (a: ReadonlyMap<string, ScreenPoint>, b: ReadonlyMap<string, ScreenPoint>) =>
-  a.size === b.size && [...a].every(([k, p]) => { const q = b.get(k); return q?.x === p.x && q.y === p.y && q.hit === p.hit })
+  a.size === b.size && [...a].every(([k, p]) => { const q = b.get(k); return q?.x === p.x && q.y === p.y && q.hit === p.hit && q.face === p.face })
 
 type Sync = Omit<OverlayState, 'camera' | 'width' | 'height' | 'hoverId'> & {
   hover: RefObject<string | null>
