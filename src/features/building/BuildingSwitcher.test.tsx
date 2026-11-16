@@ -19,11 +19,13 @@ function renderSwitcher() {
 }
 
 describe('BuildingSwitcher', () => {
-  it('lists both bundled buildings with the current one selected', () => {
+  it('lists the bundled buildings with the current one selected', () => {
     renderSwitcher()
     const select = screen.getByLabelText('Building')
     expect(select).toHaveAttribute('data-testid', 'building-switcher')
-    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Ocean Drive Tower', 'Palm Bay Plaza'])
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Ocean Drive Tower', 'Palm Bay Plaza', 'Biscayne Spire', 'Mangrove Commons', 'Flamingo Exchange',
+    ])
     expect(select).toHaveValue('odt')
   })
 

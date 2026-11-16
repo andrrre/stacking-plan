@@ -33,10 +33,10 @@ test.describe('url state and second building', () => {
     expect(errors).toEqual([])
   })
 
-  test('the switcher lists 2 buildings and switching clears the selection', async ({ page }) => {
+  test('the switcher lists 5 buildings and switching clears the selection', async ({ page }) => {
     await gotoApp(page, 'stack')
     const switcher = page.getByTestId('building-switcher')
-    await expect(switcher.locator('option')).toHaveCount(2)
+    await expect(switcher.locator('option')).toHaveCount(5)
     await suite(page, 600).click()
     await expect(page.getByTestId('suite-details')).toBeVisible()
     await switcher.selectOption('pbp')

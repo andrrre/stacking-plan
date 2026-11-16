@@ -1,0 +1,1142 @@
+{
+  "id": "mgc",
+  "name": "Mangrove Commons",
+  "address": "8800 Mangrove Parkway, Doral",
+  "floors": [
+    {
+      "number": 8,
+      "suites": [
+        {
+          "id": "mgc-801",
+          "number": "801",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-801-l1",
+              "tenant": "Roseate Software",
+              "start": "2021-08-01",
+              "end": "2031-07-31",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "mgc-802",
+          "number": "802",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-802-l1",
+              "tenant": "Low Tide Couture",
+              "start": "2027-06-01",
+              "end": "2034-05-31",
+              "rentPsf": 46
+            }
+          ]
+        },
+        {
+          "id": "mgc-803",
+          "number": "803",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-803-l1",
+              "tenant": "Biscayne Light Security",
+              "start": "2027-04-01",
+              "end": "2034-03-31",
+              "rentPsf": 46
+            }
+          ]
+        },
+        {
+          "id": "mgc-804",
+          "number": "804",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-804-l1",
+              "tenant": "Blue Lagoon Pictures",
+              "start": "2021-07-01",
+              "end": "2028-06-30",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "mgc-805",
+          "number": "805",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-805-l1",
+              "tenant": "Conch Shell Accounting",
+              "start": "2025-09-01",
+              "end": "2035-08-31",
+              "rentPsf": 45
+            }
+          ]
+        },
+        {
+          "id": "mgc-806",
+          "number": "806",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-806-l1",
+              "tenant": "Tortuga Architects",
+              "start": "2022-01-01",
+              "end": "2026-12-31",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "mgc-807",
+          "number": "807",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-807-l1",
+              "tenant": "Barracuda Events",
+              "start": "2024-06-01",
+              "end": "2029-05-31",
+              "rentPsf": 42.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-808",
+          "number": "808",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 46,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "suites": [
+        {
+          "id": "mgc-701",
+          "number": "701",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-701-l1",
+              "tenant": "Frangipani Biotech",
+              "start": "2020-09-01",
+              "end": "2029-08-31",
+              "rentPsf": 36.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-702",
+          "number": "702",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-703",
+          "number": "703",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-704",
+          "number": "704",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-704-l1",
+              "tenant": "Hightide Logistics",
+              "start": "2024-01-01",
+              "end": "2026-12-31",
+              "rentPsf": 42.5,
+              "vacating": true
+            }
+          ]
+        },
+        {
+          "id": "mgc-705",
+          "number": "705",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-705-l1",
+              "tenant": "Coconut Row Labs",
+              "start": "2022-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 40,
+              "vacating": true
+            }
+          ]
+        },
+        {
+          "id": "mgc-706",
+          "number": "706",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-706-l1",
+              "tenant": "Wavecrest Robotics",
+              "start": "2025-10-01",
+              "end": "2032-09-30",
+              "rentPsf": 43
+            }
+          ]
+        },
+        {
+          "id": "mgc-707",
+          "number": "707",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-707-l1",
+              "tenant": "Pompano Design Co",
+              "start": "2025-04-01",
+              "end": "2030-03-31",
+              "rentPsf": 45
+            }
+          ]
+        },
+        {
+          "id": "mgc-708",
+          "number": "708",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-708-l1",
+              "tenant": "Mango Street Holdings",
+              "start": "2017-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 33
+            }
+          ]
+        },
+        {
+          "id": "mgc-709",
+          "number": "709",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 45,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-709-l1",
+              "tenant": "Shore Club Publishing",
+              "start": "2020-09-01",
+              "end": "2029-08-31",
+              "rentPsf": 38.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "suites": [
+        {
+          "id": "mgc-601",
+          "number": "601",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-601-l1",
+              "tenant": "Moonglow Advertising",
+              "start": "2016-04-01",
+              "end": "2026-03-31",
+              "rentPsf": 32.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-602",
+          "number": "602",
+          "areaSf": 5800,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-602-l1",
+              "tenant": "Boardwalk Title & Escrow",
+              "start": "2023-04-01",
+              "end": "2033-03-31",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "mgc-603",
+          "number": "603",
+          "areaSf": 5100,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-603-l1",
+              "tenant": "Aqua Vista Travel",
+              "start": "2023-01-01",
+              "end": "2032-12-31",
+              "rentPsf": 41
+            }
+          ]
+        },
+        {
+          "id": "mgc-604",
+          "number": "604",
+          "areaSf": 6100,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-604-l1",
+              "tenant": "Cobalt Shore Talent Agency",
+              "start": "2020-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 35.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-605",
+          "number": "605",
+          "areaSf": 5200,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-605-l1",
+              "tenant": "Sand Dollar Realty",
+              "start": "2022-03-01",
+              "end": "2032-02-29",
+              "rentPsf": 39
+            }
+          ]
+        },
+        {
+          "id": "mgc-606",
+          "number": "606",
+          "areaSf": 4600,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-606-l1",
+              "tenant": "Rumba Marine Brokers",
+              "start": "2019-04-01",
+              "end": "2028-03-31",
+              "rentPsf": 35
+            }
+          ]
+        },
+        {
+          "id": "mgc-607",
+          "number": "607",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-607-l1",
+              "tenant": "Sunrise Pier Engineering",
+              "start": "2025-04-01",
+              "end": "2035-03-31",
+              "rentPsf": 44
+            }
+          ]
+        },
+        {
+          "id": "mgc-608",
+          "number": "608",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-608-l1",
+              "tenant": "Bougainvillea Payments",
+              "start": "2021-11-01",
+              "end": "2031-10-31",
+              "rentPsf": 38
+            }
+          ]
+        },
+        {
+          "id": "mgc-609",
+          "number": "609",
+          "areaSf": 7500,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-609-l1",
+              "tenant": "Promenade Yacht Charters",
+              "start": "2020-08-01",
+              "end": "2027-07-31",
+              "rentPsf": 36.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-610",
+          "number": "610",
+          "areaSf": 4600,
+          "kind": "leasable",
+          "askingRentPsf": 44,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-610-l1",
+              "tenant": "Calle Sol Media",
+              "start": "2023-08-01",
+              "end": "2028-07-31",
+              "rentPsf": 39
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "suites": [
+        {
+          "id": "mgc-501",
+          "number": "501",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-502",
+          "number": "502",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-503",
+          "number": "503",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-504",
+          "number": "504",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-504-l1",
+              "tenant": "Riptide Recruiting",
+              "start": "2023-05-01",
+              "end": "2026-04-30",
+              "rentPsf": 38
+            }
+          ]
+        },
+        {
+          "id": "mgc-505",
+          "number": "505",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-506",
+          "number": "506",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-506-l1",
+              "tenant": "Paradise Key Records",
+              "start": "2024-02-01",
+              "end": "2029-01-31",
+              "rentPsf": 39.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-507",
+          "number": "507",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-507-l1",
+              "tenant": "Kingfish Legal LLP",
+              "start": "2020-02-01",
+              "end": "2027-01-31",
+              "rentPsf": 35.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-508",
+          "number": "508",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-508-l1",
+              "tenant": "Grouper Bay Analytics",
+              "start": "2023-06-01",
+              "end": "2033-05-31",
+              "rentPsf": 39
+            }
+          ]
+        },
+        {
+          "id": "mgc-509",
+          "number": "509",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 43,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-509-l1",
+              "tenant": "Neon Tide Shipping",
+              "start": "2020-11-01",
+              "end": "2029-10-31",
+              "rentPsf": 35.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "suites": [
+        {
+          "id": "mgc-401",
+          "number": "401",
+          "areaSf": 4800,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-401-l1",
+              "tenant": "Limestone Key Wealth Partners",
+              "start": "2023-05-01",
+              "end": "2026-04-30",
+              "rentPsf": 37
+            }
+          ]
+        },
+        {
+          "id": "mgc-402",
+          "number": "402",
+          "areaSf": 6800,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-402-l1",
+              "tenant": "Island Time Consulting",
+              "start": "2024-02-01",
+              "end": "2034-01-31",
+              "rentPsf": 40.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-403",
+          "number": "403",
+          "areaSf": 7200,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-403-l1",
+              "tenant": "Anhinga Ventures",
+              "start": "2020-10-01",
+              "end": "2030-09-30",
+              "rentPsf": 34.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-404",
+          "number": "404",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-404-l1",
+              "tenant": "Lighthouse Point Insurance Group",
+              "start": "2024-07-01",
+              "end": "2034-06-30",
+              "rentPsf": 39.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-405",
+          "number": "405",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-405-l1",
+              "tenant": "Seawall Software",
+              "start": "2023-08-01",
+              "end": "2033-07-31",
+              "rentPsf": 38
+            }
+          ]
+        },
+        {
+          "id": "mgc-406",
+          "number": "406",
+          "areaSf": 7600,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-406-l1",
+              "tenant": "Little Torch Couture",
+              "start": "2019-10-01",
+              "end": "2028-09-30",
+              "rentPsf": 33
+            }
+          ]
+        },
+        {
+          "id": "mgc-407",
+          "number": "407",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-407-l1",
+              "tenant": "Jetty Point Security",
+              "start": "2019-04-01",
+              "end": "2029-03-31",
+              "rentPsf": 33
+            }
+          ]
+        },
+        {
+          "id": "mgc-408",
+          "number": "408",
+          "areaSf": 7600,
+          "kind": "leasable",
+          "askingRentPsf": 42,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-408-l1",
+              "tenant": "Conga Line Pictures",
+              "start": "2020-04-01",
+              "end": "2027-03-31",
+              "rentPsf": 34.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "suites": [
+        {
+          "id": "mgc-301",
+          "number": "301",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-301-l1",
+              "tenant": "Marina Row Accounting",
+              "start": "2022-06-01",
+              "end": "2029-05-31",
+              "rentPsf": 36
+            }
+          ]
+        },
+        {
+          "id": "mgc-302",
+          "number": "302",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-303",
+          "number": "303",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-304",
+          "number": "304",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "mgc-305",
+          "number": "305",
+          "areaSf": 7500,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-305-l1",
+              "tenant": "Mambo Biotech",
+              "start": "2023-05-01",
+              "end": "2030-04-30",
+              "rentPsf": 38
+            }
+          ]
+        },
+        {
+          "id": "mgc-306",
+          "number": "306",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-306-l1",
+              "tenant": "Miramar Way Translation",
+              "start": "2022-09-01",
+              "end": "2027-08-31",
+              "rentPsf": 35
+            },
+            {
+              "id": "mgc-306-l2",
+              "tenant": "Miramar Way Translation",
+              "start": "2027-09-01",
+              "end": "2032-08-31",
+              "rentPsf": 41
+            }
+          ]
+        },
+        {
+          "id": "mgc-307",
+          "number": "307",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-307-l1",
+              "tenant": "Atoll Dental Studio",
+              "start": "2025-05-01",
+              "end": "2035-04-30",
+              "rentPsf": 39
+            }
+          ]
+        },
+        {
+          "id": "mgc-308",
+          "number": "308",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-308-l1",
+              "tenant": "Hibiscus Logistics",
+              "start": "2027-02-01",
+              "end": "2037-01-31",
+              "rentPsf": 41
+            }
+          ]
+        },
+        {
+          "id": "mgc-309",
+          "number": "309",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 41,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-309-l1",
+              "tenant": "Tarpon Key Labs",
+              "start": "2020-04-01",
+              "end": "2029-03-31",
+              "rentPsf": 34.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "suites": [
+        {
+          "id": "mgc-201",
+          "number": "201",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-201-l1",
+              "tenant": "Snapper Creek Robotics",
+              "start": "2022-01-01",
+              "end": "2031-12-31",
+              "rentPsf": 34
+            }
+          ]
+        },
+        {
+          "id": "mgc-202",
+          "number": "202",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "mgc-203",
+          "number": "203",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-203-l1",
+              "tenant": "Lantana Holdings",
+              "start": "2019-08-01",
+              "end": "2026-07-31",
+              "rentPsf": 31
+            }
+          ]
+        },
+        {
+          "id": "mgc-204",
+          "number": "204",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-204-l1",
+              "tenant": "Papaya Publishing",
+              "start": "2025-08-01",
+              "end": "2032-07-31",
+              "rentPsf": 38
+            }
+          ]
+        },
+        {
+          "id": "mgc-205",
+          "number": "205",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-205-l1",
+              "tenant": "Spoonbill Advertising",
+              "start": "2022-01-01",
+              "end": "2026-12-31",
+              "rentPsf": 35
+            }
+          ]
+        },
+        {
+          "id": "mgc-206",
+          "number": "206",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-206-l1",
+              "tenant": "Tropic Line Title & Escrow",
+              "start": "2020-02-01",
+              "end": "2029-01-31",
+              "rentPsf": 32.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-207",
+          "number": "207",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-207-l1",
+              "tenant": "Monsoon Travel",
+              "start": "2021-12-01",
+              "end": "2031-11-30",
+              "rentPsf": 34
+            }
+          ]
+        },
+        {
+          "id": "mgc-208",
+          "number": "208",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-208-l1",
+              "tenant": "Chrome Coast Talent Agency",
+              "start": "2027-05-01",
+              "end": "2034-04-30",
+              "rentPsf": 40
+            }
+          ]
+        },
+        {
+          "id": "mgc-209",
+          "number": "209",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 40,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-209-l1",
+              "tenant": "Compass Rose Realty",
+              "start": "2023-06-01",
+              "end": "2030-05-31",
+              "rentPsf": 36
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 1,
+      "suites": [
+        {
+          "id": "mgc-101",
+          "number": "101",
+          "areaSf": 9000,
+          "kind": "common",
+          "name": "Lobby",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "mgc-102",
+          "number": "102",
+          "areaSf": 4000,
+          "kind": "common",
+          "name": "Cafe",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "mgc-103",
+          "number": "103",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 39,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-103-l1",
+              "tenant": "Doral Greens Pediatrics",
+              "start": "2024-05-01",
+              "end": "2031-04-30",
+              "rentPsf": 37.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-104",
+          "number": "104",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 39,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-104-l1",
+              "tenant": "Golden Hour Marine Brokers",
+              "start": "2020-02-01",
+              "end": "2030-01-31",
+              "rentPsf": 31.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-105",
+          "number": "105",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 39,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-105-l1",
+              "tenant": "Moonrise Engineering",
+              "start": "2017-11-01",
+              "end": "2027-10-31",
+              "rentPsf": 28
+            }
+          ]
+        },
+        {
+          "id": "mgc-106",
+          "number": "106",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 39,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-106-l1",
+              "tenant": "Two Palms Payments",
+              "start": "2020-04-01",
+              "end": "2029-03-31",
+              "rentPsf": 30.5
+            }
+          ]
+        },
+        {
+          "id": "mgc-107",
+          "number": "107",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 39,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "mgc-107-l1",
+              "tenant": "Firefly Yacht Charters",
+              "start": "2019-03-01",
+              "end": "2026-02-28",
+              "rentPsf": 30
+            }
+          ]
+        },
+        {
+          "id": "mgc-108",
+          "number": "108",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 39,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "mgc-108-l1",
+              "tenant": "Indigo Reef Media",
+              "start": "2023-05-01",
+              "end": "2030-04-30",
+              "rentPsf": 36
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

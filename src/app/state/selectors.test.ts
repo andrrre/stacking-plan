@@ -11,7 +11,7 @@ const base: AppState = initState('', null, '2026-11-15')
 describe('selectors', () => {
   it('selectBuildings lists bundled then imported buildings', () => {
     const imported = building({ id: 'csv-x' })
-    expect(selectBuildings({ ...base, importedBuildings: [imported] }).map((b) => b.id)).toEqual(['odt', 'pbp', 'csv-x'])
+    expect(selectBuildings({ ...base, importedBuildings: [imported] }).map((b) => b.id)).toEqual(['odt', 'pbp', 'bsp', 'mgc', 'fex', 'csv-x'])
   })
 
   it('selectBaseBuilding finds by id and falls back to the first bundled building', () => {

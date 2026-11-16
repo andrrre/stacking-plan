@@ -1,0 +1,1822 @@
+{
+  "id": "bsp",
+  "name": "Biscayne Spire",
+  "address": "1450 Biscayne Boulevard, Miami",
+  "floors": [
+    {
+      "number": 30,
+      "suites": [
+        {
+          "id": "bsp-3001",
+          "number": "3001",
+          "areaSf": 12000,
+          "kind": "leasable",
+          "askingRentPsf": 101,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-3001-l1",
+              "tenant": "Indigo Reef Robotics",
+              "start": "2023-03-01",
+              "end": "2026-02-28",
+              "rentPsf": 97
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "suites": [
+        {
+          "id": "bsp-2901",
+          "number": "2901",
+          "areaSf": 12000,
+          "kind": "leasable",
+          "askingRentPsf": 98,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2901-l1",
+              "tenant": "Skyline Bay Family Office",
+              "start": "2027-04-01",
+              "end": "2037-03-31",
+              "rentPsf": 98
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "suites": [
+        {
+          "id": "bsp-2801",
+          "number": "2801",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 95,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-2802",
+          "number": "2802",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 95,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2802-l1",
+              "tenant": "Boardwalk Events",
+              "start": "2022-05-01",
+              "end": "2029-04-30",
+              "rentPsf": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "suites": [
+        {
+          "id": "bsp-2701",
+          "number": "2701",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 92,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2701-l1",
+              "tenant": "Promenade Labs",
+              "start": "2021-11-01",
+              "end": "2028-10-31",
+              "rentPsf": 85
+            }
+          ]
+        },
+        {
+          "id": "bsp-2702",
+          "number": "2702",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 92,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2702-l1",
+              "tenant": "Tarpon Key Advertising",
+              "start": "2024-03-01",
+              "end": "2027-02-28",
+              "rentPsf": 90.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "suites": [
+        {
+          "id": "bsp-2601",
+          "number": "2601",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 78,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2601-l1",
+              "tenant": "Palm Shadow Architects",
+              "start": "2022-10-01",
+              "end": "2029-09-30",
+              "rentPsf": 73
+            }
+          ]
+        },
+        {
+          "id": "bsp-2602",
+          "number": "2602",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 78,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2602-l1",
+              "tenant": "Seawall Ventures",
+              "start": "2022-02-01",
+              "end": "2029-01-31",
+              "rentPsf": 74
+            }
+          ]
+        },
+        {
+          "id": "bsp-2603",
+          "number": "2603",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 78,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "suites": [
+        {
+          "id": "bsp-2501",
+          "number": "2501",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 77,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2501-l1",
+              "tenant": "Sailfish Row Talent Agency",
+              "start": "2022-03-01",
+              "end": "2027-02-28",
+              "rentPsf": 72,
+              "vacating": true
+            }
+          ]
+        },
+        {
+          "id": "bsp-2502",
+          "number": "2502",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 77,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2502-l1",
+              "tenant": "Guava Tree Capital",
+              "start": "2019-07-01",
+              "end": "2029-06-30",
+              "rentPsf": 68
+            }
+          ]
+        },
+        {
+          "id": "bsp-2503",
+          "number": "2503",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 77,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2503-l1",
+              "tenant": "Velvet Sky Insurance Group",
+              "start": "2024-06-01",
+              "end": "2031-05-31",
+              "rentPsf": 75.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "suites": [
+        {
+          "id": "bsp-2401",
+          "number": "2401",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 76,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2401-l1",
+              "tenant": "Shellcrest Engineering",
+              "start": "2020-06-01",
+              "end": "2029-05-31",
+              "rentPsf": 69.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-2402",
+          "number": "2402",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 76,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2402-l1",
+              "tenant": "Bonefish Shipping",
+              "start": "2027-04-01",
+              "end": "2034-03-31",
+              "rentPsf": 76
+            }
+          ]
+        },
+        {
+          "id": "bsp-2403",
+          "number": "2403",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 76,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2403-l1",
+              "tenant": "Heatwave Travel",
+              "start": "2019-04-01",
+              "end": "2028-03-31",
+              "rentPsf": 66
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "suites": [
+        {
+          "id": "bsp-2301",
+          "number": "2301",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 75,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-2302",
+          "number": "2302",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 75,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2302-l1",
+              "tenant": "Sunburst Studios",
+              "start": "2023-07-01",
+              "end": "2033-06-30",
+              "rentPsf": 71
+            }
+          ]
+        },
+        {
+          "id": "bsp-2303",
+          "number": "2303",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 75,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2303-l1",
+              "tenant": "Sand Dollar Health",
+              "start": "2024-12-01",
+              "end": "2029-11-30",
+              "rentPsf": 71.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "suites": [
+        {
+          "id": "bsp-2201",
+          "number": "2201",
+          "areaSf": 6000,
+          "kind": "leasable",
+          "askingRentPsf": 74,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2201-l1",
+              "tenant": "Cobalt Shore Consulting",
+              "start": "2020-08-01",
+              "end": "2029-07-31",
+              "rentPsf": 66.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-2202",
+          "number": "2202",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 74,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-2202-l1",
+              "tenant": "Coral Arch Wealth Partners",
+              "start": "2023-07-01",
+              "end": "2033-06-30",
+              "rentPsf": 71
+            }
+          ]
+        },
+        {
+          "id": "bsp-2203",
+          "number": "2203",
+          "areaSf": 5000,
+          "kind": "leasable",
+          "askingRentPsf": 74,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2203-l1",
+              "tenant": "Saltmarsh Realty",
+              "start": "2022-04-01",
+              "end": "2027-03-31",
+              "rentPsf": 70
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "suites": [
+        {
+          "id": "bsp-2101",
+          "number": "2101",
+          "areaSf": 16000,
+          "kind": "leasable",
+          "askingRentPsf": 73,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2101-l1",
+              "tenant": "Palmetto Harbor Bancorp",
+              "start": "2018-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "suites": [
+        {
+          "id": "bsp-2001",
+          "number": "2001",
+          "areaSf": 20000,
+          "kind": "leasable",
+          "askingRentPsf": 72,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-2001-l1",
+              "tenant": "Palmetto Harbor Bancorp",
+              "start": "2018-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "suites": [
+        {
+          "id": "bsp-1901",
+          "number": "1901",
+          "areaSf": 20000,
+          "kind": "leasable",
+          "askingRentPsf": 71,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1901-l1",
+              "tenant": "Palmetto Harbor Bancorp",
+              "start": "2018-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "suites": [
+        {
+          "id": "bsp-1801",
+          "number": "1801",
+          "areaSf": 20000,
+          "kind": "leasable",
+          "askingRentPsf": 70,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1801-l1",
+              "tenant": "Palmetto Harbor Bancorp",
+              "start": "2018-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "suites": [
+        {
+          "id": "bsp-1701",
+          "number": "1701",
+          "areaSf": 20000,
+          "kind": "leasable",
+          "askingRentPsf": 69,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1701-l1",
+              "tenant": "Palmetto Harbor Bancorp",
+              "start": "2018-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "suites": [
+        {
+          "id": "bsp-1601",
+          "number": "1601",
+          "areaSf": 20000,
+          "kind": "leasable",
+          "askingRentPsf": 68,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1601-l1",
+              "tenant": "Palmetto Harbor Bancorp",
+              "start": "2018-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "suites": [
+        {
+          "id": "bsp-1501",
+          "number": "1501",
+          "areaSf": 8000,
+          "kind": "common",
+          "name": "Sky lobby",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "bsp-1502",
+          "number": "1502",
+          "areaSf": 6000,
+          "kind": "common",
+          "name": "Fitness centre",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "bsp-1503",
+          "number": "1503",
+          "areaSf": 6000,
+          "kind": "common",
+          "name": "Tenant lounge",
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "suites": [
+        {
+          "id": "bsp-1401",
+          "number": "1401",
+          "areaSf": 4700,
+          "kind": "leasable",
+          "askingRentPsf": 66,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1401-l1",
+              "tenant": "Frangipani Cosmetics",
+              "start": "2025-09-01",
+              "end": "2032-08-31",
+              "rentPsf": 66
+            }
+          ]
+        },
+        {
+          "id": "bsp-1402",
+          "number": "1402",
+          "areaSf": 6400,
+          "kind": "leasable",
+          "askingRentPsf": 66,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1402-l1",
+              "tenant": "Mango Street Title & Escrow",
+              "start": "2022-07-01",
+              "end": "2027-06-30",
+              "rentPsf": 61,
+              "vacating": true
+            }
+          ]
+        },
+        {
+          "id": "bsp-1403",
+          "number": "1403",
+          "areaSf": 4900,
+          "kind": "leasable",
+          "askingRentPsf": 66,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-1404",
+          "number": "1404",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 66,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1404-l1",
+              "tenant": "Two Palms Marine Brokers",
+              "start": "2020-10-01",
+              "end": "2030-09-30",
+              "rentPsf": 57.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "suites": [
+        {
+          "id": "bsp-1301",
+          "number": "1301",
+          "areaSf": 5300,
+          "kind": "leasable",
+          "askingRentPsf": 65,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1301-l1",
+              "tenant": "Sandbar Couture",
+              "start": "2027-06-01",
+              "end": "2037-05-31",
+              "rentPsf": 65
+            }
+          ]
+        },
+        {
+          "id": "bsp-1302",
+          "number": "1302",
+          "areaSf": 4200,
+          "kind": "leasable",
+          "askingRentPsf": 65,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1302-l1",
+              "tenant": "Seahorse Dental Studio",
+              "start": "2024-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 61.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-1303",
+          "number": "1303",
+          "areaSf": 5200,
+          "kind": "leasable",
+          "askingRentPsf": 65,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1303-l1",
+              "tenant": "Wavecrest Software",
+              "start": "2019-09-01",
+              "end": "2029-08-31",
+              "rentPsf": 57
+            }
+          ]
+        },
+        {
+          "id": "bsp-1304",
+          "number": "1304",
+          "areaSf": 5300,
+          "kind": "leasable",
+          "askingRentPsf": 65,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1304-l1",
+              "tenant": "Stiltsville Media",
+              "start": "2024-09-01",
+              "end": "2029-08-31",
+              "rentPsf": 62.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "suites": [
+        {
+          "id": "bsp-1201",
+          "number": "1201",
+          "areaSf": 5500,
+          "kind": "leasable",
+          "askingRentPsf": 64,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1201-l1",
+              "tenant": "Riptide Security",
+              "start": "2025-10-01",
+              "end": "2035-09-30",
+              "rentPsf": 63
+            }
+          ]
+        },
+        {
+          "id": "bsp-1202",
+          "number": "1202",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 64,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-1203",
+          "number": "1203",
+          "areaSf": 4400,
+          "kind": "leasable",
+          "askingRentPsf": 64,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1203-l1",
+              "tenant": "Trade Wind Records",
+              "start": "2022-01-01",
+              "end": "2028-12-31",
+              "rentPsf": 59
+            }
+          ]
+        },
+        {
+          "id": "bsp-1204",
+          "number": "1204",
+          "areaSf": 6100,
+          "kind": "leasable",
+          "askingRentPsf": 64,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1204-l1",
+              "tenant": "Bougainvillea Recruiting",
+              "start": "2022-04-01",
+              "end": "2027-03-31",
+              "rentPsf": 59
+            },
+            {
+              "id": "bsp-1204-l2",
+              "tenant": "Bougainvillea Recruiting",
+              "start": "2027-04-01",
+              "end": "2032-03-31",
+              "rentPsf": 64
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "suites": [
+        {
+          "id": "bsp-1101",
+          "number": "1101",
+          "areaSf": 4600,
+          "kind": "leasable",
+          "askingRentPsf": 63,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1101-l1",
+              "tenant": "Dune Line Translation",
+              "start": "2024-11-01",
+              "end": "2034-10-31",
+              "rentPsf": 59.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-1102",
+          "number": "1102",
+          "areaSf": 5300,
+          "kind": "leasable",
+          "askingRentPsf": 63,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1102-l1",
+              "tenant": "Night Heron Accounting",
+              "start": "2025-01-01",
+              "end": "2029-12-31",
+              "rentPsf": 62
+            }
+          ]
+        },
+        {
+          "id": "bsp-1103",
+          "number": "1103",
+          "areaSf": 5800,
+          "kind": "leasable",
+          "askingRentPsf": 63,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1103-l1",
+              "tenant": "Cafecito Robotics",
+              "start": "2024-04-01",
+              "end": "2027-03-31",
+              "rentPsf": 60.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-1104",
+          "number": "1104",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 63,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1104-l1",
+              "tenant": "Conch Shell Yacht Charters",
+              "start": "2025-06-01",
+              "end": "2030-05-31",
+              "rentPsf": 62
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "suites": [
+        {
+          "id": "bsp-1001",
+          "number": "1001",
+          "areaSf": 9500,
+          "kind": "leasable",
+          "askingRentPsf": 62,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-1001-l1",
+              "tenant": "Ocean Mile Events",
+              "start": "2021-10-01",
+              "end": "2026-09-30",
+              "rentPsf": 57
+            }
+          ]
+        },
+        {
+          "id": "bsp-1002",
+          "number": "1002",
+          "areaSf": 6500,
+          "kind": "leasable",
+          "askingRentPsf": 62,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-1003",
+          "number": "1003",
+          "areaSf": 8000,
+          "kind": "leasable",
+          "askingRentPsf": 62,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-1003-l1",
+              "tenant": "Limestone Key Advertising",
+              "start": "2024-03-01",
+              "end": "2029-02-28",
+              "rentPsf": 58.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "suites": [
+        {
+          "id": "bsp-901",
+          "number": "901",
+          "areaSf": 9000,
+          "kind": "leasable",
+          "askingRentPsf": 61,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-901-l1",
+              "tenant": "Malecon Architects",
+              "start": "2024-07-01",
+              "end": "2034-06-30",
+              "rentPsf": 58.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-902",
+          "number": "902",
+          "areaSf": 7000,
+          "kind": "leasable",
+          "askingRentPsf": 61,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-902-l1",
+              "tenant": "Synthwave Ventures",
+              "start": "2020-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 54.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-903",
+          "number": "903",
+          "areaSf": 8000,
+          "kind": "leasable",
+          "askingRentPsf": 61,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-903-l1",
+              "tenant": "Little Torch Imports",
+              "start": "2020-01-01",
+              "end": "2029-12-31",
+              "rentPsf": 53.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "suites": [
+        {
+          "id": "bsp-801",
+          "number": "801",
+          "areaSf": 3300,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-802",
+          "number": "802",
+          "areaSf": 3700,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-802-l1",
+              "tenant": "Island Time Capital",
+              "start": "2022-03-01",
+              "end": "2029-02-28",
+              "rentPsf": 54
+            }
+          ]
+        },
+        {
+          "id": "bsp-803",
+          "number": "803",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-803-l1",
+              "tenant": "Hightide Insurance Group",
+              "start": "2019-07-01",
+              "end": "2026-06-30",
+              "rentPsf": 50
+            }
+          ]
+        },
+        {
+          "id": "bsp-804",
+          "number": "804",
+          "areaSf": 2900,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-804-l1",
+              "tenant": "Pink Shell Engineering",
+              "start": "2024-11-01",
+              "end": "2031-10-31",
+              "rentPsf": 57.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-805",
+          "number": "805",
+          "areaSf": 2600,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-805-l1",
+              "tenant": "Atoll Shipping",
+              "start": "2025-11-01",
+              "end": "2035-10-31",
+              "rentPsf": 60
+            }
+          ]
+        },
+        {
+          "id": "bsp-806",
+          "number": "806",
+          "areaSf": 3200,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-806-l1",
+              "tenant": "Sea Oats Travel",
+              "start": "2021-05-01",
+              "end": "2026-04-30",
+              "rentPsf": 55
+            }
+          ]
+        },
+        {
+          "id": "bsp-807",
+          "number": "807",
+          "areaSf": 3800,
+          "kind": "leasable",
+          "askingRentPsf": 60,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "suites": [
+        {
+          "id": "bsp-701",
+          "number": "701",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-701-l1",
+              "tenant": "Pompano Studios",
+              "start": "2024-10-01",
+              "end": "2034-09-30",
+              "rentPsf": 55.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-702",
+          "number": "702",
+          "areaSf": 1900,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-702-l1",
+              "tenant": "Keel & Compass Health",
+              "start": "2021-09-01",
+              "end": "2026-08-31",
+              "rentPsf": 54
+            }
+          ]
+        },
+        {
+          "id": "bsp-703",
+          "number": "703",
+          "areaSf": 3600,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-703-l1",
+              "tenant": "Roseate Consulting",
+              "start": "2020-08-01",
+              "end": "2027-07-31",
+              "rentPsf": 51.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-704",
+          "number": "704",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-704-l1",
+              "tenant": "Tropic Line Wealth Partners",
+              "start": "2024-06-01",
+              "end": "2034-05-31",
+              "rentPsf": 57.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-705",
+          "number": "705",
+          "areaSf": 2600,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-705-l1",
+              "tenant": "Brightwater Realty",
+              "start": "2019-07-01",
+              "end": "2028-06-30",
+              "rentPsf": 51
+            }
+          ]
+        },
+        {
+          "id": "bsp-706",
+          "number": "706",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-706-l1",
+              "tenant": "Miramar Way Publishing",
+              "start": "2022-09-01",
+              "end": "2032-08-31",
+              "rentPsf": 54
+            }
+          ]
+        },
+        {
+          "id": "bsp-707",
+          "number": "707",
+          "areaSf": 4400,
+          "kind": "leasable",
+          "askingRentPsf": 59,
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "suites": [
+        {
+          "id": "bsp-601",
+          "number": "601",
+          "areaSf": 4100,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-601-l1",
+              "tenant": "Lighthouse Point Design Co",
+              "start": "2020-08-01",
+              "end": "2027-07-31",
+              "rentPsf": 49.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-602",
+          "number": "602",
+          "areaSf": 4400,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-602-l1",
+              "tenant": "Mojito Biotech",
+              "start": "2021-07-01",
+              "end": "2026-06-30",
+              "rentPsf": 53
+            }
+          ]
+        },
+        {
+          "id": "bsp-603",
+          "number": "603",
+          "areaSf": 3700,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-603-l1",
+              "tenant": "Papaya Holdings",
+              "start": "2021-09-01",
+              "end": "2028-08-31",
+              "rentPsf": 52
+            }
+          ]
+        },
+        {
+          "id": "bsp-604",
+          "number": "604",
+          "areaSf": 2700,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-605",
+          "number": "605",
+          "areaSf": 3400,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-606",
+          "number": "606",
+          "areaSf": 3000,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-606-l1",
+              "tenant": "Blue Lagoon Title & Escrow",
+              "start": "2021-11-01",
+              "end": "2028-10-31",
+              "rentPsf": 52
+            }
+          ]
+        },
+        {
+          "id": "bsp-607",
+          "number": "607",
+          "areaSf": 2700,
+          "kind": "leasable",
+          "askingRentPsf": 58,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-607-l1",
+              "tenant": "Manatee Cove Legal LLP",
+              "start": "2021-12-01",
+              "end": "2028-11-30",
+              "rentPsf": 52
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "suites": [
+        {
+          "id": "bsp-501",
+          "number": "501",
+          "areaSf": 3600,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-501-l1",
+              "tenant": "Snapper Creek Marine Brokers",
+              "start": "2025-07-01",
+              "end": "2032-06-30",
+              "rentPsf": 56
+            }
+          ]
+        },
+        {
+          "id": "bsp-502",
+          "number": "502",
+          "areaSf": 2600,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-502-l1",
+              "tenant": "Wahoo Couture",
+              "start": "2025-12-01",
+              "end": "2032-11-30",
+              "rentPsf": 56
+            }
+          ]
+        },
+        {
+          "id": "bsp-503",
+          "number": "503",
+          "areaSf": 4000,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-503-l1",
+              "tenant": "Silver Sands Dental Studio",
+              "start": "2021-12-01",
+              "end": "2028-11-30",
+              "rentPsf": 51
+            }
+          ]
+        },
+        {
+          "id": "bsp-504",
+          "number": "504",
+          "areaSf": 3900,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-504-l1",
+              "tenant": "Breezeway Software",
+              "start": "2017-07-01",
+              "end": "2027-06-30",
+              "rentPsf": 46
+            }
+          ]
+        },
+        {
+          "id": "bsp-505",
+          "number": "505",
+          "areaSf": 2300,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-505-l1",
+              "tenant": "Mariner Media",
+              "start": "2027-01-01",
+              "end": "2036-12-31",
+              "rentPsf": 57
+            }
+          ]
+        },
+        {
+          "id": "bsp-506",
+          "number": "506",
+          "areaSf": 3900,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-506-l1",
+              "tenant": "Sunrise Pier Security",
+              "start": "2020-05-01",
+              "end": "2029-04-30",
+              "rentPsf": 50.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-507",
+          "number": "507",
+          "areaSf": 3700,
+          "kind": "leasable",
+          "askingRentPsf": 57,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-507-l1",
+              "tenant": "Key Lime Pictures",
+              "start": "2027-01-01",
+              "end": "2033-12-31",
+              "rentPsf": 57
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "suites": [
+        {
+          "id": "bsp-401",
+          "number": "401",
+          "areaSf": 3400,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-401-l1",
+              "tenant": "Chrome Coast Records",
+              "start": "2025-04-01",
+              "end": "2030-03-31",
+              "rentPsf": 56
+            }
+          ]
+        },
+        {
+          "id": "bsp-402",
+          "number": "402",
+          "areaSf": 3200,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-402-l1",
+              "tenant": "Mambo Recruiting",
+              "start": "2019-02-01",
+              "end": "2028-01-31",
+              "rentPsf": 47
+            }
+          ]
+        },
+        {
+          "id": "bsp-403",
+          "number": "403",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-403-l1",
+              "tenant": "Golden Hour Translation",
+              "start": "2017-04-01",
+              "end": "2027-03-31",
+              "rentPsf": 45
+            }
+          ]
+        },
+        {
+          "id": "bsp-404",
+          "number": "404",
+          "areaSf": 3900,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-404-l1",
+              "tenant": "Conga Line Accounting",
+              "start": "2023-07-01",
+              "end": "2030-06-30",
+              "rentPsf": 52
+            }
+          ]
+        },
+        {
+          "id": "bsp-405",
+          "number": "405",
+          "areaSf": 2800,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-405-l1",
+              "tenant": "Squall Line Robotics",
+              "start": "2021-06-01",
+              "end": "2026-05-31",
+              "rentPsf": 49
+            }
+          ]
+        },
+        {
+          "id": "bsp-406",
+          "number": "406",
+          "areaSf": 3400,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-406-l1",
+              "tenant": "Monsoon Yacht Charters",
+              "start": "2025-11-01",
+              "end": "2032-10-31",
+              "rentPsf": 54
+            }
+          ]
+        },
+        {
+          "id": "bsp-407",
+          "number": "407",
+          "areaSf": 2800,
+          "kind": "leasable",
+          "askingRentPsf": 56,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-407-l1",
+              "tenant": "Pastel Bay Events",
+              "start": "2024-12-01",
+              "end": "2031-11-30",
+              "rentPsf": 54.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "suites": [
+        {
+          "id": "bsp-301",
+          "number": "301",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-301-l1",
+              "tenant": "Aqua Vista Labs",
+              "start": "2022-12-01",
+              "end": "2029-11-30",
+              "rentPsf": 50
+            }
+          ]
+        },
+        {
+          "id": "bsp-302",
+          "number": "302",
+          "areaSf": 3600,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-302-l1",
+              "tenant": "Royal Palm Advertising",
+              "start": "2022-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 50
+            }
+          ]
+        },
+        {
+          "id": "bsp-303",
+          "number": "303",
+          "areaSf": 3900,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-303-l1",
+              "tenant": "Tangerine Architects",
+              "start": "2017-05-01",
+              "end": "2027-04-30",
+              "rentPsf": 44
+            }
+          ]
+        },
+        {
+          "id": "bsp-304",
+          "number": "304",
+          "areaSf": 2600,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": true,
+          "leases": []
+        },
+        {
+          "id": "bsp-305",
+          "number": "305",
+          "areaSf": 4200,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-305-l1",
+              "tenant": "Starlight Imports",
+              "start": "2024-10-01",
+              "end": "2034-09-30",
+              "rentPsf": 52.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-306",
+          "number": "306",
+          "areaSf": 3100,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-306-l1",
+              "tenant": "Bluewater Talent Agency",
+              "start": "2019-08-01",
+              "end": "2029-07-31",
+              "rentPsf": 45
+            }
+          ]
+        },
+        {
+          "id": "bsp-307",
+          "number": "307",
+          "areaSf": 2300,
+          "kind": "leasable",
+          "askingRentPsf": 55,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-307-l1",
+              "tenant": "Sandpiper Capital",
+              "start": "2020-04-01",
+              "end": "2029-03-31",
+              "rentPsf": 48.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "suites": [
+        {
+          "id": "bsp-201",
+          "number": "201",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-201-l1",
+              "tenant": "Egret Isle Insurance Group",
+              "start": "2022-03-01",
+              "end": "2027-02-28",
+              "rentPsf": 50
+            }
+          ]
+        },
+        {
+          "id": "bsp-202",
+          "number": "202",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-202-l1",
+              "tenant": "Shore Club Engineering",
+              "start": "2019-06-01",
+              "end": "2028-05-31",
+              "rentPsf": 44
+            }
+          ]
+        },
+        {
+          "id": "bsp-203",
+          "number": "203",
+          "areaSf": 2700,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-203-l1",
+              "tenant": "Compass Rose Shipping",
+              "start": "2024-03-01",
+              "end": "2029-02-28",
+              "rentPsf": 51.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-204",
+          "number": "204",
+          "areaSf": 3700,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-204-l1",
+              "tenant": "Grouper Bay Travel",
+              "start": "2020-09-01",
+              "end": "2029-08-31",
+              "rentPsf": 46.5
+            }
+          ]
+        },
+        {
+          "id": "bsp-205",
+          "number": "205",
+          "areaSf": 1800,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-205-l1",
+              "tenant": "Lantana Payments",
+              "start": "2017-02-01",
+              "end": "2027-01-31",
+              "rentPsf": 43
+            }
+          ]
+        },
+        {
+          "id": "bsp-206",
+          "number": "206",
+          "areaSf": 3700,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-206-l1",
+              "tenant": "Anhinga Studios",
+              "start": "2020-10-01",
+              "end": "2027-09-30",
+              "rentPsf": 46.5
+            },
+            {
+              "id": "bsp-206-l2",
+              "tenant": "Anhinga Studios",
+              "start": "2027-10-01",
+              "end": "2032-09-30",
+              "rentPsf": 54
+            }
+          ]
+        },
+        {
+          "id": "bsp-207",
+          "number": "207",
+          "areaSf": 4300,
+          "kind": "leasable",
+          "askingRentPsf": 54,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-207-l1",
+              "tenant": "Calle Sol Health",
+              "start": "2023-01-01",
+              "end": "2029-12-31",
+              "rentPsf": 49
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 1,
+      "suites": [
+        {
+          "id": "bsp-101",
+          "number": "101",
+          "areaSf": 10000,
+          "kind": "common",
+          "name": "Lobby",
+          "joinsNext": false,
+          "leases": []
+        },
+        {
+          "id": "bsp-102",
+          "number": "102",
+          "areaSf": 3500,
+          "kind": "leasable",
+          "askingRentPsf": 53,
+          "joinsNext": true,
+          "leases": [
+            {
+              "id": "bsp-102-l1",
+              "tenant": "Cortadito Coffee Bar",
+              "start": "2021-11-01",
+              "end": "2031-10-31",
+              "rentPsf": 47
+            }
+          ]
+        },
+        {
+          "id": "bsp-103",
+          "number": "103",
+          "areaSf": 4500,
+          "kind": "leasable",
+          "askingRentPsf": 53,
+          "joinsNext": false,
+          "leases": [
+            {
+              "id": "bsp-103-l1",
+              "tenant": "Hibiscus Consulting",
+              "start": "2021-09-01",
+              "end": "2026-08-31",
+              "rentPsf": 48
+            }
+          ]
+        },
+        {
+          "id": "bsp-104",
+          "number": "104",
+          "areaSf": 6000,
+          "kind": "common",
+          "name": "Conference centre",
+          "joinsNext": false,
+          "leases": []
+        }
+      ]
+    }
+  ]
+}

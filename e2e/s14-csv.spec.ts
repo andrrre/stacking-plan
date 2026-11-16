@@ -8,6 +8,7 @@ const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtur
 const VALID = path.join(FIXTURES, 'csv-valid.csv')
 const BAD = path.join(FIXTURES, 'csv-bad.csv')
 const IMPORTED_ID = 'csv-bayfront-commons'
+const BUNDLED = 5 // demo buildings in the switcher before any import
 
 async function importFile(page: Page, file: string) {
   await page.getByTestId('import-csv-input').setInputFiles(file)
@@ -36,7 +37,7 @@ test.describe('csv import', () => {
     await errors.getByRole('button', { name: 'Close' }).click()
     await expect(errors).toBeHidden()
     const switcher = page.getByTestId('building-switcher')
-    await expect(switcher.locator('option')).toHaveCount(2)
+    await expect(switcher.locator('option')).toHaveCount(BUNDLED)
     await expect(switcher).toHaveValue('odt')
   })
 
@@ -46,7 +47,7 @@ test.describe('csv import', () => {
     await importFile(page, VALID)
     const switcher = page.getByTestId('building-switcher')
     await expect(switcher).toHaveValue(IMPORTED_ID)
-    await expect(switcher.locator('option')).toHaveCount(3)
+    await expect(switcher.locator('option')).toHaveCount(BUNDLED + 1)
     await expect(page.getByTestId(`suite-${IMPORTED_ID}-3-310`)).toBeVisible()
     await expect(page.locator('[data-testid^="suite-csv-"]')).toHaveCount(5)
 
@@ -69,7 +70,7 @@ test.describe('csv import', () => {
     await expect(page.getByTestId(`suite-${IMPORTED_ID}-3-300`)).toBeVisible()
 
     await gotoApp(page, 'stack')
-    await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(3)
+    await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(BUNDLED + 1)
     await gotoApp(page, 'stack', { b: IMPORTED_ID })
     await expect(page.getByTestId('building-switcher')).toHaveValue(IMPORTED_ID)
   })
@@ -96,7 +97,7 @@ test.describe('csv import', () => {
     await expect(errors).toContainText('Excel')
     await page.keyboard.press('Escape')
     await expect(errors).toBeHidden()
-    await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(2)
+    await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(BUNDLED)
   })
 
   test('an imported building can be removed after a confirm step, and stays gone after reload', async ({ page }) => {
@@ -112,12 +113,12 @@ test.describe('csv import', () => {
 
     await expect(switcher).toHaveValue('odt')
     await expect(switcher).toBeFocused()
-    await expect(switcher.locator('option')).toHaveCount(2)
+    await expect(switcher.locator('option')).toHaveCount(BUNDLED)
     await expect(page.getByTestId('building-remove')).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => localStorage.getItem('stackmatch.v1.imported'))).toBe('[]')
 
     await page.reload()
-    await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(2)
+    await expect(page.getByTestId('building-switcher').locator('option')).toHaveCount(BUNDLED)
     expect(await page.evaluate(() => localStorage.getItem('stackmatch.v1.imported'))).not.toContain(IMPORTED_ID)
   })
 })

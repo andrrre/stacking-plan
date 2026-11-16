@@ -11,7 +11,7 @@ const suites = pbp.floors.flatMap((f) => f.suites)
 
 describe('Palm Bay Plaza', () => {
   it('is schema-valid and bundled second', () => {
-    expect(BUNDLED_BUILDINGS).toHaveLength(2)
+    expect(BUNDLED_BUILDINGS).toHaveLength(5)
     expect(BUNDLED_BUILDINGS[1]?.id).toBe('pbp')
     expect(pbp.name).toBe('Palm Bay Plaza')
   })
