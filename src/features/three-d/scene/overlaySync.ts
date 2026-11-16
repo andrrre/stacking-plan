@@ -148,11 +148,9 @@ function syncStateRings(s: OverlayState): void {
   const box = (id: string | null) => (id === null ? undefined : s.layout.suites.find((b) => b.id === id))
   const selected = s.layout.suites.find((b) => s.visuals.get(b.id)?.selected)
   const focused = box(s.focusedId)
-  const hovered = box(s.hoverId)
   setRing(s, 'selected', selected ? suiteQuad(s, selected, RING_GAP * 2.2) : null)
   setRing(s, 'selected-inner', selected ? suiteQuad(s, selected, RING_GAP) : null)
   setRing(s, 'focus', focused ? suiteQuad(s, focused, RING_GAP * 3.6) : null)
-  setRing(s, 'hover', hovered && hovered !== selected ? suiteQuad(s, hovered, RING_GAP) : null)
 }
 
 export function syncOverlay(s: OverlayState): void {

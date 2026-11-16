@@ -47,7 +47,6 @@ function Rings({ layout, refs }: Pick<Props, 'layout' | 'refs'>) {
   )
   return (
     <svg className={styles.rings}>
-      {ring('hover', 'hover')}
       {layout.runs.flatMap((r) => [ring(`run-${r.rank}`, 'run'), ring(`run-${r.rank}-inner`, 'run-inner')])}
       {ring('selected', 'selected')}
       {ring('selected-inner', 'selected-inner')}

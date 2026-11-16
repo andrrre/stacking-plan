@@ -221,7 +221,7 @@ test.describe('3D building', () => {
     await page.mouse.move(p.x, p.y)
     await expect(page.getByTestId('tooltip3d')).toBeVisible()
     await expect(page.getByTestId('tooltip3d')).toContainText('Suite 600 · Floor 6')
-    await expect(page.locator('polygon[data-kind="hover"]')).toHaveAttribute('data-on', 'true')
+    await expect(page.locator('polygon[data-kind="hover"]')).toHaveCount(0)
   })
 
   test('the date slider and the colour mode recolour the building', async ({ page }) => {

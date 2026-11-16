@@ -40,7 +40,6 @@
 .ring[data-kind='selected'] { stroke: var(--c-text); stroke-width: 3px; }
 .ring[data-kind='selected-inner'] { stroke: var(--c-surface); stroke-width: 2px; }
 .ring[data-kind='focus'] { stroke: var(--c-focus); stroke-width: 3px; }
-.ring[data-kind='hover'] { stroke: var(--c-text); stroke-opacity: .35; stroke-width: 1.5px; }
 
 /* ---------- floor numbers and rank badges ---------- */
 
