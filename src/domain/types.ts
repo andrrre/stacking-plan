@@ -30,6 +30,15 @@ export type StatusResult =
 
 export type RiskBucket = 'common' | 'vacant' | 'le6' | 'le12' | 'le24' | 'le36' | 'gt36' | 'openEnded'
 
+export type MoveEnd = { suiteId: string; number: string; floor: number; areaSf: number }
+export type MoveOption = {
+  key: string // `${lease.id}>${to.suiteId}`
+  lease: Lease // the mover's active lease on D
+  from: MoveEnd
+  to: MoveEnd
+  freed: Candidate // as findFits returns it on the building with the move applied
+}
+
 export type Block = { floor: number; suiteIds: string[]; totalSf: number }
 
 export type KpiKey = 'occupancy' | 'vacant' | 'expiring' | 'largestBlock'
