@@ -7,6 +7,12 @@ import { selectBaseBuilding } from './selectors'
 import { legendKeys, type FillKey } from './legendKeys'
 import type { Action, AppState, ColourMode, RequirementDraft, Selection } from './types'
 
+/** Actions that change what a move preview was computed from: the requirement, date, building, scenario or floor. */
+const ENDS_MOVE_PREVIEW: ReadonlySet<Action['type']> = new Set([
+  'req/set', 'req/clear', 'ask/apply', 'asOf/set', 'noFit/jump', 'building/set',
+  'building/import', 'building/remove', 'scenario/add', 'scenario/reset', 'floor/set',
+])
+
 // Every case returns a new object; inputs are never mutated.
 
 /** Replaces the requirement wholesale so no stale max or rent survives; keeps the potential toggle. */
@@ -79,6 +85,11 @@ function removeBuilding(state: AppState, buildingId: string): AppState {
 }
 
 export function reducer(state: AppState, action: Action): AppState {
+  const next = step(state, action)
+  return next.movePreview !== null && ENDS_MOVE_PREVIEW.has(action.type) ? { ...next, movePreview: null } : next
+}
+
+function step(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'building/set':
       return action.buildingId === state.buildingId ? state : switchBuilding(state, action.buildingId)
@@ -124,5 +135,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return toggleLegend(state, action.key)
     case 'present/set':
       return { ...state, presenting: action.on }
+    case 'move/preview':
+      return action.option === null ? { ...state, movePreview: null } : { ...state, movePreview: action.option, floor: null, highlight: null, legend: null }
   }
 }

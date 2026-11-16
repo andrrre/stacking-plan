@@ -23,6 +23,7 @@ describe('initState', () => {
       floor: null,
       legend: null,
       presenting: false,
+      movePreview: null,
     })
   })
 

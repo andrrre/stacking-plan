@@ -1,4 +1,4 @@
-import type { Building, Change, ISODate, KpiKey, ParsedQuery, ShortlistEntry } from '../../domain/types'
+import type { Building, Change, ISODate, KpiKey, MoveOption, ParsedQuery, ShortlistEntry } from '../../domain/types'
 import type { FillKey } from './legendKeys'
 
 export type { KpiKey }
@@ -33,6 +33,7 @@ export type AppState = {
   floor: number | null // the floor shown in the 3D floor view; null = the whole building
   legend: FillKey | null // the legend pill pressed: suites painted otherwise are dimmed; null = no filter
   presenting: boolean // presentation mode (drawers shut, fullscreen where the browser allows); never saved
+  movePreview: MoveOption | null // the move shown on the building; never saved, never in the URL
 }
 
 export type Action =
@@ -56,3 +57,4 @@ export type Action =
   | { type: 'floor/set'; floor: number | null } // null leaves floor view; a floor the current building lacks → null
   | { type: 'legend/toggle'; key: FillKey } // the pressed key again clears; a key the colour mode does not show is ignored
   | { type: 'present/set'; on: boolean }
+  | { type: 'move/preview'; option: MoveOption | null } // a non-null option also clears floor, highlight and legend; any action that changes what it was computed from ends it

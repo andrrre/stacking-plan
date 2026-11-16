@@ -158,6 +158,11 @@ describe('serializeUrl', () => {
     expect(serializeUrl({ ...base, presenting: true }, '', false)).toBe('')
   })
 
+  it('never writes the move preview', () => {
+    const preview = { key: 'k' } as AppState['movePreview']
+    expect(serializeUrl({ ...base, movePreview: preview }, '', false)).toBe('')
+  })
+
   it('omits the pot parameter when potential is on', () => {
     expect(serializeUrl({ ...base, req: { ...base.req, minSf: 5000 } }, '', false)).toBe('?min=5000')
   })

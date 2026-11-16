@@ -35,5 +35,6 @@ export function initState(search: string, storage: StorageLike | null, clockToda
     floor: url.floor !== undefined && shown?.floors.some((f) => f.number === url.floor) ? url.floor : null,
     legend: url.legend ?? null,
     presenting: false,
+    movePreview: null,
   }
 }

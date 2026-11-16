@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { reducer } from './reducer'
 import type { Action, AppState } from './types'
-import type { Candidate, ShortlistEntry } from '../../domain/types'
-import { building } from '../../domain/testing/fixtures'
+import type { Candidate, MoveOption, ShortlistEntry } from '../../domain/types'
+import { building, lease } from '../../domain/testing/fixtures'
 
 const TODAY = '2026-11-15'
 
@@ -31,6 +31,7 @@ function makeState(overrides: Partial<AppState> = {}): AppState {
     floor: null,
     legend: null,
     presenting: false,
+    movePreview: null,
     ...overrides,
   })
 }
@@ -335,5 +336,59 @@ describe('reducer', () => {
     const on = run(makeState(), { type: 'present/set', on: true })
     expect(on.presenting).toBe(true)
     expect(run(on, { type: 'present/set', on: false }).presenting).toBe(false)
+  })
+
+  describe('move preview', () => {
+    const option: MoveOption = {
+      key: 'l1>odt-300',
+      lease: lease(),
+      from: { suiteId: 'odt-500', number: '500', floor: 5, areaSf: 5000 },
+      to: { suiteId: 'odt-300', number: '300', floor: 3, areaSf: 5200 },
+      freed: candidate,
+    }
+    const previewing = makeState({ movePreview: option })
+    const noFit = '2027-05-01'
+    const endingActions: [string, Action][] = [
+      ['req/set', { type: 'req/set', patch: { minSf: 9000 } }],
+      ['req/clear', { type: 'req/clear' }],
+      ['ask/apply', { type: 'ask/apply', parsed: { minSf: 9000 } }],
+      ['asOf/set', { type: 'asOf/set', asOf: noFit }],
+      ['noFit/jump', { type: 'noFit/jump', asOf: noFit }],
+      ['building/set', { type: 'building/set', buildingId: 'pbp' }],
+      ['building/import', { type: 'building/import', buildings: [building({ id: 'csv-x' })] }],
+      ['building/remove', { type: 'building/remove', buildingId: 'csv-x' }],
+      ['scenario/add', { type: 'scenario/add', change: { kind: 'vacate', leaseId: 'l1', on: noFit } }],
+      ['scenario/reset', { type: 'scenario/reset' }],
+      ['floor/set', { type: 'floor/set', floor: null }],
+    ]
+    const keepingActions: [string, Action][] = [
+      ['view/set', { type: 'view/set', view: '3d' }],
+      ['mode/set', { type: 'mode/set', mode: 'risk' }],
+      ['select', { type: 'select', selection: { kind: 'suite', suiteId: 'odt-500' } }],
+      ['present/set', { type: 'present/set', on: true }],
+    ]
+
+    it('move/preview sets the option and leaves floor view, the KPI highlight and the legend filter', () => {
+      const s = makeState({ floor: 5, highlight: 'vacant', legend: 'vacant' })
+      const next = run(s, { type: 'move/preview', option })
+      expect(next.movePreview).toBe(option)
+      expect([next.floor, next.highlight, next.legend]).toEqual([null, null, null])
+    })
+
+    it('move/preview with null clears only the preview', () => {
+      const s = makeState({ movePreview: option, floor: 5, highlight: 'vacant', legend: 'vacant' })
+      const next = run(s, { type: 'move/preview', option: null })
+      expect(next.movePreview).toBeNull()
+      expect([next.floor, next.highlight, next.legend]).toEqual([5, 'vacant', 'vacant'])
+    })
+
+    it.each(endingActions)('the preview ends on %s', (_name, action) => {
+      const s = makeState({ movePreview: option, importedBuildings: [building({ id: 'csv-x' })] })
+      expect(reducer(s, action).movePreview).toBeNull()
+    })
+
+    it.each(keepingActions)('the preview survives %s', (_name, action) => {
+      expect(reducer(previewing, action).movePreview).toBe(option)
+    })
   })
 })
