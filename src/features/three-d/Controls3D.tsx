@@ -2,10 +2,17 @@ import type { RefObject } from 'react'
 import type { Rig } from './sceneTypes'
 import styles from './three-d.module.css'
 
-// Camera controls as real buttons (a labelled group, each its own tab stop), so rotate, zoom, reset and
-// separate floors work from the keyboard too.
+// Camera controls as real buttons (a labelled group, each its own tab stop), so rotate, zoom, reset,
+// separate floors and floor view work from the keyboard too.
 
-type Props = { rig: RefObject<Rig | null>; separated: boolean; onSeparate: (on: boolean) => void; onReset: () => void }
+type Props = {
+  rig: RefObject<Rig | null>
+  separated: boolean
+  onSeparate: (on: boolean) => void
+  floorView: boolean
+  onFloorView: (on: boolean) => void
+  onReset: () => void
+}
 
 function Icon({ d }: { d: string }) {
   return (
@@ -18,8 +25,9 @@ function Icon({ d }: { d: string }) {
 const ROTATE_LEFT = 'M3.5 6.5A5 5 0 1 1 3 9.5M3.5 6.5V3M3.5 6.5H7'
 const ROTATE_RIGHT = 'M12.5 6.5A5 5 0 1 0 13 9.5M12.5 6.5V3M12.5 6.5H9'
 const SEPARATE = 'M2.5 3.5h11M2.5 8h11M2.5 12.5h11'
+const FLOOR = 'M1.5 9.5 8 6l6.5 3.5L8 13ZM8 2v2.5'
 
-export function Controls3D({ rig, separated, onSeparate, onReset }: Props) {
+export function Controls3D({ rig, separated, onSeparate, floorView, onFloorView, onReset }: Props) {
   return (
     <div className={styles.controls} role="group" aria-label="3D view controls">
       <span className={styles.hint} aria-hidden="true">Drag to orbit · scroll to zoom</span>
@@ -46,6 +54,16 @@ export function Controls3D({ rig, separated, onSeparate, onReset }: Props) {
       >
         <Icon d={SEPARATE} />
         Separate floors
+      </button>
+      <button
+        type="button"
+        className={styles.ctlText}
+        aria-pressed={floorView}
+        data-testid="floor-view"
+        onClick={() => onFloorView(!floorView)}
+      >
+        <Icon d={FLOOR} />
+        Floor view
       </button>
       <button type="button" className={styles.ctlText} data-testid="reset-view" onClick={onReset}>
         Reset view

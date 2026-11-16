@@ -5,7 +5,7 @@ import { buildStackModel, type StackModel } from '../stack/suiteVisual'
 import { SEPARATED_VIEW } from './camera'
 import {
   CAP_T, DEPTH, LIFT, PITCH, PLATE_W, PLINTH_H, SLAB_MARGIN, SLAB_T, SPREAD_PITCH, SUITE_GAP, SUITE_H, TOP_LABEL_DEPTH, boundsKey,
-  MIN_TOP_STRIP, buildingLayout, labelFace, suiteRect, suiteWidths, topStrip, visibleTopDepth, type SuiteBox,
+  MIN_TOP_STRIP, buildingLayout, floorLayout, labelDepth, labelFace, suiteRect, suiteWidths, topStrip, visibleTopDepth, type SuiteBox,
 } from './layout3d'
 
 const TODAY = '2026-11-15'
@@ -211,5 +211,80 @@ describe('visible top strip (floors separated)', () => {
 
   it('an eye at or below the top face sees none of it', () => {
     expect(visibleTopDepth(b500, [0, b500.y, 100])).toBe(0)
+  })
+})
+
+describe('floorLayout (floor view)', () => {
+  const eye: [number, number, number] = [2, 60, 40]
+
+  it('draws the chosen floor and the floors below it; nothing above', () => {
+    const l = floorLayout(model(), 7)
+    expect(new Set(l.suites.map((b) => b.floor))).toEqual(new Set([7, 6, 5, 4, 3, 2, 1]))
+    expect(l.slabs.map((s) => s.floor)).toEqual([7, 6, 5, 4, 3, 2, 1])
+    expect(l.tags.map((t) => t.floor)).toEqual([7, 6, 5, 4, 3, 2, 1])
+    expect(l.caps.every((c) => c.floor < 7)).toBe(true)
+    expect(l.focus?.floor).toBe(7)
+    expect(l.onTop).toBe(true)
+  })
+
+  it('stacks the floors together, at the same places as the whole building', () => {
+    const whole = buildingLayout(model(), 0)
+    const l = floorLayout(model(), 5)
+    expect(byId(l.suites, 'odt-500').y).toBe(byId(whole.suites, 'odt-500').y)
+    expect(byId(l.suites, 'odt-100').x).toBe(byId(whole.suites, 'odt-100').x)
+  })
+
+  it('leaves nothing over the chosen floor, so its whole top face is in view', () => {
+    const l = floorLayout(model(), 5)
+    const b = byId(l.suites, 'odt-500')
+    expect(b.cover).toBeNull()
+    expect(visibleTopDepth(b, eye)).toBe(DEPTH)
+    expect(labelDepth(l, b, eye)).toBeGreaterThan(DEPTH - 0.5)
+    expect(labelDepth(l, b, eye)).toBeLessThan(DEPTH)
+  })
+
+  it('labels only the chosen floor', () => {
+    const l = floorLayout(model(), 5)
+    expect(labelDepth(l, byId(l.suites, 'odt-400'), eye)).toBe(0)
+  })
+
+  it('the top floor loses its roof cap so its top face shows', () => {
+    const l = floorLayout(model(), 12)
+    expect(l.caps.some((c) => c.floor === 12)).toBe(false)
+    expect(byId(l.suites, 'odt-1200').cover).toBeNull()
+  })
+
+  it('rings matches on the chosen floor without lifting them out of the plate', () => {
+    const l = floorLayout(model(10000), 7)
+    expect(l.suites.every((b) => b.z === 0)).toBe(true)
+    expect(l.runs.map((r) => [r.floor, r.rank])).toEqual([[7, 2]])
+    expect(l.runs[0]?.z).toBeCloseTo(DEPTH / 2)
+    expect(floorLayout(model(10000), 6).runs).toEqual([])
+  })
+
+  it('frames the chosen plate: its bounds hold the plate and its suites, and nothing else', () => {
+    const l = floorLayout(model(), 5)
+    const slab = l.slabs.find((s) => s.floor === 5)
+    const b = byId(l.suites, 'odt-500')
+    if (!slab || !l.focus) throw new Error('no plate')
+    expect(l.focus.bounds.min[1]).toBeCloseTo(slab.y - slab.h / 2)
+    expect(l.focus.bounds.max[1]).toBeCloseTo(b.y + b.h / 2)
+    expect(l.focus.bounds.max[0]).toBeCloseTo(slab.w / 2)
+    expect(l.focus.bounds.max[2]).toBeCloseTo(slab.d / 2)
+    expect(l.bounds).toEqual(buildingLayout(model(), 0).bounds) // the ground shadow stays under the whole building
+  })
+
+  it('a floor the building does not have gives the whole building', () => {
+    const l = floorLayout(model(), 40)
+    expect(l.focus).toBeNull()
+    expect(l.suites).toHaveLength(32)
+  })
+
+  it('the whole-building layouts have no focus floor', () => {
+    expect(buildingLayout(model(), 0).focus).toBeNull()
+    expect(buildingLayout(model(), 1).focus).toBeNull()
+    const sep = buildingLayout(model(), 1)
+    expect(labelDepth(sep, byId(sep.suites, 'odt-500'), eye)).toBe(topStrip(byId(sep.suites, 'odt-500'), eye))
+    expect(labelDepth(buildingLayout(model(), 0), byId(sep.suites, 'odt-500'), eye)).toBeUndefined()
   })
 })

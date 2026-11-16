@@ -46,7 +46,8 @@ export type Layout3D = {
   runs: RunRect[]
   tags: FloorTag[]
   bounds: Bounds
-  onTop: boolean // labels and rings lie on the top faces (floors separated)
+  onTop: boolean // labels and rings lie on the top faces (floors separated, or floor view)
+  focus: { floor: number; bounds: Bounds } | null // floor view: the floor shown, and its plate's bounds to frame
 }
 
 export type Corner = [number, number, number]
@@ -167,7 +168,46 @@ export function buildingLayout(model: StackModel, spread = 0): Layout3D {
     tags: perFloor.map((p) => p.tag),
     bounds: boundsOf(plinth, top),
     onTop: t >= 0.5,
+    focus: null,
   }
+}
+
+/** How far a floor-view label stops short of the top face's back edge (world units). */
+const FOCUS_LABEL_INSET = 0.2
+
+/**
+ * Floor view: `floor` with nothing above it (suites, slabs, roof caps, outlines and floor numbers of higher
+ * floors are gone, and so is its own roof cap) and the floors below as context, floors together. Matches
+ * keep their outline but are not lifted, so they stay on the plate. A floor the model lacks gives the
+ * whole building.
+ */
+export function floorLayout(model: StackModel, floor: number): Layout3D {
+  const whole = buildingLayout(model, 0)
+  const slab = whole.slabs.find((s) => s.floor === floor)
+  if (!slab) return whole
+  const below = <T extends { floor: number }>(xs: readonly T[]) => xs.filter((x) => x.floor <= floor)
+  const top = slab.y - slab.h / 2 + SLAB_T + SUITE_H
+  return {
+    ...whole,
+    suites: below(whole.suites).map((b) => ({ ...b, z: 0, lifted: false, cover: b.floor === floor ? null : b.cover })),
+    slabs: below(whole.slabs),
+    caps: whole.caps.filter((c) => c.floor < floor),
+    runs: whole.runs.filter((r) => r.floor === floor).map((r) => ({ ...r, z: DEPTH / 2 })),
+    tags: below(whole.tags),
+    onTop: true,
+    focus: { floor, bounds: { min: [-slab.w / 2, slab.y - slab.h / 2, -slab.d / 2], max: [slab.w / 2, top, slab.d / 2] } },
+  }
+}
+
+/**
+ * How deep (from the front edge) a suite's label lies on its top face, seen from `eye`; undefined when
+ * labels are on the front faces. In floor view the shown floor's whole top face is free and the floors
+ * below carry no labels (0).
+ */
+export function labelDepth(l: Pick<Layout3D, 'onTop' | 'focus'>, b: SuiteBox, eye: Corner): number | undefined {
+  if (!l.onTop) return undefined
+  if (l.focus) return b.floor === l.focus.floor ? b.d - FOCUS_LABEL_INSET : 0
+  return topStrip(b, eye)
 }
 
 /** A short string that changes only when the building's outline changes (to refit the camera). */

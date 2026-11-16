@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { FOV_Y } from './camera'
 import { labelContent } from './labels3d'
-import { buildingLayout } from './layout3d'
+import { buildingLayout, floorLayout } from './layout3d'
 import { overlayActive, suiteLook } from './palette'
 import type { SceneProps } from './sceneTypes'
 import { Overlay } from './scene/Overlay'
@@ -51,14 +51,16 @@ function useSpread(separated: boolean, reduced: boolean): number {
   return spread
 }
 
-function Scene3D({ model, mode, separated, focusedId, rig, onSelect, onPoints, onLost }: SceneProps) {
+function Scene3D({ model, mode, separated, floor, focusedId, rig, onSelect, onPoints, onLost }: SceneProps) {
   const reduced = useReducedMotion()
   const spread = useSpread(separated, reduced)
-  const layout = useMemo(() => buildingLayout(model, spread), [model, spread])
+  // Floor view ignores the spread, so a floors-moving animation does not rebuild its layout every step.
+  const wholeSpread = floor === null ? spread : 0
+  const layout = useMemo(() => (floor === null ? buildingLayout(model, wholeSpread) : floorLayout(model, floor)), [model, wholeSpread, floor])
   const derived = useDerived(model, focusedId)
   const [refs] = useState(createOverlayRefs)
   return (
-    <div className={styles.scene} data-testid="scene3d" data-labels={layout.onTop ? 'top' : 'front'}
+    <div className={styles.scene} data-testid="scene3d" data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
       data-floors-moving={String(spread > 0 && spread < 1)} data-colour-transition-ms={reduced ? 0 : COLOUR_MS}>
       <Canvas
         className={styles.canvas}

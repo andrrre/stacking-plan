@@ -14,6 +14,7 @@ export type SceneProps = {
   model: StackModel
   mode: ColourMode
   separated: boolean
+  floor: number | null // floor view: the floor shown (null: the whole building)
   focusedId: string | null
   rig: RefObject<Rig | null>
   onSelect: (suiteId: string) => void

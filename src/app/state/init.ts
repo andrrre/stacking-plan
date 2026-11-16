@@ -17,9 +17,11 @@ export function initState(search: string, storage: StorageLike | null, clockToda
   const buildings = [...BUNDLED_BUILDINGS, ...importedBuildings]
   const buildingIds = buildings.map((b) => b.id)
   const url = parseUrlState(search, { today, buildingIds })
+  const buildingId = url.buildingId ?? BUNDLED_BUILDINGS[0].id
+  const shown = buildings.find((b) => b.id === buildingId)
   return {
     today,
-    buildingId: url.buildingId ?? BUNDLED_BUILDINGS[0].id,
+    buildingId,
     asOf: url.asOf ?? today,
     mode: url.mode ?? 'availability',
     view: url.view ?? '3d',
@@ -30,5 +32,6 @@ export function initState(search: string, storage: StorageLike | null, clockToda
     shortlist: loadShortlist(storage, buildings),
     importedBuildings,
     overlay: 'none',
+    floor: url.floor !== undefined && shown?.floors.some((f) => f.number === url.floor) ? url.floor : null,
   }
 }

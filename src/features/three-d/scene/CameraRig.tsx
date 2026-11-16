@@ -3,9 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { MOUSE, TOUCH, Vector3, type PerspectiveCamera } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import {
-  AZIMUTH_LIMIT, DEFAULT_VIEW, ELEVATION_RANGE, SEPARATED_VIEW, framePose, insetsFor, lerpView, viewOf, viewShift, zoomedIn,
-  NO_OFFSET, applyOffset, offsetBetween, type Offset, type Pose, type Vec3, type Zoom,
+  AZIMUTH_LIMIT, ELEVATION_RANGE, floorInsets, framePose, insetsFor, viewOf, viewShift, zoomedIn,
+  NO_OFFSET, applyOffset, offsetBetween, type Insets, type Offset, type Pose, type Vec3, type View, type Zoom,
 } from '../camera'
+import { MAX_ZOOM_OUT, glideAt, limitsAfter, limitsDuring, limitsFor, retarget, type Glide, type Limits } from '../glide'
 import { boundsKey, type Bounds } from '../layout3d'
 import type { Rig } from '../sceneTypes'
 
@@ -16,13 +17,15 @@ import type { Rig } from '../sceneTypes'
 // beyond the framing distance glides back so the whole building is in view and centred. Where the buttons
 // left the camera is kept as an offset from the framing that every reframe re-applies (until Reset view), so
 // a press made while the floors are moving apart or together is not wiped out by the per-frame reframing.
+// In floor view the framing is the shown floor's plate from high above the front; a change of floor glides
+// there (a jump under reduced motion), and entering or leaving floor view drops the kept offset. A refit
+// during such a glide (the floors moving apart as floor view is left for Separate floors) moves its end
+// rather than cutting it short.
 
 const rad = (deg: number) => (deg * Math.PI) / 180
 const UP = new Vector3(0, 1, 0)
-const MAX_ZOOM_OUT = 1.7
-/** How far zoom-in may go, as a share of the framing distance: a 25-floor facade reaches label height. */
-const MAX_ZOOM_IN = 0.3
 const SETTLE_MS = 240
+const FLOOR_MS = 420 // the glide from one floor to the next in floor view
 
 function configure(c: OrbitControls): void {
   c.enablePan = false
@@ -40,9 +43,14 @@ function configure(c: OrbitControls): void {
 
 type Size = { width: number; height: number }
 
-function applyPose(camera: PerspectiveCamera, c: OrbitControls, pose: Pose, size: Size): void {
-  const shift = viewShift(insetsFor(size.width, size.height))
+/** Centres the projection in the area the insets leave. */
+function applyShift(camera: PerspectiveCamera, size: Size, insets: Insets): void {
+  const shift = viewShift(insets)
   camera.setViewOffset(size.width, size.height, shift.x, shift.y, size.width, size.height)
+}
+
+function applyPose(camera: PerspectiveCamera, c: OrbitControls, pose: Pose, size: Size, insets: Insets): void {
+  applyShift(camera, size, insets)
   camera.position.set(...pose.position)
   c.target.set(...pose.target)
   setLimits(c, pose.distance)
@@ -50,8 +58,14 @@ function applyPose(camera: PerspectiveCamera, c: OrbitControls, pose: Pose, size
 }
 
 function setLimits(c: OrbitControls, fit: number): void {
-  c.minDistance = fit * MAX_ZOOM_IN
-  c.maxDistance = fit * MAX_ZOOM_OUT
+  putLimits(c, limitsFor(fit))
+}
+
+/** Sets the controls' zoom limits; null leaves them as they are. */
+function putLimits(c: OrbitControls, l: Limits | null): void {
+  if (!l) return
+  c.minDistance = l.min
+  c.maxDistance = l.max
 }
 
 /** Moves the camera around (rotate) or towards (zoom) the target; the controls clamp it to their limits. */
@@ -62,9 +76,9 @@ function nudge(camera: PerspectiveCamera, c: OrbitControls, degrees: number, fac
 }
 
 /** How far the camera is, against the full-building framing for its current angle; also sets the zoom limits. */
-function zoomOf(camera: PerspectiveCamera, c: OrbitControls, bounds: Bounds, size: Size): Zoom & { fit: Pose } {
+function zoomOf(camera: PerspectiveCamera, c: OrbitControls, bounds: Bounds, size: Size, insets: Insets): Zoom & { fit: Pose } {
   const o = camera.position.clone().sub(c.target)
-  const fit = framePose(bounds, viewOf([o.x, o.y, o.z]), size, insetsFor(size.width, size.height))
+  const fit = framePose(bounds, viewOf([o.x, o.y, o.z]), size, insets)
   setLimits(c, fit.distance)
   return { d: o.length(), ratio: o.length() / fit.distance, fit }
 }
@@ -77,11 +91,10 @@ function restingPose(camera: PerspectiveCamera, c: OrbitControls, fit: Pose, d: 
   return { target: t, distance, position: [t[0] + dir.x * distance, t[1] + dir.y * distance, t[2] + dir.z * distance] }
 }
 
-type Glide = { from: { p: Vector3; t: Vector3 }; to: Pose; start: number }
+/** `view` is the framing angle; `focus` the floor shown in floor view (null: the whole building). */
+type Props = { bounds: Bounds; view: View; focus: number | null; reduced: boolean; rig: RefObject<Rig | null> }
 
-type Props = { bounds: Bounds; spread: number; reduced: boolean; rig: RefObject<Rig | null> }
-
-export function CameraRig({ bounds, spread, reduced, rig }: Props) {
+export function CameraRig({ bounds, view, focus, reduced, rig }: Props) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const gl = useThree((s) => s.gl)
   const width = useThree((s) => s.size.width)
@@ -91,50 +104,83 @@ export function CameraRig({ bounds, spread, reduced, rig }: Props) {
   // second, unconfigured instance listening on the canvas.
   const controls = useMemo(() => new OrbitControls(camera), [camera])
   const glide = useGlide(camera, controls, invalidate)
+  const insets = useMemo(() => (focus === null ? insetsFor : floorInsets)(width, height), [focus, width, height])
   // Refit only when the outline changes, not on every new layout object (a search must not reset the view).
   const [fitted, setFitted] = useState(bounds)
   if (boundsKey(fitted) !== boundsKey(bounds)) setFitted(bounds)
-
-  // The full-building framing for the current outline, size and separation, and the camera placed at an
-  // offset from it (the button turns and zooms the user has kept).
-  const framing = useMemo(
-    () => () => framePose(fitted, lerpView(DEFAULT_VIEW, SEPARATED_VIEW, spread), { width, height }, insetsFor(width, height)),
-    [fitted, spread, width, height],
-  )
-  const frame = useMemo(() => (o: Offset) => {
-    glide.stop()
-    const f = framing()
-    applyPose(camera, controls, { ...applyOffset(f, o), distance: f.distance }, { width, height })
-    invalidate()
-  }, [camera, controls, framing, width, height, invalidate, glide])
+  const { framing, frame } = useFraming({ camera, controls, glide, invalidate, fitted, view, width, height, insets })
   const began = useRef<Zoom | null>(null)
   const begin = useMemo(() => () => {
     glide.stop()
-    began.current = zoomOf(camera, controls, fitted, { width, height })
-  }, [camera, controls, fitted, width, height, glide])
+    began.current = zoomOf(camera, controls, fitted, { width, height }, insets)
+  }, [camera, controls, fitted, width, height, insets, glide])
   /** Glides back to a full framing unless the user zoomed in; returns where the camera will come to rest. */
   const settle = useMemo(() => (): Pose | null => {
-    const now = zoomOf(camera, controls, fitted, { width, height })
+    const now = zoomOf(camera, controls, fitted, { width, height }, insets)
     const from = began.current ?? now
     began.current = null
     if (zoomedIn(from, now)) return null
     const to = restingPose(camera, controls, now.fit, now.d)
-    glide.begin({ from: { p: camera.position.clone(), t: controls.target.clone() }, to, start: reduced ? -SETTLE_MS : performance.now() })
+    glide.begin({ from: placed(camera, controls), to, start: reduced ? -SETTLE_MS : performance.now(), ms: SETTLE_MS, limit: null })
     invalidate()
     return to
-  }, [camera, controls, fitted, width, height, reduced, invalidate, glide])
+  }, [camera, controls, fitted, width, height, insets, reduced, invalidate, glide])
   useControlEvents(controls, gl.domElement, invalidate, settle, begin)
-  useRigHandle(rig, { camera, controls, framing, frame, begin, settle })
+  useRigHandle(rig, { camera, controls, framing, frame, begin, settle, focus, reduced })
   return null
+}
+
+const placed = (camera: PerspectiveCamera, c: OrbitControls) =>
+  ({ position: camera.position.toArray() as Vec3, target: c.target.toArray() as Vec3 })
+
+type FramingInput = {
+  camera: PerspectiveCamera
+  controls: OrbitControls
+  glide: ReturnType<typeof useGlide>
+  invalidate: () => void
+  fitted: Bounds
+  view: View
+  width: number
+  height: number
+  insets: Insets
+}
+
+/**
+ * The framing for the current outline, size and view, and `frame`, which places the camera at an offset
+ * from it (the button turns and zooms the user has kept): by a glide when asked, else at once, unless a
+ * glide between framings is running, which then ends there instead.
+ */
+function useFraming(i: FramingInput) {
+  const { camera, controls, glide, invalidate, fitted, view, width, height, insets } = i
+  const framing = useMemo(
+    () => () => framePose(fitted, view, { width, height }, insets),
+    [fitted, view, width, height, insets],
+  )
+  const frame = useMemo(() => (o: Offset, animate = false) => {
+    const f = framing()
+    const to = { ...applyOffset(f, o), distance: f.distance }
+    if (animate) {
+      applyShift(camera, { width, height }, insets)
+      glide.begin({ from: placed(camera, controls), to, start: performance.now(), ms: FLOOR_MS, limit: f.distance })
+    } else if (glide.retarget(to, f.distance)) applyShift(camera, { width, height }, insets)
+    else {
+      glide.stop()
+      applyPose(camera, controls, to, { width, height }, insets)
+    }
+    invalidate()
+  }, [camera, controls, framing, width, height, insets, invalidate, glide])
+  return { framing, frame }
 }
 
 type Handle = {
   camera: PerspectiveCamera
   controls: OrbitControls
-  framing: () => Pose // the full-building framing for the current outline, size and separation
-  frame: (o: Offset) => void // puts the camera at an offset from that framing
+  framing: () => Pose // the framing for the current outline, size and view
+  frame: (o: Offset, animate?: boolean) => void // puts the camera at an offset from that framing
   begin: () => void
   settle: () => Pose | null
+  focus: number | null
+  reduced: boolean
 }
 
 /**
@@ -144,9 +190,15 @@ type Handle = {
  * during a separate / rejoin move, puts the camera exactly where the user left it. Reset view clears it.
  */
 function useRigHandle(rig: RefObject<Rig | null>, h: Handle): void {
-  const { camera, controls, framing, frame, begin, settle } = h
+  const { camera, controls, framing, frame, begin, settle, focus, reduced } = h
   const offset = useRef<Offset>(NO_OFFSET)
-  useEffect(() => frame(offset.current), [frame])
+  const shown = useRef(focus)
+  useEffect(() => {
+    const moved = shown.current !== focus
+    if (moved && (shown.current === null || focus === null)) offset.current = NO_OFFSET // into or out of floor view
+    shown.current = focus
+    frame(offset.current, moved && !reduced)
+  }, [frame, focus, reduced])
   useImperativeHandle(rig, () => {
     const press = (degrees: number, factor: number) => {
       begin()
@@ -166,24 +218,41 @@ function useRigHandle(rig: RefObject<Rig | null>, h: Handle): void {
   }, [camera, controls, framing, frame, begin, settle])
 }
 
-/** The glide back to a full-building framing, one step per rendered frame: `begin` starts one, `stop` drops it. */
+/**
+ * Camera glides, one step per rendered frame: `begin` starts one, `stop` drops it, `retarget` moves the end
+ * of a glide between framings. The zoom limits open while such a glide runs and are restored when it ends
+ * or is stopped (see glide.ts).
+ */
 function useGlide(camera: PerspectiveCamera, controls: OrbitControls, invalidate: () => void) {
   const glide = useRef<Glide | null>(null)
   useFrame(() => {
     const g = glide.current
     if (!g) return
-    const k = Math.min((performance.now() - g.start) / SETTLE_MS, 1)
-    const e = k * (2 - k)
-    camera.position.lerpVectors(g.from.p, new Vector3(...g.to.position), e)
-    controls.target.lerpVectors(g.from.t, new Vector3(...g.to.target), e)
+    const at = glideAt(g, performance.now())
+    camera.position.set(...at.position)
+    controls.target.set(...at.target)
     controls.update()
-    if (k >= 1) glide.current = null
+    if (at.done) {
+      glide.current = null
+      putLimits(controls, limitsAfter(g))
+    }
     invalidate()
   })
   return useMemo(() => ({
-    begin: (g: Glide) => { glide.current = g },
-    stop: () => { glide.current = null },
-  }), [])
+    begin: (g: Glide) => {
+      glide.current = g
+      putLimits(controls, limitsDuring(g))
+    },
+    stop: () => {
+      putLimits(controls, limitsAfter(glide.current))
+      glide.current = null
+    },
+    retarget: (to: Pose, limit: number): boolean => {
+      const next = glide.current && retarget(glide.current, to, limit)
+      if (next) glide.current = next
+      return Boolean(next)
+    },
+  }), [controls])
 }
 
 function useControlEvents(controls: OrbitControls, el: HTMLElement, invalidate: () => void, settle: () => void, onStart: () => void) {

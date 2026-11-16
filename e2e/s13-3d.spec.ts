@@ -494,6 +494,124 @@ test.describe('3D building', () => {
     expect(await page.locator('[data-testid^="label3d-"][data-hidden="false"]').count()).toBeGreaterThan(0)
   })
 
+  test.describe('floor view', () => {
+    const slider = (page: Page) => page.getByTestId('floor-slider')
+    const floorView = (page: Page) => page.getByTestId('floor-view')
+
+    test('opens on the highest floor with vacant space; the slider steps floor by floor and the URL follows', async ({ page }) => {
+      await gotoApp(page, '3d')
+      await pointOf(page, '500')
+      await floorView(page).click()
+      await expect(floorView(page)).toHaveAttribute('aria-pressed', 'true')
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 7, 7 of 12')
+      await expect(page.getByTestId('stack-3d')).toHaveAttribute('data-floor', '7')
+      await expect(page).toHaveURL(/[?&]floor=7(&|$)/)
+      await expect(page.getByTestId('floor-caption')).toHaveText(/^Floor 7 · [\d,]+ SF · [\d,]+ SF vacant$/)
+      await expect(suite3d(page, '1200')).toHaveCount(0) // floors above are not drawn, and leave the mirror
+      await expect(suite3d(page, '600')).toHaveCount(0) // the mirror lists the shown floor only
+      await expect(page.getByTestId('scene3d')).toHaveAttribute('data-labels', 'top')
+      await pointOf(page, '700')
+      await expect(label(page, '700')).toHaveAttribute('data-hidden', 'false')
+      expect(await label(page, '700').evaluate((el) => (el as HTMLElement).innerText)).toContain('VACANT')
+
+      await slider(page).focus()
+      await page.keyboard.press('ArrowDown')
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 6, 6 of 12')
+      await expect(page).toHaveURL(/[?&]floor=6(&|$)/)
+      await expect(suite3d(page, '700')).toHaveCount(0)
+      await pointOf(page, '600')
+      await expect(label(page, '600')).toHaveAttribute('data-hidden', 'false')
+      await page.keyboard.press('ArrowUp')
+      await page.keyboard.press('ArrowUp')
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 8, 8 of 12')
+
+      const rail = await page.getByTestId('floor-rail').boundingBox()
+      if (!rail) throw new Error('no rail')
+      await page.mouse.move(rail.x + rail.width / 2, rail.y + rail.height / 2)
+      await page.mouse.wheel(0, 100)
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 7, 7 of 12')
+    })
+
+    test('?floor=5 opens floor view on floor 5; an unknown floor opens the whole building', async ({ page }) => {
+      await gotoApp(page, '3d', { floor: '5' })
+      await expect(floorView(page)).toHaveAttribute('aria-pressed', 'true')
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 5, 5 of 12')
+      await pointOf(page, '500')
+      await expect(suite3d(page, '600')).toHaveCount(0)
+      await gotoApp(page, '3d', { floor: '13' })
+      await pointOf(page, '1200')
+      await expect(floorView(page)).toHaveAttribute('aria-pressed', 'false')
+      await expect(slider(page)).toHaveCount(0)
+      await expect(page).not.toHaveURL(/floor=/)
+    })
+
+    test('opens on the selected suite\'s floor', async ({ page }) => {
+      await gotoApp(page, '3d')
+      const p = await pointOf(page, '220')
+      await page.mouse.click(p.x, p.y)
+      await expect(suite3d(page, '220')).toHaveAttribute('aria-pressed', 'true')
+      await floorView(page).click()
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 2, 2 of 12')
+    })
+
+    test('Separate floors and floor view exclude each other; Reset view leaves floor view', async ({ page }) => {
+      await gotoApp(page, '3d')
+      await pointOf(page, '500')
+      const home = await pointKey(page, '500')
+      await page.getByTestId('separate-floors').click()
+      await floorView(page).click()
+      await expect(page.getByTestId('separate-floors')).toHaveAttribute('aria-pressed', 'false')
+      await expect(slider(page)).toBeVisible()
+      await page.getByTestId('separate-floors').click()
+      await expect(floorView(page)).toHaveAttribute('aria-pressed', 'false')
+      await expect(slider(page)).toHaveCount(0)
+      await expect(page).not.toHaveURL(/floor=/)
+      await floorView(page).click()
+      await expect(page.getByTestId('separate-floors')).toHaveAttribute('aria-pressed', 'false')
+      await page.getByTestId('reset-view').click()
+      await expect(floorView(page)).toHaveAttribute('aria-pressed', 'false')
+      await expect(slider(page)).toHaveCount(0)
+      await expect(page).not.toHaveURL(/floor=/)
+      await expect(suite3d(page, '1200')).toHaveCount(1)
+      await expect.poll(() => pointKey(page, '500')).toBe(home)
+    })
+
+    test('a search rings the match on the shown floor and marks matching floors on the slider', async ({ page }) => {
+      await gotoApp(page, '3d', { floor: '7' })
+      await page.getByTestId('req-min-sf').fill('10000')
+      await expect(suite3d(page, '700')).toHaveAttribute('data-match-rank', '2')
+      await expect(page.getByTestId('badge3d-2')).toBeVisible()
+      await expect(page.getByTestId('badge3d-1')).toHaveCount(0) // 500 is on floor 5
+      await expect(page.locator('polygon[data-kind="run"][data-on="true"]')).toHaveCount(1)
+      const marked = await page.getByTestId('floor-ticks').locator('li[data-match="true"]').allTextContents()
+      expect(marked).toEqual(['7', '5'])
+      await pointOf(page, '700')
+      await expect(label(page, '700')).toHaveAttribute('data-hidden', 'false')
+    })
+
+    test('selecting a match on another floor moves floor view there', async ({ page }) => {
+      await gotoApp(page, '3d', { floor: '7' })
+      await page.getByTestId('req-min-sf').fill('10000')
+      await page.getByRole('button', { name: /^Match 1:/ }).click() // Suite 500, on floor 5
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 5, 5 of 12')
+      await expect(page).toHaveURL(/[?&]floor=5(&|$)/)
+      await expect(suite3d(page, '500')).toHaveAttribute('data-match-rank', '1')
+      await expect(page.getByTestId('badge3d-1')).toBeVisible()
+    })
+
+    test('the 2D stack ignores floor view and keeps floor= out of the URL; back in 3D it returns', async ({ page }) => {
+      await gotoApp(page, '3d', { floor: '5' })
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 5, 5 of 12')
+      await page.getByTestId('view-stack').click()
+      await expect(page).toHaveURL(/view=stack/)
+      await expect(page).not.toHaveURL(/floor=/)
+      await expect(page.getByTestId('suite-odt-1200')).toBeVisible()
+      await page.getByTestId('view-3d').click()
+      await expect(slider(page)).toHaveAttribute('aria-valuetext', 'Floor 5, 5 of 12')
+      await expect(page).toHaveURL(/[?&]floor=5(&|$)/)
+    })
+  })
+
   test('printing shows the 2D stack in place of the canvas', async ({ page }) => {
     await gotoApp(page, '3d')
     await pointOf(page, '500')

@@ -20,6 +20,7 @@ describe('initState', () => {
       shortlist: [],
       importedBuildings: [],
       overlay: 'none',
+      floor: null,
     })
   })
 

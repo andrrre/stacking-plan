@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
 import type { Group } from 'three'
 import type { ColourMode } from '../../../app/state/types'
+import { DEFAULT_VIEW, FLOOR_VIEW, SEPARATED_VIEW, lerpView } from '../camera'
 import type { LabelContent } from '../labels3d'
 import type { Layout3D } from '../layout3d'
 import { readPalette, type SuiteLook } from '../palette'
@@ -51,9 +52,12 @@ export function World(p: WorldProps) {
   usePicker(pick)
   useContextWatch(p.onLost)
   useFrameSync({ layout, visuals, contents, ghosts, refs, focusedId, hover, mats, group, onPoints })
+  const focus = layout.focus?.floor ?? null
+  // The framing angle: floor view's own, or part-way between the default and the separated view.
+  const view = useMemo(() => (focus === null ? lerpView(DEFAULT_VIEW, SEPARATED_VIEW, p.spread) : FLOOR_VIEW), [focus, p.spread])
   return (
     <>
-      <CameraRig bounds={layout.bounds} spread={p.spread} reduced={reduced} rig={p.rig} />
+      <CameraRig bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} rig={p.rig} />
       <Ground bounds={layout.bounds} shapes={shapes} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} />
     </>

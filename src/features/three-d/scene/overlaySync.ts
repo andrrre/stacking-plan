@@ -1,8 +1,8 @@
 import { Vector3, type Camera } from 'three'
 import {
-  chooseParts, hideCollisions, labelPriority, labelSize, mapPoint, rectToQuad, toMatrix3d, type LabelContent, type Placed,
+  chooseParts, hideCollisions, labelPriority, labelSize, mapPoint, rectToQuad, toMatrix3d, turnLabel, turnQuad, type LabelContent, type Placed,
 } from '../labels3d'
-import { labelFace, suiteRect, topStrip, type Corner, type FaceRect, type Layout3D, type SuiteBox } from '../layout3d'
+import { labelDepth, labelFace, suiteRect, type Corner, type FaceRect, type Layout3D, type SuiteBox } from '../layout3d'
 import type { SuiteVisual } from '../../stack/suiteVisual'
 import { write, type OverlayRefs } from './overlayRefs'
 
@@ -45,9 +45,10 @@ const eyeOf = (s: Projector): Corner => [s.camera.position.x, s.camera.position.
 
 /**
  * With floors separated, the part of a suite's top face the floor above leaves in view from the camera
- * (0 when too little shows for a label); undefined on the facade, where the whole front face is used.
+ * (0 when too little shows for a label); in floor view the shown floor's whole top face (0 below it);
+ * undefined on the facade, where the whole front face is used.
  */
-const stripOf = (s: Projector & { layout: Layout3D }, b: SuiteBox) => (s.layout.onTop ? topStrip(b, eyeOf(s)) : undefined)
+const stripOf = (s: Projector & { layout: Layout3D }, b: SuiteBox) => labelDepth(s.layout, b, eyeOf(s))
 
 /** A ring or click target never collapses to nothing, even where the label strip does. */
 const ringDepth = (d: number | undefined) => (d === undefined ? undefined : Math.max(d, 0.3))
@@ -56,7 +57,7 @@ const suiteQuad = (s: OverlayState, b: SuiteBox, pad = 0) => faceQuad(s, suiteRe
 
 const px = (n: number) => `${Math.round(n * 10) / 10}px`
 
-type LabelPlan = { id: string; w: number; h: number; transform: string; parts: string; lines: string; forced: boolean }
+type LabelPlan = { id: string; w: number; h: number; transform: string; parts: string; lines: string; forced: boolean; turned: boolean }
 
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y)
 
@@ -73,16 +74,19 @@ function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Pla
   const c = s.contents.get(b.id)
   if (!v || !c) return null
   const strip = stripOf(s, b)
-  const pts = faceQuad(s, suiteRect(b), 0, ringDepth(strip))
-  const { w, h, m } = onFace(pts)
+  const across = faceQuad(s, suiteRect(b), 0, ringDepth(strip)) as [Pt, Pt, Pt, Pt]
   const forced = v.matchRank !== null || v.selected || b.id === s.hoverId || b.id === s.focusedId
+  // Floor view: on a narrow but deep top face the label runs along the depth when it shows more that way.
+  const turned = s.layout.focus?.floor === b.floor && turnLabel(c, onFace(across), forced)
+  const pts = turned ? turnQuad(across) : across
+  const { w, h, m } = onFace(pts)
   const p = pts.some((q) => q.behind) || strip === 0 ? null : chooseParts(c, { w, h }, forced)
   const parts = p ? (['cue', 'number', 'tenant', 'sf'] as const).filter((k) => p[k]) : []
   const size = p ? labelSize(c, p, w) : { w: 0, h: 0 }
   const top = (h - size.h) / 2
   const quad = size.w > 0 ? [mapPoint(m, 0, top), mapPoint(m, size.w, top), mapPoint(m, size.w, top + size.h), mapPoint(m, 0, top + size.h)] : []
   return {
-    plan: { id: b.id, w, h, transform: toMatrix3d(m), parts: parts.join(' '), lines: String(p?.lines ?? 0), forced },
+    plan: { id: b.id, w, h, transform: toMatrix3d(m), parts: parts.join(' '), lines: String(p?.lines ?? 0), forced, turned },
     placed: { id: b.id, quad, priority: labelPriority(c, forced, s.ghosts.has(b.id)) },
   }
 }
@@ -99,6 +103,7 @@ function syncLabels(s: OverlayState): void {
     write(el, 'data-parts', p.parts)
     write(el, 'data-lines', p.lines)
     write(el, 'data-forced', String(p.forced))
+    write(el, 'data-turned', String(p.turned))
     write(el, 'data-focused', String(p.id === s.focusedId))
     write(el, 'data-hidden', String(hidden.has(p.id) || p.parts === ''))
   }
@@ -126,7 +131,7 @@ function setRing(s: OverlayState, key: string, pts: readonly Pt[] | null): void 
 function syncRuns(s: OverlayState): void {
   for (const r of s.layout.runs) {
     const inRun = s.layout.suites.filter((b) => b.floor === r.floor && b.x > r.x0 && b.x < r.x1)
-    const depth = ringDepth(s.layout.onTop ? Math.min(...inRun.map((b) => topStrip(b, eyeOf(s)))) : undefined)
+    const depth = ringDepth(s.layout.onTop ? Math.min(...inRun.map((b) => stripOf(s, b) ?? 0)) : undefined)
     const outer = faceQuad(s, r, RING_GAP * 2, depth)
     setRing(s, `run-${r.rank}`, outer)
     setRing(s, `run-${r.rank}-inner`, faceQuad(s, r, RING_GAP, depth))

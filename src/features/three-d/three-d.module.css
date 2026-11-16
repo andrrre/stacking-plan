@@ -134,6 +134,14 @@
 /* A ghosted suite keeps only its cue and number: findable if you look, never competing with the matches. */
 .label[data-ghost='true'] .lTenant,
 .label[data-ghost='true'] .lSf { display: none; }
+/* Floor view: a suite's whole top face is free, so a long tenant name wraps to a second line before it truncates. */
+.scene[data-floor-view='true'] .label[data-lines='2'][data-ghost='false'][data-parts~='tenant'] .lTenant {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+}
 
 .modifiedDot {
   position: absolute;
@@ -222,6 +230,118 @@
 .ctl:focus-visible, .ctlText:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--c-focus); outline-offset: 1px; }
 
 .icon { width: 16px; height: 16px; flex: none; }
+
+/* ---------- floor view: the vertical floor slider down the left edge ---------- */
+
+/* 84px wide at 8px from the edge: FLOOR_PANEL_W (camera.ts) keeps the building clear of it. Below the
+   control bar, which runs across the top unless the stage is wide (floorInsets in camera.ts). */
+.floorPanel {
+  position: absolute;
+  top: 44px;
+  bottom: var(--sp-3);
+  left: var(--sp-2);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 84px;
+  pointer-events: none;
+}
+
+@container stage (aspect-ratio >= 3 / 2) {
+  .floorPanel { top: var(--sp-2); }
+}
+
+.floorCaption {
+  width: max-content;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-1);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+.floorRail {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 0;
+  max-height: 640px;
+  padding: 6px 8px 6px 4px;
+  border: 1px solid transparent; /* no card: the rail floats over the stage */
+  pointer-events: auto;
+}
+
+/* One tick per floor, spread over the range's thumb travel (padding = half the thumb), top floor first. */
+.floorTicks {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.floorTick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 0;
+  padding-right: 11px;
+  line-height: 1;
+}
+
+.floorTick[data-current='true'] { color: var(--c-text); font-size: var(--fs-md); font-weight: 700; }
+.floorTicks[data-dense='true'] .floorTick:not([data-current='true']) { font-size: var(--fs-2xs); }
+
+/* Vacant space: an orange dot right of the number. A search match: a ring in the match-outline colour left of it. */
+.floorTick[data-vacant='true']::after {
+  content: '';
+  position: absolute;
+  right: 1px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-vacant);
+}
+
+.floorTick[data-match='true']::before {
+  content: '';
+  margin-right: 4px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid var(--c-accent);
+  border-radius: 50%;
+}
+
+/* A native range stood upright, the highest floor at the top. */
+.floorRange {
+  flex: none;
+  width: 16px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  accent-color: var(--c-text);
+  cursor: pointer;
+}
+
+.floorRange:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 
 /* ---------- DOM mirror (visually hidden, keyboard and screen reader only) ---------- */
 

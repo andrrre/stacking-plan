@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  DEFAULT_VIEW, FOV_Y, NO_OFFSET, WIDE_STAGE, applyOffset, centre, corners, fitDistance, framePose, insetsFor, offsetBetween, viewDirection, viewOf, viewShift, zoomedIn,
+  DEFAULT_VIEW, FLOOR_VIEW, FOV_Y, NO_OFFSET, floorInsets, WIDE_STAGE, applyOffset, centre, corners, fitDistance, framePose, insetsFor, offsetBetween, viewDirection, viewOf, viewShift, zoomedIn,
   type Vec3,
 } from './camera'
 import type { Bounds } from './layout3d'
@@ -133,5 +133,42 @@ describe('camera offsets (button turns and zooms kept across reframes)', () => {
     expect(o.azimuth).toBeCloseTo(34)
     expect(o.elevation).toBeCloseTo(0)
     expect(o.factor).toBeCloseTo(1)
+  })
+})
+
+describe('floor view framing', () => {
+  const PLATE: Bounds = { min: [-9.16, 4.3, -4.26], max: [9.16, 5.18, 4.26] }
+
+  it('looks down onto the plate: its top face shows larger than its front face', () => {
+    const size = { width: 1000, height: 640 }
+    const pose = framePose(PLATE, FLOOR_VIEW, size, floorInsets(size.width, size.height))
+    const at = (x: number, y: number, z: number) => ndc([x, y, z], pose.position, pose.target, size.width / size.height)
+    const [x0, x1] = [PLATE.min[0], PLATE.max[0]]
+    const [y0, y1] = [PLATE.min[1], PLATE.max[1]]
+    const [z0, z1] = [PLATE.min[2], PLATE.max[2]]
+    const topFace = at(x0, y1, z0).y - at(x0, y1, z1).y // back edge to front edge, on screen
+    const frontFace = at(x0, y1, z1).y - at(x0, y0, z1).y
+    expect(topFace).toBeGreaterThan(3 * frontFace)
+    expect(at(x1, y1, z1).x).toBeGreaterThan(at(x0, y1, z1).x) // seen from the front, not the side or back
+  })
+
+  it('frames the whole plate inside the area the slider and controls leave', () => {
+    const size = { width: 1000, height: 640 }
+    const insets = floorInsets(size.width, size.height)
+    const pose = framePose(PLATE, FLOOR_VIEW, size, insets)
+    const shift = viewShift(insets)
+    const xs: number[] = []
+    for (const c of corners(PLATE)) {
+      const p = ndc(c, pose.position, pose.target, size.width / size.height)
+      const px = ((p.x + 1) / 2) * size.width - shift.x
+      const py = ((1 - p.y) / 2) * size.height - shift.y
+      xs.push(px)
+      expect(px).toBeGreaterThanOrEqual(insets.left - 0.5)
+      expect(px).toBeLessThanOrEqual(size.width - insets.right + 0.5)
+      expect(py).toBeGreaterThanOrEqual(insets.top - 0.5)
+      expect(py).toBeLessThanOrEqual(size.height - insets.bottom + 0.5)
+    }
+    // The plate fills most of the width left to it.
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.9 * (size.width - insets.left - insets.right))
   })
 })

@@ -29,6 +29,7 @@ export type AppState = {
   shortlist: ShortlistEntry[]
   importedBuildings: Building[]
   overlay: Overlay
+  floor: number | null // the floor shown in the 3D floor view; null = the whole building
 }
 
 export type Action =
@@ -49,3 +50,4 @@ export type Action =
   | { type: 'building/import'; buildings: Building[] } // append; buildingId = first imported
   | { type: 'building/remove'; buildingId: string } // imported only: drops it and its shortlist; if selected, switches to the first bundled
   | { type: 'overlay/set'; overlay: Overlay }
+  | { type: 'floor/set'; floor: number | null } // null leaves floor view; a floor the current building lacks → null

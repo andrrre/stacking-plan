@@ -81,6 +81,28 @@ function tenantFits(c: LabelContent, head: Line, width: number, lines: 1 | 2): b
   return lines === 2 ? need <= width : need + GAP <= head.free
 }
 
+/** How much of a label shows with `p`: one per part, and a half more when the whole tenant name fits a line. */
+function shown(c: LabelContent, p: Parts, w: number): number {
+  const parts = [p.cue, p.number, p.tenant, p.sf].filter(Boolean).length
+  return parts + (p.tenant && textWidth(c.tenant ?? '') <= w - 2 * PAD_X ? 0.5 : 0)
+}
+
+/**
+ * Floor view: whether a label should run along the depth of its top face (turned a quarter) rather than
+ * across it. Only when the face is deeper than it is wide on screen and turned the label shows more.
+ */
+export function turnLabel(c: LabelContent, face: Size, forced: boolean): boolean {
+  if (face.h <= face.w) return false
+  const turned = { w: face.h, h: face.w }
+  return shown(c, chooseParts(c, turned, forced), turned.w) > shown(c, chooseParts(c, face, forced), face.w)
+}
+
+/** A face's corners [top-left, top-right, bottom-right, bottom-left] as a turned label lies on them: from the front-left corner towards the back. */
+export function turnQuad<T>(q: readonly [T, T, T, T]): [T, T, T, T] {
+  const [tl, tr, br, bl] = q
+  return [bl, tl, tr, br]
+}
+
 const sumWidths = (ws: readonly number[]) => {
   const shown = ws.filter((w) => w > 0)
   return shown.reduce((s, w) => s + w, 0) + GAP * Math.max(shown.length - 1, 0)

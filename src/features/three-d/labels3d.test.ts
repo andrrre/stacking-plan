@@ -3,7 +3,7 @@ import { BUNDLED_BUILDINGS } from '../../data'
 import { buildStackModel, type SuiteVisual } from '../stack/suiteVisual'
 import {
   LINE_H, chooseParts, convexOverlap, cueWidth, hideCollisions, labelContent, labelPriority, labelSize, mapPoint, rectToQuad,
-  textWidth, toMatrix3d, type LabelContent, type Pt2,
+  textWidth, toMatrix3d, turnLabel, turnQuad, type LabelContent, type Pt2,
 } from './labels3d'
 
 const TODAY = '2026-11-15'
@@ -34,6 +34,26 @@ describe('labelContent', () => {
     const cue = (n: string) => labelContent(vs.find((v) => v.suite.number === n) as SuiteVisual).cue
     for (const n of ['300', '310', '410', '500', '700', '710']) expect(cue(n)?.text, n).toBe('VACANT')
     for (const n of ['600', '400', '220', '1000']) expect(cue(n)?.kind, n).toBe('clock')
+  })
+})
+
+describe('turnLabel (floor view, narrow but deep top faces)', () => {
+  const tenanted: LabelContent = { cue: null, number: '320', tenant: 'Breakwater Consulting', sf: '2,800 SF' }
+
+  it('turns the label to run along the depth when that shows more of it', () => {
+    expect(turnLabel(tenanted, { w: 55, h: 230 }, false)).toBe(true)
+    expect(turnLabel(content('330'), { w: 40, h: 230 }, false)).toBe(true)
+  })
+
+  it('keeps it across the face when the face is wide enough, or when turning gains nothing', () => {
+    expect(turnLabel(content('500'), { w: 500, h: 230 }, false)).toBe(false)
+    expect(turnLabel(tenanted, { w: 260, h: 230 }, false)).toBe(false)
+    expect(turnLabel(tenanted, { w: 55, h: 50 }, false)).toBe(false) // shallow: no room the other way either
+  })
+
+  it('reads the turned face from its front-left corner towards the back', () => {
+    const tl = { x: 0, y: 0 }, tr = { x: 10, y: 0 }, br = { x: 10, y: 50 }, bl = { x: 0, y: 50 }
+    expect(turnQuad([tl, tr, br, bl])).toEqual([bl, tl, tr, br])
   })
 })
 

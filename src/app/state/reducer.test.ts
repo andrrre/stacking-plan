@@ -28,6 +28,7 @@ function makeState(overrides: Partial<AppState> = {}): AppState {
     shortlist: [],
     importedBuildings: [],
     overlay: 'none',
+    floor: null,
     ...overrides,
   })
 }
@@ -47,6 +48,11 @@ function run(state: AppState, action: Action): AppState {
 }
 
 describe('reducer', () => {
+  it('building/set to the building already shown changes nothing', () => {
+    const s = makeState({ selection: { kind: 'suite', suiteId: 'odt-500' }, floor: 5 })
+    expect(reducer(s, { type: 'building/set', buildingId: 'odt' })).toBe(s)
+  })
+
   it('building/set switches building and clears selection, highlight and changes', () => {
     const s = makeState({
       selection: { kind: 'suite', suiteId: 'odt-500' }, highlight: 'vacant',
@@ -231,6 +237,52 @@ describe('reducer', () => {
       const s = makeState({ shortlist: [entry(1)], importedBuildings: [own] })
       expect(reducer(s, { type: 'building/remove', buildingId: 'odt' })).toBe(s)
       expect(reducer(s, { type: 'building/remove', buildingId: 'nope' })).toBe(s)
+    })
+  })
+
+  describe('floor/set', () => {
+    it('enters floor view on a floor of the current building, and steps to another', () => {
+      const on = run(makeState(), { type: 'floor/set', floor: 7 })
+      expect(on.floor).toBe(7)
+      expect(run(on, { type: 'floor/set', floor: 6 }).floor).toBe(6)
+    })
+
+    it('null leaves floor view', () => {
+      expect(run(makeState({ floor: 5 }), { type: 'floor/set', floor: null }).floor).toBeNull()
+    })
+
+    it('a floor the current building does not have leaves floor view', () => {
+      expect(run(makeState({ floor: 5 }), { type: 'floor/set', floor: 13 }).floor).toBeNull()
+      expect(run(makeState({ buildingId: 'pbp', floor: 5 }), { type: 'floor/set', floor: 9 }).floor).toBeNull()
+      expect(run(makeState(), { type: 'floor/set', floor: 0 }).floor).toBeNull()
+    })
+
+    it('switching, importing or removing the shown building clears it', () => {
+      expect(run(makeState({ floor: 5 }), { type: 'building/set', buildingId: 'pbp' }).floor).toBeNull()
+      const imported = building({ id: 'csv-x' })
+      expect(run(makeState({ floor: 5 }), { type: 'building/import', buildings: [imported] }).floor).toBeNull()
+      const held = makeState({ buildingId: 'csv-x', importedBuildings: [imported], floor: 1 })
+      expect(run(held, { type: 'building/remove', buildingId: 'csv-x' }).floor).toBeNull()
+    })
+
+    it('selecting a suite on another floor moves floor view to that floor', () => {
+      expect(run(makeState({ floor: 7 }), { type: 'select', selection: { kind: 'suite', suiteId: 'odt-220' } }).floor).toBe(2)
+      expect(run(makeState({ floor: 7 }), { type: 'select', selection: { kind: 'match', key: 'odt-500' } }).floor).toBe(5)
+      expect(run(makeState({ floor: 5 }), { type: 'select', selection: { kind: 'match', key: 'odt-700+odt-710' } }).floor).toBe(7)
+    })
+
+    it('a selection keeps the floor when it is on it, unknown, cleared, or floor view is off', () => {
+      expect(run(makeState({ floor: 5 }), { type: 'select', selection: { kind: 'suite', suiteId: 'odt-510' } }).floor).toBe(5)
+      expect(run(makeState({ floor: 5 }), { type: 'select', selection: { kind: 'suite', suiteId: 'nope' } }).floor).toBe(5)
+      expect(run(makeState({ floor: 5 }), { type: 'select', selection: null }).floor).toBe(5)
+      expect(run(makeState(), { type: 'select', selection: { kind: 'suite', suiteId: 'odt-220' } }).floor).toBeNull()
+    })
+
+    it('other actions keep it', () => {
+      const s = makeState({ floor: 5 })
+      expect(run(s, { type: 'asOf/set', asOf: '2027-05-01' }).floor).toBe(5)
+      expect(run(s, { type: 'select', selection: { kind: 'suite', suiteId: 'odt-500' } }).floor).toBe(5)
+      expect(run(s, { type: 'req/set', patch: { minSf: 9000 } }).floor).toBe(5)
     })
   })
 

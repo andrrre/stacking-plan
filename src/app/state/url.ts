@@ -8,13 +8,14 @@ import type { AppState, ColourMode, RequirementDraft, ViewMode } from './types'
 
 // spec-technical §3.5. Every parameter is validated on its own; an invalid one is ignored silently.
 
-const MANAGED = ['today', 'b', 'asOf', 'mode', 'view', 'min', 'max', 'rent', 'pot'] as const
+const MANAGED = ['today', 'b', 'asOf', 'mode', 'view', 'min', 'max', 'rent', 'pot', 'floor'] as const
 
 const intParam = z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(MIN_REQ_SF).max(MAX_REQ_SF))
 const rentParam = z.string().regex(/^\d+(\.\d+)?$/).transform(Number).pipe(z.number().min(MIN_RENT_PSF).max(MAX_RENT_PSF))
 const modeParam = z.enum(['availability', 'risk'])
 const viewParam = z.enum(['stack', '3d'])
 const potParam = z.enum(['0', '1'])
+const floorParam = z.string().regex(/^-?\d{1,4}$/).transform(Number).pipe(z.number().int())
 
 export type UrlContext = { today: ISODate; buildingIds: readonly string[] }
 export type UrlPatch = {
@@ -23,6 +24,7 @@ export type UrlPatch = {
   mode?: ColourMode
   view?: ViewMode
   req?: Partial<RequirementDraft>
+  floor?: number // a whole number only; whether the building has it is checked once the building is known
 }
 
 /** The value of `name` if `schema` accepts it, else undefined. */
@@ -55,12 +57,14 @@ export function parseUrlState(search: string, ctx: UrlContext): UrlPatch {
   const mode = read(params, 'mode', modeParam)
   const view = read(params, 'view', viewParam)
   const req = readRequirement(params)
+  const floor = read(params, 'floor', floorParam)
   return {
     ...(b !== undefined && ctx.buildingIds.includes(b) && { buildingId: b }),
     ...(asOf !== undefined && { asOf: snapToSlider(asOf, ctx.today) }),
     ...(mode !== undefined && { mode }),
     ...(view !== undefined && { view }),
     ...(Object.keys(req).length > 0 && { req }),
+    ...(floor !== undefined && { floor }),
   }
 }
 
@@ -79,6 +83,7 @@ export function serializeUrl(state: AppState, currentSearch: string, includeToda
     ['max', req.maxSf === null ? null : String(req.maxSf)],
     ['rent', req.maxRentPsf === null ? null : String(req.maxRentPsf)],
     ['pot', req.includePotential ? null : '0'],
+    ['floor', state.floor === null || state.view !== '3d' ? null : String(state.floor)], // floor view is a 3D view
   ]
   for (const [key, value] of entries) if (value !== null) params.set(key, value)
   const text = params.toString()

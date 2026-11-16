@@ -20,7 +20,18 @@ export function insetsFor(width: number, height: number): Insets {
     ? { top: 16, right: 158, bottom: 16, left: 40 }
     : { top: 48, right: 18, bottom: 16, left: 40 }
 }
+/** Floor view: the floor slider takes this much more of the stage's left edge (CSS px; .floorPanel in three-d.module.css). */
+export const FLOOR_PANEL_W = 92
+/** The floor caption's band across the top-left, under the control bar when that runs across the top (CSS px). */
+const FLOOR_CAPTION_H = 34
+/** The floor view's insets: the usual ones, plus the floor slider on the left and its caption at the top. */
+export function floorInsets(width: number, height: number): Insets {
+  const base = insetsFor(width, height)
+  return { ...base, top: base.top + FLOOR_CAPTION_H, left: base.left + FLOOR_PANEL_W }
+}
 export const DEFAULT_VIEW: View = { azimuth: 16, elevation: 14.5 }
+/** Floor view: high above the front, looking down onto one plate. */
+export const FLOOR_VIEW: View = { azimuth: 4, elevation: 60 }
 export const SEPARATED_VIEW: View = { azimuth: 12, elevation: 32 }
 export const AZIMUTH_LIMIT = 50
 export const ELEVATION_RANGE = { min: 3, max: 62 }

@@ -52,6 +52,12 @@ describe('parseUrlState', () => {
     expect(parseUrlState('?rent=1000', ctx)).toEqual({ req: { maxRentPsf: 1000 } })
   })
 
+  it('reads floor as a whole number (a basement may be 0 or below)', () => {
+    expect(parseUrlState('?floor=5', ctx)).toEqual({ floor: 5 })
+    expect(parseUrlState('?floor=-1', ctx)).toEqual({ floor: -1 })
+    for (const bad of ['1.5', 'top', '', '--1', '5e2']) expect(parseUrlState(`?floor=${bad}`, ctx)).toEqual({})
+  })
+
   it('drops max when it is below min', () => {
     expect(parseUrlState('?min=9000&max=5000', ctx)).toEqual({ req: { minSf: 9000 } })
     expect(parseUrlState('?min=9000&max=9000', ctx)).toEqual({ req: { minSf: 9000, maxSf: 9000 } })
@@ -73,6 +79,14 @@ describe('initState with a URL', () => {
     const s = initState('?min=9000&max=5000', empty, CLOCK)
     expect(s.req.minSf).toBe(9000)
     expect(s.req.maxSf).toBeNull()
+  })
+
+  it('opens floor view on a floor of the building shown, and ignores an unknown floor', () => {
+    expect(initState('?floor=5', empty, CLOCK).floor).toBe(5)
+    expect(initState('?floor=13', empty, CLOCK).floor).toBeNull()
+    expect(initState('?b=pbp&floor=7', empty, CLOCK).floor).toBe(7)
+    expect(initState('?b=pbp&floor=9', empty, CLOCK).floor).toBeNull()
+    expect(initState('', empty, CLOCK).floor).toBeNull()
   })
 
   it('accepts a stored imported building id', () => {
@@ -109,6 +123,16 @@ describe('serializeUrl', () => {
   it('writes today only when asked', () => {
     expect(serializeUrl(base, '', true)).toBe('?today=2026-11-15')
     expect(serializeUrl(full, '', false)).not.toContain('today')
+  })
+
+  it('writes floor only in floor view, and it round-trips', () => {
+    expect(serializeUrl({ ...base, floor: null }, '?floor=4', false)).toBe('')
+    expect(serializeUrl({ ...base, floor: 7 }, '', false)).toBe('?floor=7')
+    expect(parseUrlState(serializeUrl({ ...base, floor: 7 }, '', false), ctx)).toEqual({ floor: 7 })
+  })
+
+  it('keeps floor out of the URL while the 2D stack is the chosen view', () => {
+    expect(serializeUrl({ ...base, view: 'stack', floor: 7 }, '?floor=7', false)).toBe('?view=stack')
   })
 
   it('omits the pot parameter when potential is on', () => {
