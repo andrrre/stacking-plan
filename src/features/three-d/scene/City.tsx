@@ -1,12 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { BoxGeometry, BufferGeometry, CapsuleGeometry, Color, Float32BufferAttribute, Object3D, type InstancedMesh } from 'three'
+import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type InstancedMesh } from 'three'
 import { nextTick, type Tick } from '../city/motion'
 import { roadRects, type Block, type CityPlan } from '../city/plan'
 import { blockSegments, flatten, roadSegments, treeSegments } from '../city/sketch'
-import { CAR, PERSON, poseAt, type Mover, type Traffic } from '../city/traffic'
+import { CAR, poseAt, type Mover, type Traffic } from '../city/traffic'
 import type { Palette } from '../palette'
 import { depthMaterial, fadeUniforms, fillMaterial, flatMaterial, lineMaterial, setFade, shadeByNormal, type FadeUniforms } from './cityMaterials'
+import { MOVER_PROPS, NO_HIT, mix, paint, scratch as tmp, useMeshDisposal } from './cityShared'
+import { People } from './People'
 import type { Shapes } from './resources'
 
 // The sketched city: pale see-through neighbour blocks with thin outlines, trees, road surfaces with kerbs and
@@ -21,8 +23,6 @@ import type { Shapes } from './resources'
 
 export type CityScene = { plan: CityPlan; traffic: Traffic; running: boolean; dim: number }
 
-const NO_HIT = () => undefined // never picked: the facade under a car or a block is still the building's
-
 const lines = (segs: Float32Array) => {
   const g = new BufferGeometry()
   g.setAttribute('position', new Float32BufferAttribute(segs, 3))
@@ -31,19 +31,6 @@ const lines = (segs: Float32Array) => {
 
 /** Far blocks first, so a nearer see-through fill blends over (and hides the lines of) the ones behind it. */
 const farFirst = (bs: readonly Block[]) => [...bs].sort((a, b) => Math.hypot(b.x, b.z) - Math.hypot(a.x, a.z))
-
-const tmp = new Object3D()
-
-/** Frees an instanced mesh's own buffers (instance matrices, colours) when it is replaced or unmounted. */
-function useMeshDisposal(ref: RefObject<InstancedMesh | null>, geometry: unknown, material: unknown, count: number): void {
-  useEffect(() => {
-    void geometry
-    void material
-    void count
-    const mesh = ref.current
-    return () => mesh?.dispose()
-  }, [ref, geometry, material, count])
-}
 
 type BlocksProps = { blocks: readonly Block[]; fill: ReturnType<typeof fillMaterial>; depth: ReturnType<typeof depthMaterial> }
 
@@ -140,75 +127,88 @@ function useCityClock(running: boolean): RefObject<Tick> {
   return clock
 }
 
-/** Size of a part (x, y, z), its centre's height, and how far forward of the mover's centre it sits. */
-type Part = { size: [number, number, number]; y: number; ahead: number }
+/** Size of a part (x, y, z), its centre's height, and where it sits from the car's centre (to its side, ahead). */
+type Part = { size: [number, number, number]; y: number; side: number; ahead: number }
 
-const BODY: Part = { size: [CAR.width, CAR.body, CAR.length], y: 0.03 + CAR.body / 2, ahead: 0 }
-const CABIN: Part = { size: [CAR.width * 0.84, CAR.cabin, CAR.length * 0.5], y: CAR.top - CAR.cabin / 2, ahead: -0.07 }
-const FIGURE: Part = { size: [1, 1, 1], y: 0, ahead: 0 }
+const BODY: Part = { size: [CAR.width, CAR.body, CAR.length], y: 0.03 + CAR.body / 2, side: 0, ahead: 0 }
+const CABIN: Part = { size: [CAR.width * 0.84, CAR.cabin, CAR.length * 0.5], y: CAR.top - CAR.cabin / 2, side: 0, ahead: -0.07 }
+const WHEEL_R = 0.085
+/** Four wheels, a little proud of the body's sides, a short way in from its ends. */
+const WHEELS: Part[] = [1, -1].flatMap((side) => [1, -1].map((end): Part => ({
+  size: [0.07, WHEEL_R, WHEEL_R], y: WHEEL_R, side: side * (CAR.width / 2 - 0.01), ahead: end * (CAR.length / 2 - 0.22),
+})))
 
-function place(mesh: InstancedMesh, movers: readonly Mover[], t: number, part: Part): void {
-  movers.forEach((m, i) => {
+function place(mesh: InstancedMesh, cars: readonly Mover[], t: number, parts: readonly Part[]): void {
+  cars.forEach((m, i) => {
     const p = poseAt(m, t)
     const k = p.scale
-    tmp.position.set(p.x + Math.sin(p.heading) * part.ahead, part.y * k, p.z + Math.cos(p.heading) * part.ahead)
-    tmp.rotation.set(0, p.heading, 0)
-    tmp.scale.set(part.size[0] * k, part.size[1] * k, part.size[2] * k)
-    tmp.updateMatrix()
-    mesh.setMatrixAt(i, tmp.matrix)
+    const [s, c] = [Math.sin(p.heading), Math.cos(p.heading)]
+    parts.forEach((part, j) => {
+      tmp.position.set(p.x + (c * part.side + s * part.ahead) * k, part.y * k, p.z + (-s * part.side + c * part.ahead) * k)
+      tmp.rotation.set(0, p.heading, 0)
+      tmp.scale.set(part.size[0] * k, part.size[1] * k, part.size[2] * k)
+      tmp.updateMatrix()
+      mesh.setMatrixAt(i * parts.length + j, tmp.matrix)
+    })
   })
   mesh.instanceMatrix.needsUpdate = true
 }
 
-function paint(mesh: InstancedMesh, movers: readonly Mover[], tones: readonly Color[]): void {
-  movers.forEach((m, i) => mesh.setColorAt(i, tones[m.tone % tones.length] ?? new Color()))
-  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-}
+type CarsProps = { cars: readonly Mover[]; palette: Palette; u: FadeUniforms; clock: RefObject<Tick> }
 
-const mix = (a: string, b: string, t: number) => new Color(a).lerp(new Color(b), t)
+/** Cars: a body, a cabin and four wheels, one instanced draw per part. */
+function Cars({ cars, palette, u, clock }: CarsProps) {
+  const geo = useMemo(() => ({
+    box: shadeByNormal(new BoxGeometry(1, 1, 1)),
+    wheel: shadeByNormal(new CylinderGeometry(1, 1, 1, 10).rotateZ(Math.PI / 2)), // axle across the car
+  }), [])
+  useEffect(() => () => Object.values(geo).forEach((g) => g.dispose()), [geo])
+  const mat = useMemo(() => fillMaterial('#ffffff', 0.92, u), [u])
+  useEffect(() => () => mat.dispose(), [mat])
+  const body = useRef<InstancedMesh>(null)
+  const cabin = useRef<InstancedMesh>(null)
+  const wheels = useRef<InstancedMesh>(null)
+  const n = cars.length
+  useMeshDisposal(body, geo.box, mat, n)
+  useMeshDisposal(cabin, geo.box, mat, n)
+  useMeshDisposal(wheels, geo.wheel, mat, 4 * n)
+  const drawn = useRef<{ t: number; cars: readonly Mover[] | null }>({ t: -1, cars: null })
+  const invalidate = useThree((s) => s.invalidate)
+  useLayoutEffect(() => {
+    const tones = [new Color(palette.borderStrong), mix(palette.borderStrong, palette.muted, 0.35), mix(palette.border, palette.borderStrong, 0.5)]
+    const tone = (m: Mover) => tones[m.tone % tones.length] ?? tones[0] ?? new Color()
+    if (body.current) paint(body.current, cars.map(tone))
+    if (cabin.current) paint(cabin.current, cars.map((m) => tone(m).clone().lerp(new Color(palette.surface), 0.35)))
+    if (wheels.current) paint(wheels.current, cars.flatMap(() => WHEELS.map(() => mix(palette.text, palette.muted, 0.3))))
+    drawn.current = { t: -1, cars: null } // the meshes may be new: place everything on the next frame
+    invalidate()
+  }, [cars, palette, geo, mat, invalidate])
+  useFrame(() => {
+    const t = clock.current.elapsed
+    if (drawn.current.t === t && drawn.current.cars === cars) return
+    drawn.current = { t, cars }
+    if (body.current) place(body.current, cars, t, [BODY])
+    if (cabin.current) place(cabin.current, cars, t, [CABIN])
+    if (wheels.current) place(wheels.current, cars, t, WHEELS)
+  })
+  return (
+    <>
+      <instancedMesh key={`b${n}`} ref={body} args={[geo.box, mat, n]} {...MOVER_PROPS} />
+      <instancedMesh key={`c${n}`} ref={cabin} args={[geo.box, mat, n]} {...MOVER_PROPS} />
+      <instancedMesh key={`w${n}`} ref={wheels} args={[geo.wheel, mat, 4 * n]} {...MOVER_PROPS} />
+    </>
+  )
+}
 
 type LifeProps = { traffic: Traffic; palette: Palette; u: FadeUniforms; running: boolean }
 
-/** Cars (a body and a cabin) and people (capsules), one instanced draw per part. */
+/** The traffic, moved by one clock. */
 function Life({ traffic, palette, u, running }: LifeProps) {
   const clock = useCityClock(running)
-  const geo = useMemo(() => ({
-    box: shadeByNormal(new BoxGeometry(1, 1, 1)),
-    person: shadeByNormal(new CapsuleGeometry(PERSON.radius, PERSON.height - 2 * PERSON.radius, 2, 6).translate(0, PERSON.height / 2, 0)),
-  }), [])
-  useEffect(() => () => Object.values(geo).forEach((g) => g.dispose()), [geo])
-  const mats = useMemo(() => ({ car: fillMaterial('#ffffff', 0.9, u), person: fillMaterial('#ffffff', 0.85, u) }), [u])
-  useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
-  const body = useRef<InstancedMesh>(null)
-  const cabin = useRef<InstancedMesh>(null)
-  const people = useRef<InstancedMesh>(null)
-  const drawn = useRef<{ t: number; traffic: Traffic | null }>({ t: -1, traffic: null })
-  const invalidate = useThree((s) => s.invalidate)
-  useLayoutEffect(() => {
-    const cars = [new Color(palette.borderStrong), mix(palette.borderStrong, palette.muted, 0.35), mix(palette.border, palette.borderStrong, 0.5)]
-    if (body.current) paint(body.current, traffic.cars, cars)
-    if (cabin.current) paint(cabin.current, traffic.cars, cars.map((c) => c.clone().lerp(new Color(palette.surface), 0.35)))
-    if (people.current) paint(people.current, traffic.people, [mix(palette.muted, palette.borderStrong, 0.2), mix(palette.muted, palette.borderStrong, 0.5), new Color(palette.muted)])
-    drawn.current = { t: -1, traffic: null } // the meshes may be new: place everything on the next frame
-    invalidate()
-  }, [traffic, palette, geo, mats, invalidate])
-  useMeshDisposal(body, geo.box, mats.car, traffic.cars.length)
-  useMeshDisposal(cabin, geo.box, mats.car, traffic.cars.length)
-  useMeshDisposal(people, geo.person, mats.person, traffic.people.length)
-  useFrame(() => {
-    const t = clock.current.elapsed
-    if (drawn.current.t === t && drawn.current.traffic === traffic) return
-    drawn.current = { t, traffic }
-    if (body.current) place(body.current, traffic.cars, t, BODY)
-    if (cabin.current) place(cabin.current, traffic.cars, t, CABIN)
-    if (people.current) place(people.current, traffic.people, t, FIGURE)
-  })
-  const props = { dispose: null, raycast: NO_HIT, frustumCulled: false, renderOrder: 4 } // after the building: see the header
   return (
     <>
-      <instancedMesh key={`b${traffic.cars.length}`} ref={body} args={[geo.box, mats.car, traffic.cars.length]} {...props} />
-      <instancedMesh key={`c${traffic.cars.length}`} ref={cabin} args={[geo.box, mats.car, traffic.cars.length]} {...props} />
-      <instancedMesh key={`p${traffic.people.length}`} ref={people} args={[geo.person, mats.person, traffic.people.length]} {...props} />
+      <Cars cars={traffic.cars} palette={palette} u={u} clock={clock} />
+      <People people={traffic.people} palette={palette} u={u} clock={clock} />
     </>
   )
 }

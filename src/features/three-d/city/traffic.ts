@@ -6,13 +6,15 @@ import { PAVE, hashSeed, seededRandom, type CityPlan, type Road } from './plan'
 // and first RAMP units, so the jump back is never seen.
 
 export type Route = { from: [number, number]; to: [number, number] } // plan points (x, z)
-/** `offset` is where on its route it is at time 0 (0..1); `speed` in world units a second. */
-export type Mover = { route: Route; offset: number; speed: number; tone: number }
+/**
+ * `offset` is where on its route it is at time 0 (0..1); `speed` in world units a second; `tone` and `tone2`
+ * pick colours (a car's body; a person's top and trousers); `size` scales a person (1 for cars).
+ */
+export type Mover = { route: Route; offset: number; speed: number; tone: number; tone2: number; size: number }
 export type Pose = { x: number; z: number; heading: number; scale: number } // heading: radians about y, 0 = towards +z
 
 /** Car body and cabin sizes (world units: one floor ≈ 4 m); `top` is its highest point. */
 export const CAR = { length: 1.1, width: 0.46, body: 0.2, cabin: 0.14, top: 0.36 }
-export const PERSON = { radius: 0.06, height: 0.34 }
 export const RAMP = 2.5 // world units over which a mover grows in at the start of its route and shrinks out at the end
 
 export type Traffic = { cars: Mover[]; people: Mover[] }
@@ -54,13 +56,16 @@ function carsOn(rand: () => number, routes: readonly Route[]): Mover[] {
     const speed = 1.1 + rand() * 0.6
     const n = extra.has(i) ? 2 : 1
     const start = rand()
-    return Array.from({ length: n }, (_, k) => ({ route, speed, offset: (start + k / n) % 1, tone: Math.floor(rand() * 3) }))
+    return Array.from({ length: n }, (_, k) => ({ route, speed, offset: (start + k / n) % 1, tone: Math.floor(rand() * 3), tone2: 0, size: 1 }))
   })
 }
 
-/** Two people per pavement, each at their own pace, a few of them dropped at random. */
+/** Two people per pavement, each at their own pace and height (±10%), a few of them dropped at random. */
 function peopleOn(rand: () => number, routes: readonly Route[]): Mover[] {
-  const all = routes.flatMap((route) => [0, 1].map(() => ({ route, speed: 0.2 + rand() * 0.14, offset: rand(), tone: Math.floor(rand() * 3) })))
+  const person = (route: Route): Mover => ({
+    route, speed: 0.2 + rand() * 0.14, offset: rand(), tone: Math.floor(rand() * 4), tone2: Math.floor(rand() * 3), size: 0.9 + rand() * 0.2,
+  })
+  const all = routes.flatMap((route) => [person(route), person(route)])
   const drop = Math.floor(rand() * 3)
   return all.filter((_, i) => i % 5 !== 4 || i / 5 >= drop)
 }

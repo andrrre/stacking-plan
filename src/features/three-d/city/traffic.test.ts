@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DEPTH, LIFT, PLINTH_H, SLAB_T } from '../layout3d'
 import { cityPlan, type Site } from './plan'
-import { CAR, PERSON, RAMP, cityTraffic, poseAt, routeLength, type Mover } from './traffic'
+import { CAR, RAMP, cityTraffic, poseAt, routeLength, type Mover } from './traffic'
+import { figureAt } from './walk'
 
 const SITE: Site = { halfW: 9.66, halfD: 4.76, height: 12.4 }
 const IDS = ['odt', 'pbp', 'bsp', 'mgc', 'fex', 'tall', 'x']
@@ -112,11 +113,13 @@ describe('poseAt', () => {
     const lowest = PLINTH_H + SLAB_T
     const line = (z: number) => lowest + (z - facade) * Math.tan((3 * Math.PI) / 180)
     const t = trafficOf('odt')
-    for (const [movers, top] of [[t.cars, CAR.top], [t.people, PERSON.height]] as const) {
-      for (const m of movers) for (let time = 0; time < 200; time += 1.7) {
-        const p = poseAt(m, time)
-        if (p.z > facade) expect(top * p.scale).toBeLessThan(line(p.z))
-      }
+    for (const m of t.cars) for (let time = 0; time < 200; time += 1.7) {
+      const p = poseAt(m, time)
+      if (p.z > facade) expect(CAR.top * p.scale).toBeLessThan(line(p.z))
+    }
+    for (const m of t.people) for (let time = 0; time < 200; time += 1.7) {
+      const f = figureAt(m, time) // the whole figure: its own height (with the hip's bob never raising it)
+      if (f.z > facade) expect(f.height * f.scale).toBeLessThan(line(f.z))
     }
   })
 })
