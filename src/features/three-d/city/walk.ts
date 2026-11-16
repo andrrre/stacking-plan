@@ -1,22 +1,12 @@
-import { poseAt, routeLength, type Mover, type Pose } from './traffic'
+import { FIGURE } from './figure'
+import { lapLength, poseAt, routeLength, type Mover, type Pose } from './traffic'
 
 // A pedestrian's walk: where the body parts are at time t. Pure, like poseAt (and built on it). The legs swing
 // from the hip opposite each other and the arms opposite the legs; the phase follows the distance walked, one
 // cycle per two steps of the legs' own length, so the feet do not slide. Both legs make the same angle with
 // the vertical, so the hip drops exactly as much as the swung legs rise and both feet stay on the ground.
 
-/**
- * Proportions of the figure, as fractions of its height (one floor = 1 unit, so 0.4 is a short storey's worth
- * of person: the height the sightline to the lowest facade labels allows on the front pavement).
- */
-export const FIGURE = {
-  height: 0.4,
-  leg: 0.47, // hip height
-  shoulder: 0.8, // top of the torso
-  head: 0.075, // head radius
-  swing: 0.42, // largest leg swing either side of vertical (radians)
-  armSwing: 0.7, // arm swing as a share of the leg swing
-}
+export { FIGURE }
 
 /** `legs` and `arms` are [left, right] swing angles (radians, + = forward); `bob` the hip's drop; `feet` their heights. */
 export type Figure = Pose & { height: number; legs: [number, number]; arms: [number, number]; bob: number; feet: [number, number] }
@@ -32,10 +22,10 @@ export function figureAt(m: Mover, t: number): Figure {
   const pose = poseAt(m, t)
   const height = FIGURE.height * m.size
   const leg = FIGURE.leg * height
-  const phase = (2 * Math.PI * (m.offset * routeLength(m.route) + m.speed * t)) / strideOf(m)
-  const a = FIGURE.swing * Math.sin(phase)
+  const phase = (2 * Math.PI * (m.offset * lapLength(m.route) + m.speed * t)) / strideOf(m)
+  const a = m.speed === 0 ? 0 : FIGURE.swing * Math.sin(phase) // someone standing stands straight
   const arm = -a * FIGURE.armSwing
-  const bob = leg * (Math.cos(a) - 1)
+  const bob = a === 0 ? 0 : leg * (Math.cos(a) - 1)
   const foot = leg + bob - leg * Math.cos(a)
   return { ...pose, height, legs: [a, -a], arms: [arm, -arm], bob, feet: [foot, foot] }
 }

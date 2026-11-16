@@ -683,7 +683,7 @@ test.describe('the sketched city around the building', () => {
     await gotoApp(page, '3d', MOVING)
     await pointOf(page, '300')
     await settled(page, '300')
-    expect(await ticksIn(page, 1000), 'the city loop runs').toBeGreaterThan(10)
+    expect(await ticksIn(page, 1000), 'the city loop runs').toBeGreaterThan(3) // "it is running": software GL under a parallel run manages ~10 a second
     await toggle(page).click()
     await expect(scene(page)).toHaveAttribute('data-city-motion', 'off')
     await loopStopped(page)
@@ -713,7 +713,7 @@ test.describe('the sketched city around the building', () => {
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('client-summary')).toHaveCount(0)
     await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
-    expect(await ticksIn(page, 1000)).toBeGreaterThan(10)
+    expect(await ticksIn(page, 1000)).toBeGreaterThan(3) // "it is running": software GL under a parallel run manages ~10 a second
   })
 
   test('floor view and separate floors keep the city moving, further back', async ({ page }) => {
@@ -726,7 +726,7 @@ test.describe('the sketched city around the building', () => {
     await page.getByTestId('separate-floors').click()
     await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
     await expect(scene(page)).toHaveAttribute('data-city-dim', '0.50')
-    expect(await ticksIn(page, 1000)).toBeGreaterThan(10)
+    expect(await ticksIn(page, 1000)).toBeGreaterThan(3) // "it is running": software GL under a parallel run manages ~10 a second
   })
 
   test('with the traffic moving, the date slider still updates the facade labels', async ({ page }) => {

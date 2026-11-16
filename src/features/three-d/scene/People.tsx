@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { BoxGeometry, Color, CylinderGeometry, SphereGeometry, type InstancedMesh } from 'three'
+import { BoxGeometry, CylinderGeometry, SphereGeometry, type InstancedMesh } from 'three'
 import type { Tick } from '../city/motion'
 import type { Mover } from '../city/traffic'
 import { FIGURE, figureAt, type Figure } from '../city/walk'
@@ -13,9 +13,9 @@ import { MOVER_PROPS, mix, paint, scratch, useMeshDisposal } from './cityShared'
 // person and the time; this file only turns it into instance matrices. Flat sketch colours: a top and
 // trousers from muted tokens, a pale head, no faces.
 
-const ARM = { x: 0.15, length: 0.36, width: 0.05 } // fractions of the figure's height
-const LEG = { x: 0.055, width: 0.075 }
-const TORSO = { top: 0.13, bottom: 0.09, depth: 0.55 } // half-widths at the shoulders and hips; depth as a share of width
+const ARM = { x: 0.16, length: 0.36, width: 0.065 } // fractions of the figure's height
+const LEG = { x: 0.06, width: 0.095 }
+const TORSO = { top: 0.145, bottom: 0.1, depth: 0.6 } // half-widths at the shoulders and hips; depth as a share of width
 
 function useParts() {
   const geo = useMemo(() => ({
@@ -57,11 +57,14 @@ function placeFigure(m: Meshes, i: number, f: Figure): void {
   }
 }
 
-/** Muted clothing: tops and trousers from the text and edge tokens, quieter than any status colour. */
+/**
+ * Clothing in dark neutrals from the text and edge tokens, so a figure stands out against the pale pavement
+ * while staying quieter than any status colour; a lighter head.
+ */
 function outfits(p: Palette, people: readonly Mover[]) {
-  const tops = [new Color(p.muted), mix(p.muted, p.edges.committed, 0.55), mix(p.text, p.muted, 0.55), mix(p.muted, p.borderStrong, 0.3)]
-  const trousers = [mix(p.text, p.muted, 0.35), mix(p.muted, p.text, 0.25), mix(p.edges.committed, p.text, 0.45)]
-  const skin = mix(p.borderStrong, p.edges.committed, 0.4)
+  const tops = [mix(p.text, p.muted, 0.35), mix(p.text, p.edges.committed, 0.5), mix(p.muted, p.text, 0.3), mix(p.text, p.borderStrong, 0.4)]
+  const trousers = [mix(p.text, p.muted, 0.12), mix(p.text, p.muted, 0.3), mix(p.text, p.edges.committed, 0.3)]
+  const skin = mix(p.edges.committed, p.borderStrong, 0.35)
   const top = (m: Mover) => tops[m.tone % tops.length] ?? skin
   const legs = (m: Mover) => trousers[m.tone2 % trousers.length] ?? skin
   return {

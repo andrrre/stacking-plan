@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { cityPlan } from './plan'
-import { RAMP, cityTraffic, poseAt, routeLength, type Mover } from './traffic'
+import { cityTraffic, lapLength, poseAt, routeLength, type Mover } from './traffic'
 import { FIGURE, figureAt, strideOf } from './walk'
 
-const people = cityTraffic('odt', cityPlan('odt', { halfW: 9.66, halfD: 4.76, height: 12.4 })).people
+const all = cityTraffic('odt', cityPlan('odt', { halfW: 9.66, halfD: 4.76, height: 12.4 })).people
+const people = all.filter((m) => m.speed > 0) // walking; the few standing are tested on their own
 const TIMES = [0, 0.37, 2.9, 15.1, 88.8, 431.2]
 const someone = (): Mover => {
   const m = people[0]
@@ -21,10 +22,10 @@ describe('figureAt', () => {
     }
   })
 
-  it('heights vary by person within ±10% of the base figure, the same every time', () => {
-    const heights = people.map((m) => figureAt(m, 0).height)
+  it('heights vary by person, up to 10% over the base figure (less where the sightline caps them), the same every time', () => {
+    const heights = all.map((m) => figureAt(m, 0).height)
     for (const h of heights) {
-      expect(h).toBeGreaterThanOrEqual(FIGURE.height * 0.9 - 1e-9)
+      expect(h).toBeGreaterThanOrEqual(FIGURE.height * 0.75 - 1e-9)
       expect(h).toBeLessThanOrEqual(FIGURE.height * 1.1 + 1e-9)
     }
     expect(new Set(heights.map((h) => h.toFixed(4))).size).toBeGreaterThan(3)
@@ -61,7 +62,7 @@ describe('figureAt', () => {
     const m = someone()
     const stride = strideOf(m)
     // Mid-stance: the distance walked is a whole number of half strides.
-    const s0 = m.offset * routeLength(m.route)
+    const s0 = m.offset * lapLength(m.route)
     const k = Math.ceil(s0 / (stride / 2)) + 1
     const t = (k * (stride / 2) - s0) / m.speed
     const f = figureAt(m, t)
@@ -73,7 +74,7 @@ describe('figureAt', () => {
     for (const m of people) {
       const L = routeLength(m.route)
       expect(L / strideOf(m)).toBeCloseTo(Math.round(L / strideOf(m)), 9)
-      const lap = L / m.speed
+      const lap = lapLength(m.route) / m.speed
       for (const t of TIMES) {
         const a = figureAt(m, t)
         const b = figureAt(m, t + lap)
@@ -94,11 +95,14 @@ describe('figureAt', () => {
     }
   })
 
-  it('still shrinks to nothing where the route starts again', () => {
-    const m = someone()
-    const lap = routeLength(m.route) / m.speed
-    const joint = (1 - m.offset) * lap
-    expect(figureAt(m, joint - 1e-3).scale).toBeLessThan(0.01)
-    expect(figureAt(m, joint + RAMP / m.speed + 1).scale).toBe(1)
+  it('someone standing still stands straight, hip at full height', () => {
+    const standing = all.filter((m) => m.speed === 0)
+    expect(standing.length).toBeGreaterThan(0)
+    for (const m of standing) for (const t of TIMES) {
+      const f = figureAt(m, t)
+      for (const a of [...f.legs, ...f.arms]) expect(Math.abs(a)).toBe(0)
+      expect(f.bob).toBe(0)
+      expect([f.x, f.z]).toEqual([figureAt(m, 0).x, figureAt(m, 0).z])
+    }
   })
 })
