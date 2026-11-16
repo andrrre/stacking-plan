@@ -252,9 +252,31 @@ describe('buildStackModel: legend filter', () => {
 
   it('follows the as-of date and the colour mode: the key is the fill', () => {
     expect(visual(model({ legend: 'potential', asOf: JUL }), '600').filtered).toBe(false)
-    expect(visual(model({ legend: 'potential' }), '600').filtered).toBe(true)
+    expect(visual(model({ legend: 'expiring', asOf: JUL }), '600').filtered).toBe(true)
+    expect(visual(model({ legend: 'expiring' }), '600').filtered).toBe(false)
     expect(visual(model({ legend: 'risk-le6', mode: 'risk' }), '600').filtered).toBe(false)
     expect(visual(model({ legend: 'risk-le6', mode: 'risk' }), '900').filtered).toBe(true)
+  })
+
+  it('a key no suite carries filters nothing: the whole building stays lit (committed is gone by July 2027)', () => {
+    expect(all(model({ legend: 'committed' })).filter((v) => !v.filtered).map((v) => v.suite.number)).toEqual(['1010'])
+    expect(all(model({ legend: 'committed', asOf: JUL })).some((v) => v.filtered)).toBe(false)
+    expect(all(model({ legend: 'potential' })).some((v) => v.filtered)).toBe(false)
+  })
+
+  it('a search match stays lit under the filter, whatever it is painted as', () => {
+    const m = model({ legend: 'expiring', matches: MATCHES })
+    expect(visual(m, '500')).toMatchObject({ fill: 'vacant', matchRank: 1, dimmed: false, filtered: false })
+    expect(visual(m, '700')).toMatchObject({ matchRank: 2, filtered: false })
+    expect(visual(m, '900')).toMatchObject({ dimmed: true, filtered: true })
+  })
+
+  it('says "filtered out" in the accessible name of a suite the filter leaves out, and only then', () => {
+    const m = model({ legend: 'vacant' })
+    expect(visual(m, '600').ariaLabel).toMatch(/, filtered out$/)
+    expect(visual(m, '500').ariaLabel).not.toContain('filtered out')
+    expect(all(model()).some((v) => v.ariaLabel.includes('filtered out'))).toBe(false)
+    expect(all(model({ legend: 'committed', asOf: JUL })).some((v) => v.ariaLabel.includes('filtered out'))).toBe(false)
   })
 
   it('is separate from search dimming: a suite may be dimmed, filtered, both or neither', () => {

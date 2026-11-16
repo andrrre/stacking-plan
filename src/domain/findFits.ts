@@ -104,9 +104,12 @@ export function findFits(b: Building, req: Requirement, D: ISODate, today: ISODa
     .map((r) => r.candidate)
 }
 
-/** One available suite as a candidate on its own (excess 0), for adding it to the shortlist; null if not available. */
-export function suiteCandidate(f: Floor, suite: Suite, D: ISODate, today: ISODate): Candidate | null {
+/**
+ * One available suite as a candidate on its own (excess 0), for adding it to the shortlist; null if not available.
+ * Potential space counts only with `includePotential`, as in the finder.
+ */
+export function suiteCandidate(f: Floor, suite: Suite, D: ISODate, today: ISODate, includePotential: boolean): Candidate | null {
   const st = statusAt(suite, D, today)
-  if (!isAvailable(suite, st, true)) return null
-  return toCandidate(f, [{ suite, st, available: true }], { minSf: suite.areaSf, includePotential: true }, today)
+  if (!isAvailable(suite, st, includePotential)) return null
+  return toCandidate(f, [{ suite, st, available: true }], { minSf: suite.areaSf, includePotential }, today)
 }

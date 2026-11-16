@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { buildStackModel, type SuiteVisual } from '../stack/suiteVisual'
 import {
-  LINE_H, MIN_FACE_H, ONE_LINE_H, TWO_LINES_H, chooseParts, convexOverlap, fitLabel, hideCollisions, innerRect, labelContent, labelPriority, labelSize, line1Text, textWidth, turnLabel,
+  LINE_H, MIN_FACE_H, ONE_LINE_H, TWO_LINES_H, WRAPPED_H, chooseParts, convexOverlap, fitLabel, hideCollisions, innerRect, labelContent, labelPriority, labelSize, line1Text, textWidth, turnLabel,
   uprightBox,
   type LabelContent, type Pt2,
 } from './labels3d'
@@ -99,6 +99,16 @@ describe('chooseParts', () => {
     const forced = chooseParts(c, { w: 10, h: 20 }, true)
     expect(labelSize(c, forced, 10).w).toBe(textWidth('600') + 10) // the number overflows
   })
+
+  it('labelSize counts the second line a long line 2 wraps to in floor view (wrap), and only there', () => {
+    const all = chooseParts(c, { w: 400, h: 60 }, false)
+    const narrow = textWidth(c.text) // too narrow for line 2 on one line once padded
+    expect(labelSize(c, all, narrow, true).h).toBe(WRAPPED_H)
+    expect(WRAPPED_H).toBe(TWO_LINES_H + 13)
+    expect(labelSize(c, all, narrow).h).toBe(TWO_LINES_H) // on the facade line 2 truncates instead
+    expect(labelSize(c, all, 400, true).h).toBe(TWO_LINES_H) // fits on one line: no wrap
+    expect(labelSize(c, { number: true, sf: true, tenant: false, lines: 1 }, 40, true).h).toBe(LINE_H)
+  })
 })
 
 describe('innerRect (labels sit upright inside the projected face)', () => {
@@ -183,5 +193,44 @@ describe('uprightBox and fitLabel (a face seen at an angle slopes on screen)', (
   it('fitLabel prefers two lines where the face is tall enough for them', () => {
     const tall: [Pt2, Pt2, Pt2, Pt2] = [{ x: 0, y: 100 }, { x: 400, y: 110 }, { x: 400, y: 150 }, { x: 0, y: 140 }]
     expect(fitLabel(c, tall, false).parts).toEqual({ number: true, sf: true, tenant: true, lines: 2 })
+  })
+})
+
+describe('uprightBox and fitLabel are mirror-symmetric (the camera orbits either way)', () => {
+  type Quad = [Pt2, Pt2, Pt2, Pt2]
+  /** The face reflected about x = 0, re-ordered so it is still [top-left, top-right, bottom-right, bottom-left]. */
+  const mirror = ([tl, tr, br, bl]: Quad): Quad => [{ x: -tr.x, y: tr.y }, { x: -tl.x, y: tl.y }, { x: -bl.x, y: bl.y }, { x: -br.x, y: br.y }]
+  const c: LabelContent = { number: '700', sf: '4,300 SF', text: 'Vacant', compact: false, notable: true }
+  // 200px wide, 12px tall on the left and 30px on the right (a face seen from its right).
+  const wedge: Quad = [{ x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 130 }, { x: 0, y: 112 }]
+  // A long face whose edges fall the other way, 14px tall at its left end and 20px at its right.
+  const fall: Quad = [{ x: 0, y: 120 }, { x: 300, y: 100 }, { x: 300, y: 120 }, { x: 0, y: 134 }]
+
+  it.each([['wedge', wedge], ['fall', fall]] as const)('%s: a face and its mirror image give boxes of the same size', (_, q) => {
+    for (const h of [MIN_FACE_H, ONE_LINE_H, TWO_LINES_H]) {
+      const a = uprightBox(q, h)
+      const b = uprightBox(mirror(q), h)
+      expect(a === null, `h ${h}`).toBe(b === null)
+      if (!a || !b) continue
+      expect(b.w, `h ${h}`).toBeCloseTo(a.w, 3)
+      expect(b.h, `h ${h}`).toBeCloseTo(a.h, 3)
+      expect(b.x + b.w, `h ${h}: the mirrored box mirrors the box`).toBeCloseTo(-a.x, 3)
+    }
+  })
+
+  it('the wedge gets a label from its tall right side, as its mirror does from its tall left side', () => {
+    const fit = fitLabel(c, wedge, false)
+    const mirrored = fitLabel(c, mirror(wedge), false)
+    expect(fit.parts).toEqual(mirrored.parts)
+    expect(fit.parts).toMatchObject({ number: true, sf: true, lines: 1 })
+    expect(fit.box.x + fit.box.w).toBeCloseTo(200, 3) // anchored at the tall (right) end; the text starts at its left
+    expect(fit.box.w).toBeCloseTo(mirrored.box.w, 3)
+    expect(fit.box.h).toBeGreaterThanOrEqual(ONE_LINE_H)
+  })
+
+  it('an upright face too thin at both ends gets no box', () => {
+    const thin: Quad = [{ x: 0, y: 100 }, { x: 200, y: 100 }, { x: 200, y: 109 }, { x: 0, y: 109 }]
+    expect(uprightBox(thin, ONE_LINE_H)).toBeNull()
+    expect(uprightBox(mirror(thin), ONE_LINE_H)).toBeNull()
   })
 })

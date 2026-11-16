@@ -103,11 +103,13 @@ function planLabel(s: OverlayState, b: SuiteBox): { plan: LabelPlan; placed: Pla
   const box: Size = turned ? { w: face.h, h: face.w } : face
   const p = fit?.parts
   const parts = p ? (['number', 'sf', 'tenant'] as const).filter((k) => p[k]) : []
-  const size = p ? labelSize(c, p, box.w) : { w: 0, h: 0 }
+  const ghost = s.ghosts.has(b.id)
+  // Floor view wraps a long line 2 (not a ghost's: it shows only its number), so the collision box counts it.
+  const size = p ? labelSize(c, p, box.w, s.layout.focus !== null && !ghost) : { w: 0, h: 0 }
   const { transform, text } = placeBox(face, size, turned)
   return {
     plan: { id: b.id, w: box.w, h: box.h, transform, parts: parts.join(' '), lines: String(p?.lines ?? 0), forced, turned },
-    placed: { id: b.id, quad: size.w > 0 ? corners(text) : [], priority: labelPriority(c, forced, s.ghosts.has(b.id) || s.faded.has(b.id)) },
+    placed: { id: b.id, quad: size.w > 0 ? corners(text) : [], priority: labelPriority(c, forced, ghost || s.faded.has(b.id)) },
   }
 }
 
@@ -125,6 +127,8 @@ function syncLabels(s: OverlayState): void {
     write(el, 'data-forced', String(p.forced))
     write(el, 'data-turned', String(p.turned))
     write(el, 'data-focused', String(p.id === s.focusedId))
+    // The hovered suite's box ignores the filter (suiteMaterial's uHover), so its label does too.
+    write(el, 'data-filtered', String(s.faded.has(p.id) && p.id !== s.hoverId))
     write(el, 'data-hidden', String(hidden.has(p.id) || p.parts === ''))
   }
 }

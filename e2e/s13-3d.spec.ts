@@ -115,8 +115,8 @@ test.describe('3D building', () => {
         await expect(label(page, n), n).toHaveAttribute('data-parts', w === 1440 ? 'number sf tenant' : /^number/)
         const shown = await label(page, n).evaluate((el) => (el as HTMLElement).innerText)
         expect(shown, n).toMatch(w === 1440 ? new RegExp(`^${n} · [\\d,]+ SF\\n`) : new RegExp(`^${n}( · [\\d,]+ SF)?`))
+        // At 1280 line 2 may not fit (display:none, still in the DOM), so it is checked only where it shows.
         if (w === 1440) expect(shown, n).toContain(line2[n])
-        await expect(label(page, n), n).toContainText(line2[n] ?? '')
       }
       for (const n of [...VACANT, ...Object.keys(EXPIRING)]) {
         const p = await pointOf(page, n)
@@ -242,7 +242,7 @@ test.describe('3D building', () => {
     await pointOf(page, '600')
     await page.getByTestId('date-slider').fill('8')
     await expect(suite3d(page, '600')).toHaveAttribute('data-overlay', 'potential')
-    await expect(label(page, '600')).toContainText('Potential · was Flamingo Row Media')
+    await expect.poll(() => label(page, '600').evaluate((el) => (el as HTMLElement).innerText)).toContain('Potential · was Flamingo Row Media')
     await expect(label(page, '600')).toHaveAttribute('data-fill', 'potential')
     await page.getByTestId('date-today').click()
     await page.getByTestId('mode-risk').click()
@@ -751,7 +751,7 @@ test.describe('the sketched city around the building', () => {
     await pointOf(page, '600')
     await page.getByTestId('date-slider').fill('8')
     await expect(suite3d(page, '600')).toHaveAttribute('data-overlay', 'potential')
-    await expect(label(page, '600')).toContainText('Potential · was Flamingo Row Media')
+    await expect.poll(() => label(page, '600').evaluate((el) => (el as HTMLElement).innerText)).toContain('Potential · was Flamingo Row Media')
     await expect(label(page, '600')).toHaveAttribute('data-fill', 'potential')
     await expect(label(page, '600')).toBeVisible()
   })

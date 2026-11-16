@@ -95,7 +95,7 @@ stacking-plan/
       timeline/ DateSlider                                                    S6
       finder/   RequirementForm, MatchList, MatchCard, useMatches.ts          S5
                 MatchWhy, NoFit                                               S7
-      risk/     StackToolbar, ColourModeToggle, RiskLegend                    S8
+      risk/     StackToolbar, ColourModeToggle                                S8
       shortlist/ Shortlist, CompareDialog, CompareTable, ClientSummary, MiniStack, entryId.ts   S9
       building/ BuildingSwitcher                                              S10
       scenario/ ScenarioBar, ChangeDialog, changeDefaults.ts                  S11
@@ -412,7 +412,7 @@ Every component reads state through `useAppState()`. No component calls the cloc
 | StackToolbar (S8; +S13) | – | mode, view | mode/set | `mode-availability`, `mode-risk` (radio buttons) |
 | ViewToggle (S13) | – | view | view/set | `view-stack`, `view-3d` |
 | StackView / FloorRow / SuiteCell (S3) | `model: StackModel` from `useStackModel()` | – | select | `stack`; `floor-{n}`; `suite-{suiteId}` (button) with `data-status`, `data-overlay`, `data-fill`, `data-risk`, `data-match-rank` (absent or "1".."5"), `data-dimmed="true|false"`, `data-modified`, `aria-pressed`, full `aria-label`; `match-outline-{rank}` |
-| Legend (S3) / RiskLegend (S8) | – | mode | – | `legend`, `legend-risk`, `legend-assumption` |
+| Legend (S3; both colour modes, S8) | – | mode, legend | legend/toggle | `legend` (availability) or `legend-risk` (lease risk), `legend-pill` (one per fill, `data-key`, `aria-pressed`), `legend-assumption` |
 | DateSlider (S6) | – | asOf, today | asOf/set | `date-slider` (`<input type=range min=0 max=60 step=1 aria-label="As of date" aria-valuetext="May 2027">`), `date-label`, `date-today` |
 | ScenarioBar (S11) | – | changes, kpis base vs scenario | scenario/reset | `scenario-bar`, `scenario-count`, `scenario-occupancy`, `scenario-vacant`, `scenario-rent-roll`, `scenario-reset` |
 | Stack3D / Floor3D (S13) | `model: StackModel` | – | select | `stack-3d`, `suite3d-{suiteId}` (same data-* attributes) |

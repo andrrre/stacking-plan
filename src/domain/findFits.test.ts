@@ -154,19 +154,24 @@ describe('suiteCandidate (one suite added to the client summary from its details
   const find = (n: number, num: string) => on(n).suites.find((s) => s.number === num) as (typeof hero.floors)[number]['suites'][number]
 
   it('a vacant suite is a firm one-suite candidate, as the finder would give it', () => {
-    const c = suiteCandidate(on(5), find(5, '500'), TODAY, TODAY)
+    const c = suiteCandidate(on(5), find(5, '500'), TODAY, TODAY, true)
     expect(c).toEqual(findFits(hero, req({ minSf: 10_250, maxSf: 10_250 }), TODAY, TODAY)[0])
     expect(c).toMatchObject({ key: 'odt-500', suiteNumbers: ['500'], floor: 5, totalSf: 10_250, excessSf: 0, availability: 'now' })
   })
 
   it('a potential suite carries its no-renewal caveat', () => {
-    const c = suiteCandidate(on(6), find(6, '600'), JUL_2027, TODAY)
+    const c = suiteCandidate(on(6), find(6, '600'), JUL_2027, TODAY, true)
     expect(c).toMatchObject({ availability: 'potential', caveats: [{ kind: 'assumesNoRenewal', tenant: 'Flamingo Row Media' }] })
   })
 
+  it('follows Include potential: with it off a potential suite is not a candidate, a vacant one still is', () => {
+    expect(suiteCandidate(on(6), find(6, '600'), JUL_2027, TODAY, false)).toBeNull()
+    expect(suiteCandidate(on(5), find(5, '500'), TODAY, TODAY, false)).toMatchObject({ key: 'odt-500', availability: 'now' })
+  })
+
   it('occupied, committed and common space is not a candidate', () => {
-    expect(suiteCandidate(on(9), find(9, '900'), TODAY, TODAY)).toBeNull()
-    expect(suiteCandidate(on(10), find(10, '1010'), TODAY, TODAY)).toBeNull()
-    expect(suiteCandidate(on(1), find(1, '100'), TODAY, TODAY)).toBeNull()
+    expect(suiteCandidate(on(9), find(9, '900'), TODAY, TODAY, true)).toBeNull()
+    expect(suiteCandidate(on(10), find(10, '1010'), TODAY, TODAY, true)).toBeNull()
+    expect(suiteCandidate(on(1), find(1, '100'), TODAY, TODAY, true)).toBeNull()
   })
 })

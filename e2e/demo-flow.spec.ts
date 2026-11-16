@@ -72,7 +72,11 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await expect(page.getByTestId('match-5')).toHaveCount(0)
   await expect(suite3d(page, 600)).toHaveAttribute('data-overlay', 'potential')
   await expect(page.getByTestId('badge3d-4')).toBeVisible()
-  await expect(label(page, 600)).toContainText('Potential · was Flamingo Row Media')
+  // Visible text, not textContent: a part the label cannot fit stays in the DOM under display:none. With both
+  // drawers open the face is too small for line 2 at the default zoom, so zoom in to read it.
+  await expect.poll(() => visibleText(page, 600)).toMatch(/^600 · 12,400 SF/)
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Zoom in' }).click()
+  await expect.poll(() => visibleText(page, 600)).toBe('600 · 12,400 SF\nPotential · was Flamingo Row Media')
 
   // 4. Back to today, save match 1
   await page.getByTestId('date-today').click()

@@ -48,11 +48,27 @@ describe('Legend', () => {
     expect(screen.getByTestId('probe')).toHaveTextContent('none')
   })
 
-  it('a status no suite has is a disabled pill', () => {
+  it('a status no suite has is an aria-disabled pill that stays focusable and ignores clicks', async () => {
     renderLegend()
-    const potential = pills('legend').find((p) => p.getAttribute('data-key') === 'potential')
-    expect(potential).toBeDisabled()
+    const potential = pills('legend').find((p) => p.getAttribute('data-key') === 'potential') as HTMLElement
+    expect(potential).toHaveAttribute('aria-disabled', 'true')
+    expect(potential).toBeEnabled()
     expect(potential).toHaveTextContent('0 suites')
+    await userEvent.click(potential)
+    expect(screen.getByTestId('probe')).toHaveTextContent('none')
+    expect(potential).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('a pressed pill whose suites are gone stays pressed with "0 suites"; un-pressing it keeps focus on it', async () => {
+    renderLegend('?legend=potential')
+    const potential = pills('legend').find((p) => p.getAttribute('data-key') === 'potential') as HTMLElement
+    expect(potential).toHaveAttribute('aria-pressed', 'true')
+    expect(potential).not.toHaveAttribute('aria-disabled')
+    expect(potential).toHaveTextContent('0 suites')
+    await userEvent.click(potential)
+    expect(screen.getByTestId('probe')).toHaveTextContent('none')
+    expect(potential).toHaveAttribute('aria-disabled', 'true')
+    expect(potential).toHaveFocus()
   })
 
   it('lease risk mode shows the risk ramp as pills that filter the same way', async () => {

@@ -94,6 +94,10 @@
    ghost's greyscale and the filter's lower opacity: never brighter than its dimmest reason. */
 .suite[data-filtered='true'] { opacity: var(--filter-opacity); }
 
+/* The hovered suite shows through the filter (not through a search's ghosting): what the pointer is on is legible. */
+.suite[data-filtered='true']:hover { opacity: 1; }
+.suite[data-filtered='true'][data-dimmed='true']:hover { opacity: var(--dim-opacity); }
+
 /* Opacity would fade the focus and selection rings too, so a dimmed suite lights up while focused or selected. */
 .suite[data-dimmed='true']:focus-visible,
 .suite[data-dimmed='true'][aria-pressed='true'],
@@ -268,9 +272,9 @@
   transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
-.pill:hover:not(:disabled) { background: var(--c-surface-2); }
+.pill:hover:not([aria-disabled='true']) { background: var(--c-surface-2); }
 .pill[aria-pressed='true'] { border-color: var(--c-text); background: var(--c-btn); box-shadow: inset 0 0 0 1px var(--c-text); }
-.pill:disabled { cursor: default; opacity: .6; }
+.pill[aria-disabled='true'] { cursor: default; opacity: .6; }
 .pill:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
 
 .pillName { font-weight: var(--fw-medium); }
@@ -285,6 +289,9 @@
   height: 14px;
   border-radius: var(--r-sm);
   background-color: var(--fill);
+  /* A 1px inner rule, so the darkest fills (occupied, common in dark) and the palest (common in light) still show
+     their edge on the card; the status fills themselves are untouched. */
+  box-shadow: inset 0 0 0 1px var(--c-roof-edge);
 }
 
 .swatch::before {

@@ -41,7 +41,10 @@
 .cell dt { color: var(--c-text-muted); font-size: var(--fs-sm); }
 .cell dd { margin: 2px 0 0; font-size: 16px; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
+.actions { display: flex; flex-direction: column; gap: 6px; }
 .buttons { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+/* Why "Add to client summary" cannot be pressed: the button is described by this line. */
+.reason { margin: 0; color: var(--c-text-muted); font-size: var(--fs-sm); line-height: 1.35; }
 
 .primary, .secondary {
   min-height: 40px;
@@ -58,10 +61,10 @@
 }
 .secondary:hover { background: var(--c-surface-2); }
 .primary { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-accent-ink); }
-.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 85%, var(--c-surface)); }
+.primary:hover:not([aria-disabled='true']) { background: color-mix(in srgb, var(--c-accent) 85%, var(--c-surface)); }
 .primary[data-saved='true'] { border-color: var(--c-btn-border); background: var(--c-btn); color: var(--c-text); }
 .primary[data-saved='true']:hover { background: var(--c-surface-2); }
-.primary:disabled { border-color: var(--c-btn-border); background: var(--c-surface-2); color: var(--c-text-muted); cursor: not-allowed; }
+.primary[aria-disabled='true'] { border-color: var(--c-btn-border); background: var(--c-surface-2); color: var(--c-text-muted); cursor: not-allowed; }
 .primary:focus-visible, .secondary:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 
 /* The rest of the suite's facts, under a rule. */

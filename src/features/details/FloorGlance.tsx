@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { useAppState } from '../../app/state/useAppState'
 import { formatSf } from '../../domain/format'
 import { useStackModel } from '../stack/useStackModel'
@@ -9,10 +10,11 @@ type Props = { floor: number; suiteId: string }
 /** "Floor N at a glance": the floor's suites as rows, the shown one current; a row selects its suite. */
 export function FloorGlance({ floor, suiteId }: Props) {
   const { dispatch } = useAppState()
+  const titleId = useId()
   const suites = useStackModel().floors.find((f) => f.number === floor)?.suites ?? []
   return (
-    <section className={styles.card} data-testid="floor-glance" aria-labelledby="floor-glance-title">
-      <h3 id="floor-glance-title" className={styles.sub}>Floor {floor} at a glance</h3>
+    <section className={styles.card} data-testid="floor-glance" aria-labelledby={titleId}>
+      <h3 id={titleId} className={styles.sub}>Floor {floor} at a glance</h3>
       <ul className={styles.glance}>
         {suites.map((v) => (
           <li key={v.suite.id}>

@@ -27,6 +27,8 @@ export const LINE_H = 14
  * ascenders and descenders (the overlay CSS sets the same).
  */
 export const TWO_LINES_H = 25
+/** Two lines with line 2 wrapped onto a second line of 13px (floor view only: three-d.module.css). */
+export const WRAPPED_H = TWO_LINES_H + 13
 /**
  * The least height a single line's box needs. Line 1 is digits and capitals, ~8px tall in the middle of its
  * 14px line box, so the box may lose 2px a side to a sloping face without clipping a glyph.
@@ -79,14 +81,17 @@ export function turnLabel(c: LabelContent, face: Size, forced: boolean): boolean
 
 /**
  * Estimated size of a label showing `parts`, in px. It is clipped to the face, except that a forced label's
- * number may overflow it (it is never truncated).
+ * number may overflow it (it is never truncated). With `wrap` (floor view), a line 2 too long for the face wraps
+ * to a second line instead of truncating, so it is a line taller.
  */
-export function labelSize(c: LabelContent, parts: Parts, faceW: number): Size {
+export function labelSize(c: LabelContent, parts: Parts, faceW: number, wrap = false): Size {
   if (parts.lines === 0) return { w: 0, h: 0 }
   const head = textWidth(c.number)
   const line1 = parts.sf ? textWidth(line1Text(c)) : head
   const full = Math.max(line1, parts.tenant ? textWidth(c.text) : 0)
-  return { w: Math.min(full, Math.max(faceW - 2 * PAD_X, head)) + 2 * PAD_X, h: parts.lines === 2 ? TWO_LINES_H : LINE_H }
+  const room = Math.max(faceW - 2 * PAD_X, head)
+  const wraps = wrap && parts.tenant && textWidth(c.text) > room
+  return { w: Math.min(full, room) + 2 * PAD_X, h: parts.lines === 1 ? LINE_H : wraps ? WRAPPED_H : TWO_LINES_H }
 }
 
 export type Rect = { x: number; y: number; w: number; h: number }
@@ -172,33 +177,52 @@ function edgeY(p: Pt2, q: Pt2, x: number): number {
   return p.y + (q.y - p.y) * t
 }
 
-/** The upright box over [a, b] inside the face: below the top edge and above the bottom edge at both ends. */
-function spanBox(q: readonly [Pt2, Pt2, Pt2, Pt2], a: number, b: number): Rect {
+type Quad = readonly [Pt2, Pt2, Pt2, Pt2]
+
+/** Height of the upright box over [a, b] inside the face: below the top edge, above the bottom edge at both ends. */
+function spanHeight(q: Quad, a: number, b: number): number {
   const [tl, tr, br, bl] = q
-  const top = Math.max(edgeY(tl, tr, a), edgeY(tl, tr, b))
-  const bottom = Math.min(edgeY(bl, br, a), edgeY(bl, br, b))
-  return { x: a, y: top, w: b - a, h: Math.max(bottom - top, 0) }
+  return Math.min(edgeY(bl, br, a), edgeY(bl, br, b)) - Math.max(edgeY(tl, tr, a), edgeY(tl, tr, b))
 }
 
-/**
- * The widest upright box at least `h` tall inside the face, from its left side; null when none is. A face
- * seen at an angle slopes on screen, so the full-width inner bounds can be too thin for a line even where a
- * shorter box (all a label needs) fits easily.
- */
-export function uprightBox(q: readonly [Pt2, Pt2, Pt2, Pt2], h: number): Rect | null {
-  const [tl, tr, br, bl] = q
-  const a = Math.max(tl.x, bl.x)
-  const right = Math.min(tr.x, br.x)
-  if (right <= a || spanBox(q, a, a).h < h) return null
-  if (spanBox(q, a, right).h >= h) return spanBox(q, a, right)
-  let lo = a
-  let hi = right
+/** How far a box at least `h` tall reaches from the column at `from` towards `to` (bisection); -1 when none. */
+function reach(q: Quad, from: number, to: number, h: number): number {
+  if (spanHeight(q, from, from) < h) return -1
+  if (spanHeight(q, Math.min(from, to), Math.max(from, to)) >= h) return Math.abs(to - from)
+  let lo = from
+  let hi = to
   for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2
-    if (spanBox(q, a, mid).h >= h) lo = mid
+    if (spanHeight(q, Math.min(from, mid), Math.max(from, mid)) >= h) lo = mid
     else hi = mid
   }
-  return spanBox(q, a, lo)
+  return Math.abs(lo - from)
+}
+
+const spanOf = (q: Quad) => ({ left: Math.max(q[0].x, q[3].x), right: Math.min(q[1].x, q[2].x) })
+
+/**
+ * The widest upright box at least `h` tall inside the face; null when none is. A face seen at an angle slopes on
+ * screen, so the full-width inner bounds can be too thin for a line even where a shorter box (all a label needs)
+ * fits easily. The box grows from the face's left side and from its right side and the wider wins (the left on a
+ * tie), so a face and its mirror image (the camera orbits either way) get the same box, mirrored.
+ */
+export function uprightBox(q: Quad, h: number): Rect | null {
+  const { left, right } = spanOf(q)
+  if (right <= left) return null
+  const fromLeft = reach(q, left, right, h)
+  const fromRight = reach(q, right, left, h)
+  if (fromLeft < 0 && fromRight < 0) return null
+  const a = fromLeft >= fromRight ? left : right - fromRight
+  const b = fromLeft >= fromRight ? left + fromLeft : right
+  const [tl, tr] = q
+  return { x: a, y: Math.max(edgeY(tl, tr, a), edgeY(tl, tr, b)), w: b - a, h: Math.max(spanHeight(q, a, b), 0) }
+}
+
+/** Whether the face's tallest column (an end: the edges are straight) is at least `h` tall. */
+function tallEnough(q: Quad, h: number): boolean {
+  const { left, right } = spanOf(q)
+  return right > left && Math.max(spanHeight(q, left, left), spanHeight(q, right, right)) >= h
 }
 
 export type Fit = { box: Rect; parts: Parts }
@@ -206,13 +230,22 @@ export type Fit = { box: Rect; parts: Parts }
 /**
  * The upright box and parts that show the most of a label on a face: a box tall enough for two lines, one
  * for a single line, or the face's inner bounds, whichever shows more (the first on a tie). A face thinner
- * than MIN_FACE_H gets only its inner bounds, so it shows a label only when forced.
+ * than MIN_FACE_H gets only its inner bounds, so it shows a label only when forced. Runs per suite per frame:
+ * a box is only computed when it can be used (a full-width two-line box makes the one-line box the same).
  */
-export function fitLabel(c: LabelContent, q: readonly [Pt2, Pt2, Pt2, Pt2], forced: boolean): Fit {
-  const thick = uprightBox(q, MIN_FACE_H) !== null
-  if (!thick && !forced) return { box: innerRect(q), parts: NONE }
-  const boxes = [...(thick ? [uprightBox(q, TWO_LINES_H), uprightBox(q, ONE_LINE_H)] : []), innerRect(q)].filter((b): b is Rect => b !== null)
-  return boxes
-    .map((box) => ({ box, parts: chooseParts(c, box, forced) }))
-    .reduce((best, f) => (shown(c, f.parts, f.box.w) > shown(c, best.parts, best.box.w) ? f : best))
+export function fitLabel(c: LabelContent, q: Quad, forced: boolean): Fit {
+  const inner = innerRect(q)
+  const thick = tallEnough(q, MIN_FACE_H)
+  let best: Fit = { box: inner, parts: thick || forced ? chooseParts(c, inner, forced) : NONE }
+  if (!thick) return best
+  const consider = (box: Rect | null) => {
+    if (!box) return
+    const parts = chooseParts(c, box, forced)
+    if (shown(c, parts, box.w) >= shown(c, best.parts, best.box.w)) best = { box, parts }
+  }
+  const two = uprightBox(q, TWO_LINES_H)
+  const { left, right } = spanOf(q)
+  if (!two || two.w < right - left) consider(uprightBox(q, ONE_LINE_H))
+  consider(two)
+  return best
 }

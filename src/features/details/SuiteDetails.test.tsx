@@ -5,6 +5,8 @@ import { StateProvider } from '../../app/state/StateProvider'
 import { initState } from '../../app/state/init'
 import { useAppState } from '../../app/state/useAppState'
 import type { AppState } from '../../app/state/types'
+import type { Candidate } from '../../domain/types'
+import { createEntry } from '../shortlist/entryId'
 import { SuiteDetails } from './SuiteDetails'
 
 /** What the details' actions change in app state, rendered for the assertions. */
@@ -15,6 +17,13 @@ function Probe() {
 }
 
 const TODAY = '2026-11-15'
+const JUL = '2027-07-01'
+
+/** 700 + 710 on floor 7, as the finder gives it for a 10,000 SF search. */
+const PAIR: Candidate = {
+  key: 'odt-700+odt-710', suiteIds: ['odt-700', 'odt-710'], suiteNumbers: ['700', '710'], floor: 7, totalSf: 10_500, excessSf: 500,
+  blendedRentPsf: 50, availableFrom: TODAY, availability: 'now', caveats: [],
+}
 
 function renderDetails(number: string, over: Partial<AppState> = {}) {
   const base = initState('', null, TODAY)
@@ -159,10 +168,57 @@ describe('SuiteDetails', () => {
       expect(screen.getByTestId('probe')).toHaveTextContent(/\|0$/)
     })
 
-    it('is unavailable, with the reason, for space that is not available', () => {
+    it('is unavailable for space that is not available: aria-disabled, focusable, its reason in a visible line it is described by', async () => {
       renderDetails('900')
-      expect(screen.getByTestId('add-to-summary')).toBeDisabled()
-      expect(screen.getByTestId('add-to-summary')).toHaveAttribute('title', 'Only available space can go in the client summary')
+      const button = screen.getByTestId('add-to-summary')
+      expect(button).toHaveAttribute('aria-disabled', 'true')
+      expect(button).toBeEnabled()
+      expect(button).toHaveAccessibleDescription('Only available space can go in the client summary')
+      expect(screen.getByTestId('add-to-summary-reason')).toBeVisible()
+      await userEvent.click(button)
+      expect(screen.getByTestId('probe')).toHaveTextContent(/\|0$/)
+    })
+
+    it('has no reason line while it can be pressed', () => {
+      renderDetails('700')
+      expect(screen.getByTestId('add-to-summary')).not.toHaveAttribute('aria-disabled')
+      expect(screen.getByTestId('add-to-summary')).not.toHaveAttribute('aria-describedby')
+      expect(screen.queryByTestId('add-to-summary-reason')).toBeNull()
+    })
+
+    it('follows Include potential, as the Contiguous on floor cell does', async () => {
+      const off = { asOf: JUL, req: { ...initState('', null, TODAY).req, includePotential: false } }
+      renderDetails('600', off)
+      expect(cell('fact-contiguous')).toBe('—')
+      expect(screen.getByTestId('add-to-summary')).toHaveAttribute('aria-disabled', 'true')
+      expect(screen.getByTestId('add-to-summary')).toHaveAccessibleDescription('Potential space is left out: Include potential space is off')
+      await userEvent.click(screen.getByTestId('add-to-summary'))
+      expect(screen.getByTestId('probe')).toHaveTextContent(/\|0$/)
+    })
+
+    it('with Include potential on, a potential suite can be added', async () => {
+      renderDetails('600', { asOf: JUL })
+      expect(cell('fact-contiguous')).toBe('12,400 SF')
+      await userEvent.click(screen.getByTestId('add-to-summary'))
+      expect(screen.getByTestId('probe')).toHaveTextContent(/\|1$/)
+    })
+
+    it('a suite already in a shortlisted multi-suite option is not added again', async () => {
+      const option = createEntry('odt', { ...PAIR }, TODAY, false)
+      renderDetails('710', { shortlist: [option] })
+      const button = screen.getByTestId('add-to-summary')
+      expect(button).toHaveTextContent('In shortlisted option')
+      expect(button).toHaveAttribute('aria-disabled', 'true')
+      expect(button).toHaveAccessibleDescription('Already in the shortlisted option 700 + 710')
+      await userEvent.click(button)
+      expect(screen.getByTestId('probe')).toHaveTextContent(/\|1$/)
+    })
+
+    it('the same option at another date does not block it', () => {
+      const option = createEntry('odt', { ...PAIR }, JUL, false)
+      renderDetails('710', { shortlist: [option] })
+      expect(screen.getByTestId('add-to-summary')).toHaveTextContent('Add to client summary')
+      expect(screen.getByTestId('add-to-summary')).not.toHaveAttribute('aria-disabled')
     })
   })
 

@@ -170,7 +170,7 @@ describe('right drawer', () => {
 
   it('H3: Escape on a control inside the details, with a search active, moves focus to the first match card', async () => {
     renderApp({ req: SEARCH, selection: { kind: 'suite', suiteId: 'odt-600' } })
-    const inside = within(screen.getByTestId('suite-details')).getByTestId('open-floor-plan') // the first enabled control
+    const inside = within(screen.getByTestId('suite-details')).getByTestId('open-floor-plan') // a control inside the details
     inside.focus()
     await userEvent.keyboard('{Escape}')
     expect(within(rightPanel()).getByTestId('match-list')).toBeVisible()
@@ -293,6 +293,29 @@ describe('presentation mode', () => {
     await userEvent.click(present())
     await userEvent.keyboard('{Escape}')
     expect(present()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('one Escape does one thing, innermost first: a KPI highlight clears, then the next Escape ends presenting', async () => {
+    renderApp()
+    await userEvent.click(present())
+    await userEvent.click(screen.getByTestId('kpi-vacant'))
+    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'false')
+    expect(present()).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.keyboard('{Escape}')
+    expect(present()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('Escape in the open details closes the drawer first, keeping the highlight and presentation', async () => {
+    renderApp({ highlight: 'vacant' })
+    await userEvent.click(present())
+    await userEvent.click(screen.getByTestId('suite-odt-700'))
+    within(screen.getByTestId('suite-details')).getByTestId('open-floor-plan').focus()
+    await userEvent.keyboard('{Escape}')
+    expect(rightPanel()).toHaveAttribute('data-open', 'false')
+    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'true')
+    expect(present()).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('leaving fullscreen by the browser ends it', async () => {

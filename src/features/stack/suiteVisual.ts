@@ -20,7 +20,7 @@ export type SuiteVisual = {
   ariaLabel: string
   tooltip: string // native `title`
   dimmed: boolean // ghosted by a search or a KPI highlight
-  filtered: boolean // painted otherwise than the pressed legend pill
+  filtered: boolean // painted otherwise than the pressed legend pill, and not a search match
   matchRank: number | null
   modified: boolean
   selected: boolean
@@ -52,7 +52,7 @@ const RISK_WORDS: Partial<Record<RiskBucket, string>> = {
   le6: '6 months or less', le12: '12 months or less', le24: '24 months or less', le36: '36 months or less', gt36: 'over 36 months',
 }
 
-type Context = Omit<StackModelInput, 'building' | 'matches'> & { ranks: ReadonlyMap<string, number> }
+type Context = Omit<StackModelInput, 'building' | 'matches' | 'legend'> & { ranks: ReadonlyMap<string, number> }
 
 function availabilityFill(st: StatusResult): FillKey {
   return st.status === 'vacant' && st.overlay !== 'none' ? st.overlay : st.status
@@ -173,7 +173,7 @@ function suiteVisual(s: Suite, floorNumber: number, ctx: Context): SuiteVisual {
     ariaLabel: ariaLabelFor(s, floorNumber, status, marks),
     tooltip: tooltipFor(s, floorNumber, status, marks),
     dimmed,
-    filtered: Boolean(ctx.legend) && fill !== ctx.legend,
+    filtered: false, // set by withFilter, once the whole building's fills are known
     matchRank,
     modified: marks.modified,
     selected: s.id === ctx.selectedSuiteId,
@@ -198,9 +198,23 @@ function runsFor(f: Floor, matches: readonly Candidate[]): MatchRun[] {
 
 const plateOf = (f: Floor) => f.suites.reduce((sum, s) => sum + s.areaSf, 0)
 
+/**
+ * The legend filter: a suite painted otherwise than the pressed pill fades and says so, unless it is a search
+ * match (a match is what the search asked to see). A key no suite carries as of the date filters nothing, so a
+ * pill left pressed past its last suite (or a shared link) never fades the whole building.
+ */
+function withFilter(floors: FloorVisual[], legend: FillKey | null | undefined): FloorVisual[] {
+  const carried = legend && floors.some((f) => f.suites.some((v) => v.fill === legend))
+  if (!carried) return floors
+  const filter = (v: SuiteVisual): SuiteVisual =>
+    v.fill === legend || v.matchRank !== null ? v : { ...v, filtered: true, ariaLabel: `${v.ariaLabel}, filtered out` }
+  return floors.map((f) => ({ ...f, suites: f.suites.map(filter) }))
+}
+
 export function buildStackModel(i: StackModelInput): StackModel {
   const matches = i.highlightIds ? [] : i.matches
-  const ctx: Context = { ...i, ranks: rankMap(matches) }
+  const { legend, ...rest } = i
+  const ctx: Context = { ...rest, ranks: rankMap(matches) }
   const maxPlate = Math.max(...i.building.floors.map(plateOf))
   const floors = [...i.building.floors].sort((a, b) => b.number - a.number).map((f): FloorVisual => {
     const plateSf = plateOf(f)
@@ -212,5 +226,5 @@ export function buildStackModel(i: StackModelInput): StackModel {
       runs: runsFor(f, matches),
     }
   })
-  return { floors }
+  return { floors: withFilter(floors, legend) }
 }

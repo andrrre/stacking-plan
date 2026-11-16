@@ -31,6 +31,7 @@ export function KpiBar() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
       if (e.target instanceof Element && e.target.closest(OWNS_ESCAPE)) return
+      e.preventDefault() // one Escape does one thing: presentation mode (a window listener) waits for the next
       dispatch({ type: 'highlight/toggle', kpi: highlight })
     }
     document.addEventListener('keydown', onKey)

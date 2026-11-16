@@ -25,11 +25,12 @@ const resolveIn = (dark: boolean) => {
 const resolve = resolveIn(false)
 const resolveDark = resolveIn(true)
 
-function visuals(over: { mode?: 'availability' | 'risk'; asOf?: string; minSf?: number } = {}): SuiteVisual[] {
+function visuals(over: { mode?: 'availability' | 'risk'; asOf?: string; minSf?: number; legend?: FillKey } = {}): SuiteVisual[] {
   const asOf = over.asOf ?? TODAY
   const matches = over.minSf ? findFits(ODT, { minSf: over.minSf, includePotential: true }, asOf, TODAY) : []
   return buildStackModel({
     building: ODT, asOf, today: TODAY, mode: over.mode ?? 'availability', matches, highlightIds: null, modifiedIds: new Set(), selectedSuiteId: null,
+    legend: over.legend ?? null,
   }).floors.flatMap((f) => f.suites)
 }
 const find = (vs: readonly SuiteVisual[], n: string) => vs.find((v) => v.suite.number === n) as SuiteVisual
@@ -165,6 +166,13 @@ describe('suiteLook', () => {
     expect(suiteLook({ ...out, selected: true }, false).faded).toBe(false)
     expect(suiteLook(out, false, true).faded).toBe(false)
     expect(overlayActive([out])).toBe(false)
+  })
+
+  it('a search match of another status is neither faded nor ghosted under the filter, and lifts', () => {
+    const vs = visuals({ minSf: 10_000, legend: 'expiring' })
+    expect(find(vs, '500').fill).toBe('vacant')
+    expect(suiteLook(find(vs, '500'), overlayActive(vs))).toMatchObject({ faded: false, ghost: false, lifted: true })
+    expect(suiteLook(find(vs, '900'), overlayActive(vs))).toMatchObject({ faded: true, ghost: true })
   })
 
   it('a suite both ghosted and filtered is both: the material keeps the fainter of the two', () => {

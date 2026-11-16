@@ -12,14 +12,14 @@ type Props = {
   visuals: ReadonlyMap<string, SuiteVisual>
   contents: ReadonlyMap<string, LabelContent>
   ghosts: ReadonlySet<string>
-  faded: ReadonlySet<string>
   refs: OverlayRefs
 }
 
-type LabelProps = { v: SuiteVisual; c: LabelContent; ghost: boolean; faded: boolean; refs: OverlayRefs }
+type LabelProps = { v: SuiteVisual; c: LabelContent; ghost: boolean; refs: OverlayRefs }
 
-/** Two lines: "number · SF" over the tenant or status; overlaySync says which parts show (data-parts). */
-function Label({ v, c, ghost, faded, refs }: LabelProps) {
+/** Two lines: "number · SF" over the tenant or status; overlaySync says which parts show (data-parts) and whether
+ *  the legend filter fades it (data-filtered: not while hovered). */
+function Label({ v, c, ghost, refs }: LabelProps) {
   return (
     <div
       ref={register(refs.labels, v.suite.id)}
@@ -27,7 +27,6 @@ function Label({ v, c, ghost, faded, refs }: LabelProps) {
       data-testid={`label3d-${v.suite.id}`}
       data-fill={v.fill}
       data-ghost={String(ghost)}
-      data-filtered={String(faded)}
       data-hidden="true"
     >
       <span className={styles.lLine1}>
@@ -54,7 +53,7 @@ function Rings({ layout, refs }: Pick<Props, 'layout' | 'refs'>) {
   )
 }
 
-export function Overlay({ layout, visuals, contents, ghosts, faded, refs }: Props) {
+export function Overlay({ layout, visuals, contents, ghosts, refs }: Props) {
   return (
     <div className={styles.overlay} aria-hidden="true">
       <Rings layout={layout} refs={refs} />
@@ -66,7 +65,7 @@ export function Overlay({ layout, visuals, contents, ghosts, faded, refs }: Prop
       {layout.suites.map((b) => {
         const v = visuals.get(b.id)
         const c = contents.get(b.id)
-        return v && c ? <Label key={b.id} v={v} c={c} ghost={ghosts.has(b.id)} faded={faded.has(b.id)} refs={refs} /> : null
+        return v && c ? <Label key={b.id} v={v} c={c} ghost={ghosts.has(b.id)} refs={refs} /> : null
       })}
       {layout.runs.map((r) => (
         <span key={r.rank} ref={register(refs.badges, r.rank)} className={styles.badge} data-testid={`badge3d-${r.rank}`}>

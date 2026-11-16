@@ -6,7 +6,8 @@ import { Color, MeshBasicMaterial, Vector3 } from 'three'
 // two crimson bands of 7px at the 2D stack's scale) is drawn in the fragment shader in world units, the same
 // density on every box, on the front and top; the potential/committed outline in screen pixels (crisp at any
 // zoom). Ghosting (desaturated, translucent, towards the stage colour) is a 0..1 uniform so it can fade, and so
-// is the legend filter's opacity (uFade); a suite under both is as faint as the fainter. No textures, so
+// is the legend filter's opacity (uFade), which the hovered suite ignores (uHover); a suite under both is as faint as
+// the fainter. No textures, so
 // nothing to load.
 
 const VERTEX_DECL = /* glsl */ `
@@ -70,7 +71,7 @@ const FRAGMENT_BODY = /* glsl */ `#include <color_fragment>
   }
   c = mix(c, vec3(1.0), 0.16 * uHover);
   diffuseColor.rgb = pow(c, vec3(2.2));
-  diffuseColor.a *= min(mix(1.0, 0.5, uGhost), uFade);
+  diffuseColor.a *= min(mix(1.0, 0.5, uGhost), mix(uFade, 1.0, uHover));
 }`
 
 export class SuiteMaterial extends MeshBasicMaterial {

@@ -7,11 +7,14 @@ import styles from './stack.module.css'
 // the date shown. Pressing one dims every suite painted otherwise (2D and 3D); pressing it again clears.
 // Swatches reuse the suite fill rules (data-fill), so the legend can never drift from the building.
 
+// A pill with no suites is aria-disabled, not disabled: un-pressing a pill whose suites are gone (the date moved)
+// keeps keyboard focus on it instead of dropping it to the page.
 function Pill({ entry, pressed, onToggle }: { entry: LegendEntry; pressed: boolean; onToggle: () => void }) {
+  const inert = entry.count === 0 && !pressed
   return (
     <button
       type="button" className={styles.pill} data-testid="legend-pill" data-key={entry.key} aria-pressed={pressed}
-      disabled={entry.count === 0 && !pressed} onClick={onToggle}
+      aria-disabled={inert || undefined} onClick={inert ? undefined : onToggle}
     >
       <span className={styles.swatch} data-fill={entry.key} aria-hidden="true" />
       <span className={styles.pillName}>{entry.label}</span>

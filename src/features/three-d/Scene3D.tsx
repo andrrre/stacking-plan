@@ -105,7 +105,7 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
           city={city ? { ...town, running, dim } : null}
         />
       </Canvas>
-      <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} faded={derived.faded} refs={refs} />
+      <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />
     </div>
   )
 }
