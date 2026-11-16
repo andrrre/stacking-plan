@@ -1,70 +1,89 @@
+/* Four cells divided by 1px rules: the gaps of a grid laid on the rule colour. Cells wrap on narrow screens. */
 .bar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
-  background: var(--c-surface);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--c-border);
   border-bottom: 1px solid var(--c-border);
 }
 
 .tile {
-  --kpi-accent: var(--c-border-strong);
+  --kpi-ink: var(--c-text);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1px;
+  gap: 6px;
   min-width: 0;
   min-height: var(--kpi-h);
-  padding: var(--sp-1) var(--sp-3);
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
-  border-left: 4px solid var(--kpi-accent);
-  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-6);
+  border: 0;
+  border-radius: 0;
+  background: var(--c-surface);
   color: var(--c-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  transition: background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
-.tile[data-kpi='occupancy'] { --kpi-accent: var(--c-occupied); }
-.tile[data-kpi='vacant'] { --kpi-accent: var(--c-vacant); }
-.tile[data-kpi='expiring'] { --kpi-accent: var(--c-expiring-edge); }
-.tile[data-kpi='largestBlock'] { --kpi-accent: var(--c-accent); }
+.tile[data-kpi='vacant'] { --kpi-ink: var(--c-kpi-available); }
+.tile[data-kpi='expiring'] { --kpi-ink: var(--c-kpi-expiring); }
 
 .tile:hover { background: var(--c-surface-2); }
-.tile:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.tile:focus-visible { outline: 2px solid var(--c-focus); outline-offset: -4px; }
 
-.tile[aria-pressed='true'] {
-  background: var(--c-surface);
-  border-color: var(--kpi-accent);
-  box-shadow: 0 0 0 1px var(--kpi-accent), var(--shadow-1);
-}
+/* The highlighted figure: an inset bar along the cell's foot in the ink colour. */
+.tile[aria-pressed='true'] { box-shadow: inset 0 -3px 0 var(--c-text); }
 
 .label {
   overflow: hidden;
   color: var(--c-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-label);
   font-weight: var(--fw-medium);
   line-height: var(--lh-tight);
+  letter-spacing: var(--ls-label);
   text-overflow: ellipsis;
   text-transform: uppercase;
-  letter-spacing: .04em;
   white-space: nowrap;
 }
 
 .value {
+  overflow: hidden;
+  color: var(--kpi-ink);
+  font-family: var(--font-display);
   font-size: var(--fs-kpi);
-  font-weight: var(--fw-semibold);
-  line-height: var(--lh-tight);
+  font-weight: var(--fw-regular);
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.unit {
+  color: var(--c-text-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: var(--fw-regular);
+}
+
+.track {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--c-track);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--c-accent);
 }
 
 .sub {
   overflow: hidden;
   color: var(--c-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-md);
   line-height: var(--lh-tight);
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;

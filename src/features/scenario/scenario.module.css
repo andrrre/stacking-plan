@@ -3,9 +3,9 @@
 .sub {
   margin: 0;
   color: var(--c-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-label);
   font-weight: var(--fw-semibold);
-  letter-spacing: .04em;
+  letter-spacing: var(--ls-label);
   text-transform: uppercase;
 }
 .buttons { display: flex; flex-wrap: wrap; gap: var(--sp-2); }

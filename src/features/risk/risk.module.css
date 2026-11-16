@@ -8,21 +8,21 @@
 
 .group {
   display: inline-flex;
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-border);
+  background: var(--c-seg);
   border-radius: var(--r-md);
 }
 
 .option {
-  padding: var(--sp-1) var(--sp-3);
+  height: 30px;
+  padding: 0 var(--sp-3);
   border: 0;
-  border-radius: var(--r-sm);
+  border-radius: 4px;
   background: transparent;
   color: var(--c-text-muted);
   font: inherit;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   font-weight: var(--fw-medium);
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
@@ -31,7 +31,7 @@
 .option:hover { color: var(--c-text); }
 
 .option[aria-checked='true'] {
-  background: var(--c-surface);
+  background: var(--c-seg-on);
   color: var(--c-text);
   box-shadow: var(--shadow-1);
 }

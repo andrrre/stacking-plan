@@ -1,7 +1,8 @@
 import type { FillKey, SuiteVisual } from '../stack/suiteVisual'
 
-// What a suite box looks like in the 3D building: its fill, surface pattern, edge and ghosting. Pure: the
-// colours come from the same CSS tokens as the 2D stack (read by the caller), so the two views cannot drift.
+// What a suite box looks like in the 3D building: its fill, side, surface pattern, edge and ghosting. Pure: the
+// colours come from the same CSS tokens as the 2D stack (read by the caller, resolved for the current light or
+// dark theme), so the two views cannot drift.
 
 export const FILL_KEYS: readonly FillKey[] = [
   'occupied', 'expiring', 'vacant', 'potential', 'committed', 'common',
@@ -11,30 +12,28 @@ export const FILL_KEYS: readonly FillKey[] = [
 export type Rgba = { hex: string; alpha: number }
 
 export type Palette = {
-  fills: Record<FillKey, string>
-  hatch: Rgba // vacant stripes
-  committedPattern: Rgba
-  edges: { expiring: string; potential: string; committed: string; 'risk-gt36': string }
-  accent: string
+  fills: Record<FillKey, string> // front faces
+  sides: Record<FillKey, string> // side faces
+  hatch: string // the vacant hatch's second band
+  edges: { potential: string; committed: string; 'risk-gt36': string }
   text: string
-  focus: string
-  surface: string
-  surface2: string
+  muted: string
+  bg: string
+  surface: string // the stage (card) colour; ghosts fade towards it
   border: string
-  muted: string // the sketched city's ink
-  borderStrong: string // its traffic
+  roof: string // slabs, roof caps and the sketched city
+  roofEdge: string
 }
 
-export type PatternKind = 'hatch' | 'committed' | 'none'
-export type EdgeKind = 'expiring' | 'potential' | 'committed' | 'risk-gt36' | 'none'
+export type PatternKind = 'hatch' | 'none'
+export type EdgeKind = 'potential' | 'committed' | 'risk-gt36' | 'none'
 
 /** The drawing recipe of one suite, before colours are attached. */
 export type SuiteLook = { fill: FillKey; pattern: PatternKind; edge: EdgeKind; ghost: boolean; lifted: boolean }
 
-const EDGE: Partial<Record<FillKey, EdgeKind>> = {
-  expiring: 'expiring', potential: 'potential', committed: 'committed', 'risk-gt36': 'risk-gt36',
-}
-const PATTERN: Partial<Record<FillKey, PatternKind>> = { vacant: 'hatch', committed: 'committed' }
+// Potential and committed carry a 1.5px inset outline; the palest risk step keeps an edge on the card.
+const EDGE: Partial<Record<FillKey, EdgeKind>> = { potential: 'potential', committed: 'committed', 'risk-gt36': 'risk-gt36' }
+const PATTERN: Partial<Record<FillKey, PatternKind>> = { vacant: 'hatch' }
 
 /** True when a search or a KPI highlight is active, i.e. some suite is dimmed. */
 export function overlayActive(suites: readonly SuiteVisual[]): boolean {
@@ -83,43 +82,46 @@ export function parseRgba(raw: string, fallback: Rgba): Rgba {
 
 const GREY = '#808080'
 
-/** Reads every colour the 3D building needs from the CSS custom properties. */
+/** A colour as CSS reports it ('#abc', '#aabbcc', 'rgb()' or 'rgba()', alpha dropped) → '#aabbcc'; else the fallback. */
+export function parseColour(raw: string, fallback: string): string {
+  const hex = normaliseHex(raw, '')
+  return hex || parseRgba(raw, { hex: fallback, alpha: 1 }).hex
+}
+
+/** Reads every colour the 3D building needs from the CSS custom properties (resolved colours). */
 export function readPalette(read: (name: string) => string): Palette {
-  const hex = (name: string) => normaliseHex(read(name), GREY)
-  const fills = Object.fromEntries(FILL_KEYS.map((k) => [k, hex(`--c-${k}`)])) as Record<FillKey, string>
+  const hex = (name: string) => parseColour(read(name), GREY)
+  const byFill = (suffix: string) => Object.fromEntries(FILL_KEYS.map((k) => [k, hex(`--c-${k}${suffix}`)])) as Record<FillKey, string>
   return {
-    fills,
-    hatch: parseRgba(read('--c-vacant-stripe'), { hex: '#ffffff', alpha: 0.35 }),
-    committedPattern: parseRgba(read('--pat-committed'), { hex: '#3b3326', alpha: 0.14 }),
-    edges: {
-      expiring: hex('--c-expiring-edge'),
-      potential: hex('--c-potential-edge'),
-      committed: hex('--c-committed-edge'),
-      'risk-gt36': hex('--c-risk-gt36-edge'),
-    },
-    accent: hex('--c-accent'),
+    fills: byFill(''),
+    sides: byFill('-side'),
+    hatch: hex('--c-vacant-2'),
+    edges: { potential: hex('--c-potential-edge'), committed: hex('--c-committed-edge'), 'risk-gt36': hex('--c-risk-gt36-edge') },
     text: hex('--c-text'),
-    focus: hex('--c-focus'),
-    surface: hex('--c-surface'),
-    surface2: hex('--c-surface-2'),
-    border: hex('--c-border'),
     muted: hex('--c-text-muted'),
-    borderStrong: hex('--c-border-strong'),
+    bg: hex('--c-bg'),
+    surface: hex('--c-surface'),
+    border: hex('--c-border'),
+    roof: hex('--c-roof'),
+    roofEdge: hex('--c-roof-edge'),
   }
 }
 
-/** Colours for one look: the fill, the pattern (or null) and the edge (or null), with how the edge is drawn. */
+/** Colours for one look: front and side, the hatch (or null), the edge (or null) and the tone a ghost fades to. */
 export type LookColours = {
   base: string
-  pattern: (Rgba & { kind: Exclude<PatternKind, 'none'> }) | null
-  edge: { hex: string; px: number; dashed: boolean } | null
+  side: string
+  pattern: { hex: string; kind: Exclude<PatternKind, 'none'> } | null
+  edge: { hex: string; px: number } | null
+  ghostTone: string
 }
 
 export function lookColours(l: SuiteLook, p: Palette): LookColours {
-  const pattern = l.pattern === 'hatch' ? { ...p.hatch, kind: 'hatch' as const }
-    : l.pattern === 'committed' ? { ...p.committedPattern, kind: 'committed' as const }
-      : null
-  const edge = l.edge === 'none' ? null
-    : { hex: p.edges[l.edge], px: l.edge === 'potential' ? 2 : 1.25, dashed: l.edge === 'potential' }
-  return { base: p.fills[l.fill], pattern, edge }
+  return {
+    base: p.fills[l.fill],
+    side: p.sides[l.fill],
+    pattern: l.pattern === 'hatch' ? { hex: p.hatch, kind: 'hatch' } : null,
+    edge: l.edge === 'none' ? null : { hex: p.edges[l.edge], px: l.edge === 'risk-gt36' ? 1.25 : 1.5 },
+    ghostTone: p.surface,
+  }
 }

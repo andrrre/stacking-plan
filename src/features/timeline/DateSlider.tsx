@@ -9,13 +9,14 @@ export function DateSlider() {
   const { today, asOf } = state
   const step = monthOffset(asOf, today)
   const atToday = step === 0
-  const label = atToday ? 'Today' : formatMonthYear(asOf)
+  const label = atToday ? 'Today' : formatMonthYear(asOf) // the slider's spoken value
+  const shown = atToday ? `Today · ${formatMonthYear(today)}` : label
 
   return (
     <div className={styles.slider} data-testid="date-slider-panel">
       <div className={styles.head}>
-        <span className={styles.caption}>Showing the building as of</span>
-        <span className={styles.label} data-testid="date-label">{label}</span>
+        <span className={styles.caption}>Building as of</span>
+        <span className={styles.label} data-testid="date-label">{shown}</span>
         <button
           type="button"
           className={styles.today}
@@ -41,7 +42,7 @@ export function DateSlider() {
         onChange={(e) => dispatch({ type: 'asOf/set', asOf: sliderDate(today, Number(e.target.value)) })}
       />
       <div className={styles.ends} aria-hidden="true">
-        <span>Today</span>
+        <span>{formatMonthYear(today)}</span>
         <span>{formatMonthYear(sliderDate(today, HORIZON_MONTHS))}</span>
       </div>
     </div>

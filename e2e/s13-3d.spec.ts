@@ -37,6 +37,9 @@ async function settled(page: Page, n: string): Promise<void> {
 const pointKey = (page: Page, n: string) => suite3d(page, n).evaluate((el) => `${el.getAttribute('data-screen-x')},${el.getAttribute('data-screen-y')}`)
 
 /** Counts pixels of the element's screenshot within `tol` of each hex colour. */
+/** The expiring front face: an availability-only colour (lease risk has none of it), the same in both themes. */
+const EXPIRING_GOLD = '#E8C25A'
+
 async function colourCounts(page: Page, target: Locator, hexes: readonly string[], tol = 10): Promise<number[]> {
   const png = (await target.screenshot()).toString('base64')
   return page.evaluate(async ({ png, hexes, tol }) => {
@@ -80,9 +83,11 @@ test.describe('3D building', () => {
     await expect(page.getByRole('group', { name: '3D building, Ocean Drive Tower' })).toBeVisible()
     await expect(page.locator('[data-testid^="suite-odt-"]')).toHaveCount(0) // the print-only 2D stack mounts only to print
     await pointOf(page, '500')
-    const [orange, blue] = await colourCounts(page, canvas(page), ['#F28C28', '#1E3A6E'])
-    expect(orange, 'vacant orange pixels').toBeGreaterThan(1500)
-    expect(blue, 'occupied blue pixels').toBeGreaterThan(5000)
+    const [crimson, band] = await colourCounts(page, canvas(page), ['#C62F3B', '#B82A35'], 6)
+    const [gold] = await colourCounts(page, canvas(page), [EXPIRING_GOLD], 6)
+    expect(crimson, 'vacant crimson pixels').toBeGreaterThan(1000)
+    expect(band, 'vacant hatch band pixels').toBeGreaterThan(1000)
+    expect(gold, 'expiring gold pixels').toBeGreaterThan(1500)
     expect(problems).toEqual([])
   })
 
@@ -235,7 +240,7 @@ test.describe('3D building', () => {
     await expect(page.getByTestId('legend-risk')).toBeVisible()
     await expect(suite3d(page, '900')).toHaveAttribute('data-fill', 'risk-gt36')
     await expect(label(page, '900')).toHaveAttribute('data-fill', 'risk-gt36')
-    await expect.poll(async () => (await colourCounts(page, canvas(page), ['#6D28D9', '#1E3A6E']))).toEqual([expect.any(Number), 0])
+    await expect.poll(async () => (await colourCounts(page, canvas(page), ['#6D28D9', EXPIRING_GOLD], 6))).toEqual([expect.any(Number), 0])
     const [violet] = await colourCounts(page, canvas(page), ['#6D28D9'])
     expect(violet, 'risk ≤12 months violet pixels').toBeGreaterThan(300)
   })
@@ -403,8 +408,8 @@ test.describe('3D building', () => {
     await pointOf(page, '600')
     await page.getByTestId('mode-risk').click()
     // With no fade the very next screenshot already has no availability blue left.
-    const [blue, violet] = await colourCounts(page, canvas(page), ['#1E3A6E', '#6D28D9'], 6)
-    expect(blue).toBe(0)
+    const [gold, violet] = await colourCounts(page, canvas(page), [EXPIRING_GOLD, '#6D28D9'], 6)
+    expect(gold, 'no availability gold left').toBe(0)
     expect(violet, 'the canvas is drawn, in the new colours').toBeGreaterThan(300)
   })
 
@@ -457,7 +462,7 @@ test.describe('3D building', () => {
     await ext('loseContext')
     await page.waitForTimeout(300)
     await ext('restoreContext')
-    await expect.poll(async () => (await colourCounts(page, canvas(page), ['#F28C28']))[0], { timeout: 5000 }).toBeGreaterThan(1500)
+    await expect.poll(async () => (await colourCounts(page, canvas(page), ['#C62F3B'], 6))[0], { timeout: 5000 }).toBeGreaterThan(1000)
     await expect(page.getByTestId('webgl-fallback')).toHaveCount(0)
     await ext('loseContext')
     await expect(page.getByTestId('webgl-fallback')).toHaveAttribute('data-reason', 'lost', { timeout: 6000 })

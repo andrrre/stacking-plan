@@ -22,23 +22,38 @@ describe('KpiBar', () => {
     renderBar()
     expect(screen.getByTestId('kpi-occupancy-value')).toHaveTextContent('72%')
     expect(screen.getByTestId('kpi-vacant-value')).toHaveTextContent('38,150 SF')
-    expect(screen.getByTestId('kpi-vacant-potential')).toHaveTextContent('committed 3,000')
-    expect(screen.getByTestId('kpi-vacant-potential')).not.toHaveTextContent('potential')
+    expect(screen.getByTestId('kpi-vacant-potential')).toHaveTextContent(/^3,000 SF committed$/)
     expect(screen.getByTestId('kpi-expiring-value')).toHaveTextContent('26,500 SF')
-    expect(screen.getByTestId('kpi-largest-block-value')).toHaveTextContent('10,500 SF · Fl 7')
+    expect(screen.getByTestId('kpi-expiring-leases')).toHaveTextContent(/^4 leases$/)
+    expect(screen.getByTestId('kpi-largest-block-value')).toHaveTextContent('10,500 SF · Floor 7')
+    expect(screen.getByTestId('kpi-largest-block-suites')).toHaveTextContent(/^Suites 700 \+ 710$/)
+  })
+
+  it('captions the cells as in the Night design', () => {
+    renderBar()
+    expect(screen.getByTestId('kpi-occupancy')).toHaveTextContent(/^Occupancy/)
+    expect(screen.getByTestId('kpi-vacant')).toHaveTextContent(/^Available/)
+    expect(screen.getByTestId('kpi-expiring')).toHaveTextContent(/^Expiring ≤ 12 months/)
+    expect(screen.getByTestId('kpi-largest-block')).toHaveTextContent(/^Largest contiguous block/)
   })
 
   it('shows the potential sub-line and the potential-inclusive largest block at 2027-07-01', () => {
     renderBar({ asOf: '2027-07-01' })
     expect(screen.getByTestId('kpi-vacant-value')).toHaveTextContent('53,650 SF')
-    expect(screen.getByTestId('kpi-vacant-potential')).toHaveTextContent('of which potential 12,400 SF')
-    expect(screen.getByTestId('kpi-largest-block-value')).toHaveTextContent('12,400 SF · Fl 6')
+    expect(screen.getByTestId('kpi-vacant-potential')).toHaveTextContent(/^12,400 SF potential$/)
+    expect(screen.getByTestId('kpi-largest-block-value')).toHaveTextContent('12,400 SF · Floor 6')
+    expect(screen.getByTestId('kpi-largest-block-suites')).toHaveTextContent(/^Suite 600$/)
   })
 
-  it('omits the sub-line when nothing is potential or committed', () => {
+  it('shows 0 SF committed when nothing is potential or committed', () => {
     renderBar({ asOf: '2027-03-01' })
     expect(screen.getByTestId('kpi-vacant-value')).toBeInTheDocument()
-    expect(screen.queryByTestId('kpi-vacant-potential')).toBeNull()
+    expect(screen.getByTestId('kpi-vacant-potential')).toHaveTextContent(/^0 SF committed$/)
+  })
+
+  it('counts one lease in the singular', () => {
+    renderBar({ asOf: '2031-08-01' })
+    expect(screen.getByTestId('kpi-expiring-leases')).toHaveTextContent(/^1 lease$/)
   })
 
   it('a tile click toggles aria-pressed and a second click clears it', async () => {

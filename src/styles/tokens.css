@@ -1,35 +1,73 @@
-/* StackMatch design tokens (spec-technical §7). Light theme only. Contrast ratios (WCAG) noted with ✓. */
+/*
+  StackMatch design tokens: the Night theme (.omc/handoffs/night-theme.md), light and dark.
+  Every colour is light-dark(LIGHT, DARK); `color-scheme` on the root picks the side. With no data-theme the
+  root follows the system (prefers-color-scheme); data-theme='light' | 'dark' (set by src/features/theme)
+  overrides it; print is always light. The 3D building reads these same tokens (readPalette), so the two views
+  cannot drift. Contrast ratios (WCAG) are noted as light / dark; ✓ meets 4.5:1 for text, 3:1 for UI.
+*/
 :root{
-  --c-bg:#F5F6F8; --c-surface:#FFFFFF; --c-surface-2:#EEF0F4; --c-border:#DDE1E7; --c-border-strong:#B8C0CC;
-  --c-text:#111827 /*16.4 on bg ✓*/; --c-text-muted:#5B6475 /*6.0 ✓*/; --c-focus:#2563EB;
-  --c-accent:#C2185B /*Vice pink; 5.4 vs bg ✓, white ink 5.9 ✓*/; --c-accent-ink:#FFFFFF;
-  --c-occupied:#1E3A6E; --c-occupied-ink:#FFFFFF;                          /*11.1 ✓*/
-  --c-expiring:#A9CFF2; --c-expiring-ink:#0B1F3A; --c-expiring-edge:#4A7FB5;  /*10.1 ✓; edge 3.9 vs bg ✓*/
-  --c-vacant:#F28C28;   --c-vacant-ink:#1C1206; --c-vacant-stripe:rgba(255,255,255,.35); /*7.5 ✓*/
-  --c-potential:#FCD9B4; --c-potential-ink:#5A2A00; --c-potential-edge:#B45309;   /*8.9 ✓; edge 3.8 ✓*/
-  --c-committed:#E9E4DC; --c-committed-ink:#3B3326; --c-committed-edge:#8A7B63;   /*9.8 ✓*/
-  --c-common:#DADDE3; --c-common-ink:#3A4250;                               /*7.4 ✓*/
-  --c-risk-le6:#3B0764;  --c-risk-le6-ink:#FFFFFF;   /*15.0 ✓*/
-  --c-risk-le12:#6D28D9; --c-risk-le12-ink:#FFFFFF;  /* 7.1 ✓*/
-  --c-risk-le24:#A78BFA; --c-risk-le24-ink:#1A1033;  /* 6.6 ✓*/
-  --c-risk-le36:#D4C9FB; --c-risk-le36-ink:#1A1033;  /*11.6 ✓*/
-  --c-risk-gt36:#E9E3FD; --c-risk-gt36-ink:#0D061E; --c-risk-gt36-edge:#8A74D8;  /*15.9 ✓; edge 3.8 vs surface ✓; darker than the fill so the pale suite still has a visible edge*/
-  --c-risk-open:#CBD2DC; --c-risk-open-ink:#1F2733;  /* 9.9 ✓*/
-  --c-modified:#0F766E /*5.5 ✓*/; --c-up:#15803D; --c-down:#B91C1C;
-  --pat-hatch:repeating-linear-gradient(135deg,var(--c-vacant-stripe) 0 3px,transparent 3px 8px);
-  --pat-committed:repeating-linear-gradient(45deg,rgba(59,51,38,.14) 0 2px,transparent 2px 6px);
-  --edge-potential:2px dashed var(--c-potential-edge); --edge-committed:1px solid var(--c-committed-edge);
-  --match-ring:0 0 0 2px var(--c-surface),0 0 0 4px var(--c-accent);  /* white inner ring: pink alone is 1.9 on occupied */
+  color-scheme:light dark;
+  /* ---------- surfaces ---------- */
+  --c-bg:light-dark(#F4F5F7,#121518); --c-surface:light-dark(#FFFFFF,#1A1E23) /*card*/; --c-surface-2:light-dark(#ECEEF1,#22272E) /*hover, wells*/;
+  --c-border:light-dark(#E2E5EA,#2A3038) /*rule*/; --c-border-strong:light-dark(#D3D8DF,#353C45) /*secondary button border: 1.4 / 1.5, decorative only (handoff)*/;
+  --c-text:light-dark(#121518,#ECEEF1) /*16.8 / 14.6 on bg ✓*/; --c-text-muted:light-dark(#5B636E,#9AA3AE) /*5.6 on bg, 5.2 on seg / 7.2 on bg, 5.9 on seg ✓*/;
+  --c-btn:light-dark(#FFFFFF,#22272E); --c-btn-border:var(--c-border-strong);
+  --c-seg:light-dark(#ECEEF1,#22272E); --c-seg-on:light-dark(#FFFFFF,#353C45);
+  --c-grid:light-dark(#F0F2F5,#1F242A) /*24px canvas grid*/; --c-track:light-dark(#E6E9ED,#2A3038) /*progress track*/;
+  --c-roof:light-dark(#E9ECF0,#2A3038); --c-roof-edge:light-dark(#CDD2D9,#3A424C) /*slabs, roof caps and the sketched city*/;
+  --c-accent:light-dark(#121518,#E9E4D8) /*primary button; white ink 18.3 / ink 14.4 ✓*/; --c-accent-ink:light-dark(#FFFFFF,#121518);
+  --c-outline-selected:light-dark(#121518,#FFFFFF) /*2px inset; 3.4 on vacant / 3.0 on vacant, 1.7 on expiring ✗ (handoff)*/;
+  --c-focus:var(--c-accent) /*16.8 on bg / 14.4 on bg ✓; outset with a 2px gap, so it never reads as the inset selection*/;
+  --c-kpi-available:light-dark(#B02A35,#FF7C84) /*6.5 / 6.8 on card ✓*/; --c-kpi-expiring:light-dark(#8A6A0E,#E8C25A) /*5.1 / 9.8 on card ✓*/;
+  /* Search matches (rings, rank badges): blue, far from crimson and from every status hue. It always sits on a
+     2px halo in the card colour (6.7 / 6.9 ✓), which itself stands 5.4 / 5.6 off the vacant fill, the fill a
+     match is usually on; ink on the badge 6.7 / 7.8 ✓. Without the halo it would be 1.2 on vacant. */
+  --c-match:light-dark(#1D4ED8,#6EA8FE); --c-match-ink:light-dark(#FFFFFF,#0B1220);
+  /* Real errors and warnings: orange, never the vacant crimson. 5.2 on card / 9.9 ✓ */
+  --c-error:light-dark(#C2410C,#FDBA74); --c-error-bg:light-dark(#FFF4ED,#2B1A10);
+  --c-modified:light-dark(#0F766E,#2DD4BF) /*5.5 / 9.0 ✓*/; --c-up:light-dark(#15803D,#6FCF97) /*5.0 / 8.8 ✓*/; --c-down:var(--c-error);
+  --c-shadow:light-dark(rgba(16,24,40,.12),rgba(0,0,0,.45)); --c-scrim:light-dark(rgba(17,24,39,.55),rgba(0,0,0,.65));
+  /* ---------- availability statuses: front face / side face / ink (+ outline) ---------- */
+  --c-vacant:light-dark(#C62F3B,#FF5C66); --c-vacant-2:light-dark(#B82A35,#F2505A) /*the second hatch band*/;
+  --c-vacant-side:light-dark(#97222C,#C23E46); --c-vacant-ink:light-dark(#FFFFFF,#2A0508) /*5.4 (6.1 on band 2) / 6.2 (5.4) ✓*/;
+  --c-potential:light-dark(#FBE6E8,#3A171A); --c-potential-side:light-dark(#F1CACE,#2E1215); --c-potential-ink:light-dark(#94202A,#FFB0B5) /*7.0 / 9.2 ✓*/;
+  --c-potential-edge:light-dark(#C62F3B,#FF5C66) /*4.5 / 5.3 ✓*/;
+  --c-expiring:#E8C25A; --c-expiring-side:light-dark(#C9A443,#BF9D42); --c-expiring-ink:#2A2004 /*9.4 ✓*/;
+  --c-committed:light-dark(#E3F5EA,#1E2E25); --c-committed-side:light-dark(#C8E6D3,#18251E); --c-committed-ink:light-dark(#1D5E3A,#A8E6C1) /*6.8 / 10.0 ✓*/;
+  --c-committed-edge:light-dark(#3FA36B,#6FCF97) /*2.8 ✗ (handoff) / 7.5 ✓*/;
+  --c-occupied:light-dark(#E3E6EA,#2E343C); --c-occupied-side:light-dark(#CCD1D8,#252A31); --c-occupied-ink:light-dark(#2E343C,#C9CFD6) /*10.0 / 8.0 ✓*/;
+  --c-common:light-dark(#EEF0F2,#22262C); --c-common-side:light-dark(#DCE0E5,#1C2025); --c-common-ink:light-dark(#5B636E,#8B939D) /*5.3 / 4.9 ✓*/;
+  /* ---------- lease risk: soonest is loudest in both themes (darkest on the light card, brightest on the dark) ---------- */
+  --c-risk-le6:light-dark(#3B0764,#C4B5FD);  --c-risk-le6-side:light-dark(#330656,#9D91CA);  --c-risk-le6-ink:light-dark(#FFFFFF,#1A1033);   /*15.0 / 9.8 ✓*/
+  --c-risk-le12:light-dark(#6D28D9,#A78BFA); --c-risk-le12-side:light-dark(#5E22BB,#866FC8); --c-risk-le12-ink:light-dark(#FFFFFF,#160A33);  /* 7.1 / 6.9 ✓*/
+  --c-risk-le24:light-dark(#A78BFA,#6D4BC9); --c-risk-le24-side:light-dark(#9078D7,#573CA1); --c-risk-le24-ink:light-dark(#1A1033,#FFFFFF);  /* 6.6 / 6.0 ✓*/
+  --c-risk-le36:light-dark(#D4C9FB,#4A3485); --c-risk-le36-side:light-dark(#B6ADD8,#3B2A6A); --c-risk-le36-ink:light-dark(#1A1033,#E9E3FD);  /*11.6 / 8.0 ✓*/
+  --c-risk-gt36:light-dark(#E9E3FD,#2E2650); --c-risk-gt36-side:light-dark(#C8C3DA,#251E40); --c-risk-gt36-ink:light-dark(#0D061E,#D4C9FB); /*15.9 / 9.0 ✓*/
+  --c-risk-gt36-edge:light-dark(#8A74D8,#8A74D8) /*3.8 / 4.4 vs card ✓: the palest step keeps a visible edge*/;
+  --c-risk-open:light-dark(#CBD2DC,#353C45); --c-risk-open-side:light-dark(#AFB5BD,#2A3037); --c-risk-open-ink:light-dark(#1F2733,#C9CFD6); /*9.9 / 7.1 ✓*/
+  /* ---------- patterns and edges ---------- */
+  --pat-hatch:repeating-linear-gradient(135deg,var(--c-vacant) 0 7px,var(--c-vacant-2) 7px 14px);
+  --edge-potential:1.5px solid var(--c-potential-edge); --edge-committed:1.5px solid var(--c-committed-edge);
+  --match-ring:0 0 0 2px var(--c-surface),0 0 0 4px var(--c-match);
   --dim-opacity:.45; --dim-filter:grayscale(1);
+  /* ---------- type ---------- */
   --font-sans:'Inter Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
-  --fs-2xs:10px; --fs-xs:11px; --fs-sm:12px; --fs-md:13px /*body*/; --fs-lg:15px; --fs-xl:18px; --fs-kpi:22px;
-  --fw-regular:450; --fw-medium:550; --fw-semibold:650; --lh-tight:1.2; --lh:1.4;  /* + font-variant-numeric: tabular-nums on numbers */
+  --font-display:'Newsreader Variable',Georgia,'Times New Roman',serif;
+  --fs-2xs:10px; --fs-xs:11px; --fs-sm:12px; --fs-md:13px /*body*/; --fs-lg:15px; --fs-xl:18px;
+  --fs-display-sm:24px /*building name, as-of date*/; --fs-display-md:32px /*suite title*/; --fs-kpi:40px;
+  --fs-label:12px; --ls-label:.08em /*section labels: uppercase, secondary text*/;
+  --fw-regular:400; --fw-medium:500; --fw-semibold:600; --lh-tight:1.2; --lh:1.4;  /* + font-variant-numeric: tabular-nums on numbers */
+  /* ---------- space, shape, motion ---------- */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
-  --r-sm:3px; --r-md:6px; --r-lg:10px; --shadow-1:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.10);
-  --header-h:48px; --kpi-h:64px; --rail-w:272px; --panel-w:336px;
+  --r-sm:3px; --r-md:6px; --r-lg:10px; --r-pill:999px;
+  --shadow-1:0 1px 2px var(--c-shadow),0 1px 3px var(--c-shadow);
+  --header-h:60px; --kpi-h:64px; --rail-w:272px; --panel-w:336px;
   --floor-h:34px; --floor-gap:2px; --suite-gap:2px; --floor-label-w:32px; --suite-min-w:28px;
   --dur-fast:120ms; --dur-status:180ms; --ease:cubic-bezier(.2,0,0,1);
 }
+:root[data-theme='light']{color-scheme:light}
+:root[data-theme='dark']{color-scheme:dark}
+@media print{:root,:root[data-theme]{color-scheme:light}}
 @media (prefers-reduced-motion:reduce){:root{--dur-fast:0ms;--dur-status:0ms}}
 /* Tall screens (a 1080p demo): roomier floors. 900px and shorter keep 34px so stack, legend and slider fit. */
 @media (min-height:1000px){:root{--floor-h:42px}}

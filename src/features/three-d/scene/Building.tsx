@@ -15,8 +15,8 @@ import type { SuiteMaterials } from './suiteMaterials'
 
 function useLineMaterials(p: Palette) {
   const mats = useMemo(() => ({
-    solid: new LineBasicMaterial({ color: p.text, transparent: true, opacity: 0.3 }),
-    slab: new LineBasicMaterial({ color: p.text, transparent: true, opacity: 0.22 }),
+    solid: new LineBasicMaterial({ color: p.roofEdge, transparent: true, opacity: 0.9 }),
+    slab: new LineBasicMaterial({ color: p.roofEdge, transparent: true, opacity: 0.9 }),
   }), [p])
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
   return mats
@@ -62,16 +62,17 @@ export function Suites({ layout, looks, palette, mats, shapes, group, animateAt 
   )
 }
 
-function neutral(hex: string): SuiteMaterial {
+function neutral(hex: string, side: string): SuiteMaterial {
   const m = new SuiteMaterial()
   m.color.set(hex)
+  m.u.uSide.value.set(side)
   m.transparent = false
   return m
 }
 
-/** Slabs and roof caps in the light neutral, the plinth a step darker so the base reads as a base. */
+/** Slabs and roof caps in the roof neutral (their sides in its edge tone), the plinth in the edge tone. */
 function Slabs({ layout, palette, shapes, line }: { layout: Layout3D; palette: Palette; shapes: Shapes; line: LineBasicMaterial }) {
-  const mats = useMemo(() => ({ slab: neutral(palette.surface2), base: neutral(palette.border) }), [palette])
+  const mats = useMemo(() => ({ slab: neutral(palette.roof, palette.roofEdge), base: neutral(palette.roofEdge, palette.roofEdge) }), [palette])
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
   const p = layout.plinth
   return (

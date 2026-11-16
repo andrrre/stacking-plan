@@ -42,7 +42,9 @@ export type Kpis = {
   potentialSf: number // subset of vacant
   committedSf: number // subset of vacant
   expiringSf: number
+  expiringCount: number // leases ending within 12 months (one per expiring suite)
   largestBlock: Block | null
+  largestBlockSuiteNumbers: string[] // the block's suite numbers, in floor order; [] without a block
   rentRoll: number // Σ areaSf × rentPsf, leases active on D
   ids: Record<KpiKey, string[]> // occupancy → leased suites
 }

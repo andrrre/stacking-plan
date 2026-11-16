@@ -59,6 +59,26 @@ describe('kpis for the hero building (A14)', () => {
   })
 })
 
+describe('kpis lease count and block suite numbers', () => {
+  it('counts the expiring leases and names the largest block suites at today', () => {
+    const k = kpis(hero, TODAY, TODAY, true)
+    expect(k.expiringCount).toBe(4)
+    expect(k.largestBlockSuiteNumbers).toEqual(['700', '710'])
+  })
+
+  it('follows the as-of date', () => {
+    const k = kpis(hero, '2027-07-01', TODAY, true)
+    expect(k.expiringCount).toBe(k.ids.expiring.length)
+    expect(k.largestBlockSuiteNumbers).toEqual(['600'])
+  })
+
+  it('is 0 and empty for a building with no leasable space', () => {
+    const k = kpis(building({ floors: [] }), TODAY, TODAY, true)
+    expect(k.expiringCount).toBe(0)
+    expect(k.largestBlockSuiteNumbers).toEqual([])
+  })
+})
+
 describe('kpis edge cases', () => {
   it('an empty building gives occupancyPct === null', () => {
     const common = building({ floors: [floor({ suites: [suite({ kind: 'common', askingRentPsf: undefined, areaSf: 5000 })] })] })

@@ -4,15 +4,15 @@ import { useAppState } from '../../app/state/useAppState'
 import { BuildingSwitcher } from '../building/BuildingSwitcher'
 import { ImportCsv } from '../import/ImportCsv'
 import { SummaryButton } from '../shortlist/SummaryButton'
+import { ThemeToggle } from '../theme/ThemeToggle'
 import styles from './Header.module.css'
 
 function BrandMark() {
   return (
-    <svg className={styles.mark} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-      <rect x="2" y="2" width="16" height="4" rx="1" fill="var(--c-occupied)" />
-      <rect x="2" y="8" width="9" height="4" rx="1" fill="var(--c-expiring-edge)" />
-      <rect x="12" y="8" width="6" height="4" rx="1" fill="var(--c-vacant)" />
-      <rect x="2" y="14" width="16" height="4" rx="1" fill="var(--c-accent)" />
+    <svg className={styles.mark} viewBox="0 0 22 22" aria-hidden="true" focusable="false">
+      <rect className={styles.markTop} x="2" y="3" width="18" height="4" />
+      <rect className={styles.markMid} x="2" y="9" width="18" height="4" />
+      <rect className={styles.markLow} x="2" y="15" width="18" height="4" />
     </svg>
   )
 }
@@ -30,12 +30,13 @@ export function Header() {
       <div className={styles.building}>
         <BuildingSwitcher />
         <span className={styles.address}>{building.address}</span>
+        {isDemo && <span className={styles.badge} data-testid="demo-badge">Demo data</span>}
       </div>
-      {isDemo && <span className={styles.badge} data-testid="demo-badge">Demo data</span>}
       <div className={styles.actions} data-print="hide">
         <ImportCsv buttonClassName={styles.button} />
-        <SummaryButton className={styles.button} />
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
+        <SummaryButton className={styles.primary} />
+        <ThemeToggle className={styles.iconButton} />
       </div>
     </header>
   )

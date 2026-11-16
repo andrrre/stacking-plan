@@ -1,8 +1,6 @@
-/* Reset, body, focus ring and print base. Tokens live in tokens.css; import it first. */
+/* Reset, body, focus ring and print base. Tokens (and the light/dark switch) live in tokens.css; import it first. */
 
 *, *::before, *::after { box-sizing: border-box; }
-
-:root { color-scheme: light; } /* light theme only */
 
 html, body, #root { height: 100%; }
 
@@ -14,6 +12,7 @@ body {
   font-size: var(--fs-md);
   font-weight: var(--fw-regular);
   line-height: var(--lh);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -44,7 +43,7 @@ button:disabled { cursor: not-allowed; }
 @media print {
   @page { margin: 12mm; }
   html, body, #root { height: auto; }
-  body { background: #FFFFFF; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: var(--c-surface); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   [data-print="hide"] { display: none !important; }
   [data-overlay="summary"][data-print="shell"],
   [data-overlay="summary"] [data-print="shell"] { display: none !important; }

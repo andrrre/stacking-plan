@@ -50,9 +50,9 @@
 
 .eyebrow {
   color: var(--c-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-label);
   font-weight: var(--fw-semibold);
-  letter-spacing: .06em;
+  letter-spacing: var(--ls-label);
   text-transform: uppercase;
 }
 
@@ -86,7 +86,7 @@
   }
   .drawer[data-open='false'] { width: var(--panel-w); transform: translateX(100%); }
   .clip { overflow: visible; }
-  .drawer[data-open='true'] .panel { box-shadow: -4px 0 16px rgba(16, 24, 40, .12); }
+  .drawer[data-open='true'] .panel { box-shadow: -4px 0 16px var(--c-shadow); }
 }
 
 @media (prefers-reduced-motion: reduce) {

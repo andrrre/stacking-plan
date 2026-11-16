@@ -11,6 +11,7 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
     viewport: { width: 1440, height: 900 },
     timezoneId: 'America/New_York',
+    colorScheme: 'light', // deterministic: a test opts into dark itself
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
   webServer: {

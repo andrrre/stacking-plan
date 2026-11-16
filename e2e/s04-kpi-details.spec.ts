@@ -5,9 +5,19 @@ test('KPI tiles show the A14 values at today', async ({ page }) => {
   await gotoApp(page, 'stack')
   await expect(page.getByTestId('kpi-occupancy-value')).toHaveText('72%')
   await expect(page.getByTestId('kpi-vacant-value')).toHaveText('38,150 SF')
-  await expect(page.getByTestId('kpi-vacant-potential')).toContainText('committed 3,000')
+  await expect(page.getByTestId('kpi-vacant-potential')).toHaveText('3,000 SF committed')
   await expect(page.getByTestId('kpi-expiring-value')).toHaveText('26,500 SF')
-  await expect(page.getByTestId('kpi-largest-block-value')).toHaveText('10,500 SF · Fl 7')
+  await expect(page.getByTestId('kpi-expiring-leases')).toHaveText('4 leases')
+  await expect(page.getByTestId('kpi-largest-block-value')).toHaveText('10,500 SF · Floor 7')
+  await expect(page.getByTestId('kpi-largest-block-suites')).toHaveText('Suites 700 + 710')
+})
+
+test('the lease count and the block suites follow the date slider', async ({ page }) => {
+  await gotoApp(page, 'stack')
+  await page.getByTestId('date-slider').fill('8')
+  await expect(page.getByTestId('date-label')).toContainText('Jul 2027')
+  await expect(page.getByTestId('kpi-expiring-leases')).toHaveText('6 leases')
+  await expect(page.getByTestId('kpi-largest-block-suites')).toHaveText('Suite 600')
 })
 
 test('clicking the largest-block tile lights exactly 700 and 710; Esc restores', async ({ page }) => {

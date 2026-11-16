@@ -25,6 +25,7 @@ export function kpis(b: Building, D: ISODate, today: ISODate, includePotential: 
   const leasableSf = sumSf(rated)
   const leasedSf = sumSf(leased)
   const block = largestBlock(b, D, today, includePotential)
+  const numberOf = new Map(rated.map((r) => [r.suite.id, r.suite.number]))
   return {
     leasableSf,
     leasedSf,
@@ -33,7 +34,9 @@ export function kpis(b: Building, D: ISODate, today: ISODate, includePotential: 
     potentialSf: sumSf(potential),
     committedSf: sumSf(committed),
     expiringSf: sumSf(expiring),
+    expiringCount: expiring.length,
     largestBlock: block,
+    largestBlockSuiteNumbers: block ? block.suiteIds.map((id) => numberOf.get(id) ?? id) : [],
     rentRoll,
     ids: {
       occupancy: idsOf(leased),

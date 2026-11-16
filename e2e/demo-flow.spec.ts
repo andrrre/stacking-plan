@@ -37,7 +37,7 @@ test('demo flow: the eight beats in order, in one session, on the 3D building', 
   await expect(page.getByTestId('kpi-occupancy-value')).toHaveText('72%')
   await expect(page.getByTestId('kpi-vacant')).toContainText('38,150 SF')
   await expect(page.getByTestId('kpi-expiring')).toContainText('26,500 SF')
-  await expect(page.getByTestId('kpi-largest-block')).toContainText('10,500 SF · Fl 7')
+  await expect(page.getByTestId('kpi-largest-block')).toContainText('10,500 SF · Floor 7')
 
   // 2. Finder
   await page.getByTestId('req-min-sf').fill('10,000')

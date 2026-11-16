@@ -58,13 +58,14 @@ function placeFigure(m: Meshes, i: number, f: Figure): void {
 }
 
 /**
- * Clothing in dark neutrals from the text and edge tokens, so a figure stands out against the pale pavement
- * while staying quieter than any status colour; a lighter head.
+ * Clothing in neutrals between the text, muted and roof-edge tokens (dark figures on the light stage, light ones
+ * on the dark), so a figure stands out against the pavement while staying quieter than any status colour; a
+ * paler head.
  */
 function outfits(p: Palette, people: readonly Mover[]) {
-  const tops = [mix(p.text, p.muted, 0.35), mix(p.text, p.edges.committed, 0.5), mix(p.muted, p.text, 0.3), mix(p.text, p.borderStrong, 0.4)]
-  const trousers = [mix(p.text, p.muted, 0.12), mix(p.text, p.muted, 0.3), mix(p.text, p.edges.committed, 0.3)]
-  const skin = mix(p.edges.committed, p.borderStrong, 0.35)
+  const tops = [mix(p.text, p.muted, 0.35), mix(p.muted, p.roofEdge, 0.3), mix(p.muted, p.text, 0.3), mix(p.text, p.roofEdge, 0.4)]
+  const trousers = [mix(p.text, p.muted, 0.12), mix(p.text, p.muted, 0.3), mix(p.muted, p.roofEdge, 0.2)]
+  const skin = mix(p.roofEdge, p.muted, 0.35)
   const top = (m: Mover) => tops[m.tone % tops.length] ?? skin
   const legs = (m: Mover) => trousers[m.tone2 % trousers.length] ?? skin
   return {

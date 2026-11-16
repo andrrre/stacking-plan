@@ -14,6 +14,7 @@ import { COLOUR_MS } from './scene/suiteMaterials'
 import { World } from './scene/World'
 import { useCityMotion } from './useCityMotion'
 import { useReducedMotion } from './useReducedMotion'
+import { useTheme } from '../theme/useTheme'
 import styles from './three-d.module.css'
 
 // The WebGL building (loaded lazily): a canvas rendered on demand, with an HTML overlay for the labels.
@@ -67,6 +68,7 @@ function useCity(buildingId: string, model: SceneProps['model']) {
 
 function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, wide, rig, onSelect, onPoints, onLost }: SceneProps) {
   const reduced = useReducedMotion()
+  const { theme } = useTheme()
   const spread = useSpread(separated, reduced)
   const root = useRef<HTMLDivElement>(null)
   const running = useCityMotion(root, city, reduced)
@@ -79,7 +81,7 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
   const derived = useDerived(model, focusedId)
   const [refs] = useState(createOverlayRefs)
   return (
-    <div ref={root} className={styles.scene} data-testid="scene3d" data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
+    <div ref={root} className={styles.scene} data-testid="scene3d" data-theme={theme} data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
       data-floors-moving={String(spread > 0 && spread < 1)} data-colour-transition-ms={reduced ? 0 : COLOUR_MS}
       data-city={city ? 'on' : 'off'} data-city-motion={running ? 'on' : 'off'}
       data-city-dim={city ? dim.toFixed(2) : undefined}>
@@ -97,7 +99,7 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
         gl={{ antialias: true, alpha: true }}
       >
         <World
-          {...derived} mode={mode} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced} wide={wide}
+          {...derived} mode={mode} theme={theme} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced} wide={wide}
           refs={refs} rig={rig} onSelect={onSelect} onPoints={onPoints} onLost={onLost}
           city={city ? { ...town, running, dim } : null}
         />

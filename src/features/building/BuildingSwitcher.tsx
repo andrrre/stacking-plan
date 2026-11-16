@@ -63,18 +63,23 @@ export function BuildingSwitcher() {
 
   return (
     <span className={styles.switcher}>
-      <select
-        ref={select}
-        className={styles.select}
-        data-testid="building-switcher"
-        aria-label="Building"
-        value={state.buildingId}
-        onChange={(e) => dispatch({ type: 'building/set', buildingId: e.target.value })}
-      >
-        {selectBuildings(state).map((b) => (
-          <option key={b.id} value={b.id}>{b.name}</option>
-        ))}
-      </select>
+      <span className={styles.pick}>
+        <select
+          ref={select}
+          className={styles.select}
+          data-testid="building-switcher"
+          aria-label="Building"
+          value={state.buildingId}
+          onChange={(e) => dispatch({ type: 'building/set', buildingId: e.target.value })}
+        >
+          {selectBuildings(state).map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+        <svg className={styles.chevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </span>
       {imported && <RemoveImported key={current.id} name={current.name} onRemove={remove} />}
     </span>
   )

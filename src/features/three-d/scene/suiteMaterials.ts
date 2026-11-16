@@ -8,10 +8,14 @@ import { SuiteMaterial } from './suiteMaterial'
 
 export const COLOUR_MS = 180
 
-type Tween = { from: Color; to: Color; ghostFrom: number; ghostTo: number; start: number }
+type Tween = { from: Color; to: Color; sideFrom: Color; sideTo: Color; ghostFrom: number; ghostTo: number; start: number }
 
-const PATTERN_KIND = { hatch: 1, committed: 2 } as const
-const PATTERN_GEOMETRY = { hatch: { period: 0.18, ratio: 0.375 }, committed: { period: 0.13, ratio: 0.34 } } as const
+const PATTERN_KIND = { hatch: 1 } as const
+/**
+ * The hatch's period along x - y, in world units. A floor (pitch 1) stands for the 2D stack's ~40px floor, so
+ * a 7px band is ~0.175 across the stripes; across them the period is HATCH_PERIOD / √2, two bands.
+ */
+export const HATCH_PERIOD = 0.175 * 2 * Math.SQRT2
 
 export class SuiteMaterials {
   private readonly mats = new Map<string, SuiteMaterial>()
@@ -50,13 +54,17 @@ export class SuiteMaterials {
     this.applied.set(m, signature)
     const u = m.u
     const target = new Color(c.base)
+    const side = new Color(c.side)
     const ghostTo = ghost ? 1 : 0
-    const changed = !m.color.equals(target) || u.uGhost.value !== ghostTo
+    const changed = !m.color.equals(target) || !u.uSide.value.equals(side) || u.uGhost.value !== ghostTo
     if (this.seen.has(m) && changed && animateAt !== null) {
-      this.tweens.set(m, { from: m.color.clone(), to: target, ghostFrom: u.uGhost.value, ghostTo, start: animateAt })
+      this.tweens.set(m, {
+        from: m.color.clone(), to: target, sideFrom: u.uSide.value.clone(), sideTo: side, ghostFrom: u.uGhost.value, ghostTo, start: animateAt,
+      })
     } else if (changed) {
       this.tweens.delete(m)
       m.color.copy(target)
+      u.uSide.value.copy(side)
       u.uGhost.value = ghostTo
     }
     this.seen.add(m)
@@ -64,16 +72,14 @@ export class SuiteMaterials {
     u.uPatKind.value = c.pattern ? PATTERN_KIND[c.pattern.kind] : 0
     if (c.pattern) {
       u.uPatColor.value.set(c.pattern.hex)
-      u.uPatAlpha.value = c.pattern.alpha
-      u.uPatPeriod.value = PATTERN_GEOMETRY[c.pattern.kind].period
-      u.uPatRatio.value = PATTERN_GEOMETRY[c.pattern.kind].ratio
+      u.uPatPeriod.value = HATCH_PERIOD
     }
     u.uEdgeAlpha.value = c.edge ? 1 : 0
     if (c.edge) {
       u.uEdgeColor.value.set(c.edge.hex)
       u.uEdgePx.value = c.edge.px
-      u.uEdgeDash.value = c.edge.dashed ? 1 : 0
     }
+    u.uGhostTone.value.set(c.ghostTone)
     u.uBoxMin.value.set(box.x - box.w / 2, box.y - box.h / 2, box.z - box.d / 2)
     u.uBoxMax.value.set(box.x + box.w / 2, box.y + box.h / 2, box.z + box.d / 2)
   }
@@ -88,6 +94,7 @@ export class SuiteMaterials {
       const k = Math.min(Math.max((now - t.start) / COLOUR_MS, 0), 1)
       const e = k * (2 - k) // ease out
       m.color.copy(t.from).lerp(t.to, e)
+      m.u.uSide.value.copy(t.sideFrom).lerp(t.sideTo, e)
       m.u.uGhost.value = t.ghostFrom + (t.ghostTo - t.ghostFrom) * e
       if (k >= 1) this.tweens.delete(m)
     }

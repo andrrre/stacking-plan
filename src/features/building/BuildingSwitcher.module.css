@@ -1,18 +1,40 @@
+/* The building name in the display face, a native select without its own arrow; the chevron is drawn beside it. */
+.pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .select {
-  height: 28px;
-  max-width: 240px;
-  padding: 0 var(--sp-1);
+  max-width: 340px;
+  height: 36px;
+  padding: 0 26px 0 var(--sp-1);
   margin-left: calc(-1 * var(--sp-1));
+  overflow: hidden;
   border: 1px solid transparent;
   border-radius: var(--r-md);
   background: transparent;
   color: var(--c-text);
-  font-size: var(--fs-md);
-  font-weight: var(--fw-semibold);
+  font-family: var(--font-display);
+  font-size: var(--fs-display-sm);
+  font-weight: var(--fw-regular);
+  text-overflow: ellipsis;
+  appearance: none;
   cursor: pointer;
 }
 
-.select:hover { border-color: var(--c-border-strong); }
+.select:hover { border-color: var(--c-btn-border); }
+.select option { background: var(--c-surface); color: var(--c-text); font-family: var(--font-sans); font-size: var(--fs-md); }
+
+.chevron {
+  position: absolute;
+  right: 8px;
+  width: 14px;
+  height: 14px;
+  color: var(--c-text);
+  pointer-events: none;
+}
 
 .switcher {
   display: inline-flex;
@@ -36,9 +58,9 @@
 .danger {
   height: 24px;
   padding: 0 var(--sp-2);
-  border: 1px solid var(--c-border-strong);
+  border: 1px solid var(--c-btn-border);
   border-radius: var(--r-md);
-  background: var(--c-surface);
+  background: var(--c-btn);
   color: var(--c-text-muted);
   font: inherit;
   font-size: var(--fs-sm);
@@ -48,6 +70,6 @@
 .remove:hover { color: var(--c-text); }
 
 .danger {
-  border-color: var(--c-risk-le6);
-  color: var(--c-risk-le6);
+  border-color: var(--c-error);
+  color: var(--c-error);
 }

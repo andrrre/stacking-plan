@@ -11,7 +11,7 @@
   padding: var(--sp-3);
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-left: 3px solid var(--c-accent);
+  border-left: 3px solid var(--c-match);
   border-radius: var(--r-md);
   color: var(--c-text);
   font: inherit;
@@ -19,9 +19,9 @@
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
-.main:hover { background: var(--c-surface-2); border-color: var(--c-border-strong); border-left-color: var(--c-accent); }
+.main:hover { background: var(--c-surface-2); border-color: var(--c-border-strong); border-left-color: var(--c-match); }
 .main:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; }
-.main[aria-pressed='true'] { background: var(--c-surface-2); border-color: var(--c-accent); }
+.main[aria-pressed='true'] { background: var(--c-surface-2); border-color: var(--c-match); }
 
 /* Same badge as the stack outline, so list rank and stack rank read as one thing. */
 .rank {
@@ -31,8 +31,8 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--c-accent);
-  color: var(--c-accent-ink);
+  background: var(--c-match);
+  color: var(--c-match-ink);
   font-size: var(--fs-md);
   font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;

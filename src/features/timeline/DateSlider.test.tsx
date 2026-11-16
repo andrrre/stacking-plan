@@ -31,6 +31,7 @@ describe('DateSlider', () => {
   it('reads Today at step 0', () => {
     renderSlider(TODAY)
     expect(screen.getByTestId('date-slider')).toHaveAttribute('aria-valuetext', 'Today')
+    expect(screen.getByTestId('date-label')).toHaveTextContent(/^Today · Nov 2026$/)
     expect(screen.getByTestId('date-slider')).toHaveValue('0')
   })
 

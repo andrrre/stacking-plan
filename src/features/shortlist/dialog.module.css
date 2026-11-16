@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: var(--sp-6);
-  background: rgba(17, 24, 39, .55);
+  background: var(--c-scrim);
 }
 
 .dialog {
@@ -14,7 +14,7 @@
   display: flex;
   border-radius: var(--r-lg);
   background: var(--c-surface);
-  box-shadow: 0 10px 40px rgba(16, 24, 40, .35);
+  box-shadow: 0 10px 40px var(--c-shadow);
 }
 
 .inner { display: flex; flex-direction: column; width: 100%; min-height: 0; }

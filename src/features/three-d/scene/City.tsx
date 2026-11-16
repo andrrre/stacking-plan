@@ -68,11 +68,11 @@ type SketchProps = { plan: CityPlan; palette: Palette; shapes: Shapes; u: FadeUn
 /** The still part of the city: roads, neighbour blocks, trees. */
 function Sketch({ plan, palette, shapes, u }: SketchProps) {
   const mats = useMemo(() => ({
-    road: flatMaterial(palette.border, 0.42, u),
+    road: flatMaterial(palette.roof, 0.7, u),
     fill: fillMaterial(palette.surface, 0.62, u, false),
     depth: depthMaterial(u),
-    ink: lineMaterial(palette.muted, 0.42, u),
-    kerb: lineMaterial(palette.muted, 0.24, u),
+    ink: lineMaterial(mix(palette.roofEdge, palette.muted, 0.3).getStyle(), 0.9, u),
+    kerb: lineMaterial(palette.roofEdge, 0.7, u),
   }), [palette, u])
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
   const geo = useMemo(() => ({
@@ -175,7 +175,7 @@ function Cars({ cars, palette, u, clock }: CarsProps) {
   const drawn = useRef<{ t: number; cars: readonly Mover[] | null }>({ t: -1, cars: null })
   const invalidate = useThree((s) => s.invalidate)
   useLayoutEffect(() => {
-    const tones = [new Color(palette.borderStrong), mix(palette.borderStrong, palette.muted, 0.35), mix(palette.border, palette.borderStrong, 0.5)]
+    const tones = [new Color(palette.roofEdge), mix(palette.roofEdge, palette.muted, 0.35), mix(palette.roof, palette.roofEdge, 0.5)]
     const tone = (m: Mover) => tones[m.tone % tones.length] ?? tones[0] ?? new Color()
     if (body.current) paint(body.current, cars.map(tone))
     if (cabin.current) paint(cabin.current, cars.map((m) => tone(m).clone().lerp(new Color(palette.surface), 0.35)))

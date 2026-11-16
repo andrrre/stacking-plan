@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
 import type { Group } from 'three'
 import type { ColourMode } from '../../../app/state/types'
+import type { Theme } from '../../theme/themeStorage'
 import { DEFAULT_VIEW, FLOOR_VIEW, SEPARATED_VIEW, lerpView } from '../camera'
 import type { LabelContent } from '../labels3d'
 import type { Layout3D } from '../layout3d'
@@ -20,6 +21,7 @@ import { SuiteMaterials } from './suiteMaterials'
 
 export type WorldProps = {
   mode: ColourMode
+  theme: Theme // the palette is read again, and the frame redrawn, when it changes
   layout: Layout3D
   visuals: ReadonlyMap<string, SuiteVisual>
   contents: ReadonlyMap<string, LabelContent>
@@ -37,15 +39,33 @@ export type WorldProps = {
   city: CityScene | null // the sketched city around the building (null: the plain stage)
 }
 
-const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name)
+/**
+ * Reads the tokens as resolved colours: each is set as a hidden probe's colour and read back computed, so
+ * light-dark() and nested var()s resolve for the theme the page is showing.
+ */
+function readTokens() {
+  const probe = document.createElement('span')
+  probe.hidden = true
+  document.body.append(probe)
+  try {
+    return readPalette((name) => {
+      probe.style.setProperty('color', `var(${name})`)
+      return getComputedStyle(probe).color
+    })
+  } finally {
+    probe.remove()
+  }
+}
 
 export function World(p: WorldProps) {
-  const { mode, layout, visuals, contents, looks, ghosts, refs, onSelect, onPoints, focusedId, reduced } = p
-  // The tokens are read once, and again when the colour mode changes.
+  const { mode, theme, layout, visuals, contents, looks, ghosts, refs, onSelect, onPoints, focusedId, reduced } = p
+  // The tokens are read once, and again when the colour mode or the theme changes (the new palette rebuilds the
+  // materials, which invalidate the frame).
   const palette = useMemo(() => {
     void mode
-    return readPalette(cssVar)
-  }, [mode])
+    void theme
+    return readTokens()
+  }, [mode, theme])
   const shapes = useSharedGeometry()
   const mats = useMemo(() => new SuiteMaterials(), [])
   useEffect(() => () => mats.dispose(), [mats])
