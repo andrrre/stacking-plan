@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { applyMove, makeRoom, moveChanges } from './makeRoom'
 import { findFits } from './findFits'
-import { sliderDate } from './dates'
+import { MAX_MOVE_OPTIONS } from './constants'
+import { addDaysIso, sliderDate } from './dates'
 import { kpis } from './kpis'
+import { applyScenario } from './scenario'
+import { statusAt } from './status'
 import { BUNDLED_BUILDINGS } from '../data'
 import { building, floor, lease, suite } from './testing/fixtures'
-import type { Floor, Lease, MoveOption, Requirement, Suite } from './types'
+import type { Building, Candidate, Floor, ISODate, Lease, MoveEnd, MoveOption, Requirement, Suite } from './types'
 
 const TODAY = '2026-11-15'
 const hero = BUNDLED_BUILDINGS[0]
@@ -133,5 +136,124 @@ describe('makeRoom rules (fixtures)', () => {
   it('a destination on the mover’s own floor is allowed', () => {
     const f = floorOf(1, vacantSuite('100', 2_000), vacantSuite('101', 5_000, { joinsNext: true }), vacantSuite('102', 2_000, { leases: [blocker()] }))
     expect(only(solve([f])).to).toMatchObject({ suiteId: 's-100', floor: 1 })
+  })
+})
+
+describe('makeRoom ranking keys (fixtures)', () => {
+  const ids = (options: readonly MoveOption[]) => options.map((o) => o.from.suiteId)
+  const leased = (number: string) => vacantSuite(number, 2_000, { leases: [blocker({ tenant: `Tenant ${number}` })] })
+
+  it('equal movers: the smaller destination excess first, even against a higher freed floor', () => {
+    const options = solve([
+      floorOf(1, vacantSuite('101', 5_000, { joinsNext: true }), leased('102')),
+      floorOf(2, vacantSuite('201', 2_000, { joinsNext: true }), { ...leased('202'), joinsNext: true }, vacantSuite('203', 3_000)),
+      floorOf(3, vacantSuite('301', 2_500)),
+    ])
+    expect(options.map((o) => o.to.areaSf - o.from.areaSf)).toEqual([0, 500])
+    expect(ids(options)).toEqual(['s-102', 's-202'])
+  })
+
+  it('equal movers and destinations: the smaller freed excess first, even against a higher freed floor', () => {
+    const options = solve([
+      floorOf(1, vacantSuite('101', 4_500, { joinsNext: true }), leased('102')),
+      floorOf(2, vacantSuite('201', 5_000, { joinsNext: true }), leased('202')),
+      floorOf(3, vacantSuite('301', 2_000)),
+    ])
+    expect(options.map((o) => o.freed.excessSf)).toEqual([500, 1_000])
+    expect(ids(options)).toEqual(['s-102', 's-202'])
+  })
+
+  it('all else equal: the higher freed floor first, against building order', () => {
+    const options = solve([
+      floorOf(1, vacantSuite('101', 5_000, { joinsNext: true }), leased('102')),
+      floorOf(2, vacantSuite('201', 5_000, { joinsNext: true }), leased('202')),
+      floorOf(3, vacantSuite('301', 2_000)),
+    ])
+    expect(options.map((o) => o.freed.floor)).toEqual([2, 1])
+  })
+})
+
+// The pre-optimisation solver, kept verbatim as an oracle: makeRoom must return exactly what it returns.
+type RefMover = { floor: Floor; suite: Suite; lease: Lease }
+const refEnd = ({ floor: f, suite: s }: { floor: Floor; suite: Suite }): MoveEnd => ({ suiteId: s.id, number: s.number, floor: f.number, areaSf: s.areaSf })
+
+function refMovers(b: Building, D: ISODate): RefMover[] {
+  return b.floors.flatMap((f) => f.suites.flatMap((s): RefMover[] => {
+    const st = statusAt(s, D, TODAY)
+    const active = st.status === 'occupied' || st.status === 'expiring' ? st.lease : null
+    return s.kind === 'leasable' && active && active.end !== null && active.start < D ? [{ floor: f, suite: s, lease: active }] : []
+  }))
+}
+
+function refDestination(b: Building, m: RefMover, block: Candidate, D: ISODate) {
+  return b.floors
+    .flatMap((f) => f.suites.map((s) => ({ floor: f, suite: s })))
+    .filter(({ suite: s }) => {
+      const st = statusAt(s, D, TODAY)
+      return s.kind === 'leasable' && st.status === 'vacant' && st.overlay === 'none' && s.areaSf >= m.suite.areaSf && !block.suiteIds.includes(s.id)
+    })
+    .sort((a, c) => a.suite.areaSf - c.suite.areaSf || c.floor.number - a.floor.number)[0] ?? null
+}
+
+function refOption(b: Building, m: RefMover, req: Requirement, D: ISODate): MoveOption | null {
+  const cleared = { ...b, floors: b.floors.map((f) => ({ ...f, suites: f.suites.map((s) => (s.id === m.suite.id ? { ...s, leases: [] } : s)) })) }
+  const block = findFits(cleared, req, D, TODAY)[0]
+  const to = block && refDestination(b, m, block, D)
+  if (!block || !to) return null
+  const draft: MoveOption = { key: `${m.lease.id}>${to.suite.id}`, lease: m.lease, from: refEnd(m), to: refEnd(to), freed: block }
+  const applied = applyScenario(b, [
+    { kind: 'vacate', leaseId: m.lease.id, on: addDaysIso(D, -1) },
+    { kind: 'newLease', suiteIds: [to.suite.id], tenant: m.lease.tenant, start: D, end: m.lease.end ?? D, rentPsf: m.lease.rentPsf },
+  ])
+  const freed = applied.ok ? findFits(applied.building, req, D, TODAY).find((c) => c.key === block.key) : undefined
+  return freed ? { ...draft, freed } : null
+}
+
+function referenceMakeRoom(b: Building, req: Requirement, D: ISODate): MoveOption[] {
+  if (findFits(b, req, D, TODAY).length > 0) return []
+  return refMovers(b, D)
+    .flatMap((m) => refOption(b, m, req, D) ?? [])
+    .sort((a, c) => a.from.areaSf - c.from.areaSf
+      || (a.to.areaSf - a.from.areaSf) - (c.to.areaSf - c.from.areaSf)
+      || a.freed.excessSf - c.freed.excessSf
+      || c.freed.floor - a.freed.floor)
+    .slice(0, MAX_MOVE_OPTIONS)
+}
+
+describe('makeRoom matches the reference solver', () => {
+  it('on every bundled building, for several sizes, dates and potential on and off', () => {
+    const dates = [TODAY, sliderDate(TODAY, 6), sliderDate(TODAY, 24)]
+    const sizes = [5_000, 12_000, 20_000, 40_000]
+    const reqs = sizes.flatMap((minSf) => [false, true].map((includePotential): Requirement => ({ minSf, includePotential })))
+    let withOptions = 0
+    for (const b of BUNDLED_BUILDINGS) for (const D of dates) for (const req of reqs) {
+      const expected = referenceMakeRoom(b, req, D)
+      expect(makeRoom(b, req, D, TODAY), `${b.id} ${D} ${req.minSf} ${req.includePotential}`).toEqual(expected)
+      withOptions += expected.length > 0 ? 1 : 0
+    }
+    expect(withOptions).toBeGreaterThan(0)
+  })
+})
+
+// 40 floors × 50 suites (the import limit): alternating vacant and leased 1,000 SF suites, all combinable, so nothing
+// fits 2,500 SF and every one of the 1,000 tenants is a mover. Guards against the solver running whole-building
+// findFits per mover again, which took seconds here and runs in render on every keystroke.
+function bigBuilding(): Building {
+  const floors = Array.from({ length: 40 }, (_, f) => floorOf(f + 1, ...Array.from({ length: 50 }, (_, i) => {
+    const number = `${f + 1}-${i}`
+    const leases = i % 2 === 1 ? [blocker({ tenant: `Tenant ${number}` })] : []
+    return vacantSuite(number, 1_000, { joinsNext: true, leases })
+  })))
+  return building({ floors })
+}
+
+describe('makeRoom cost', () => {
+  it('solves a 2,000-suite building well under a second', () => {
+    const b = bigBuilding()
+    const started = performance.now()
+    const options = makeRoom(b, { minSf: 2_500, includePotential: false }, TODAY, TODAY)
+    const elapsed = performance.now() - started
+    expect(options).toHaveLength(MAX_MOVE_OPTIONS)
+    expect(elapsed).toBeLessThan(1_500)
   })
 })

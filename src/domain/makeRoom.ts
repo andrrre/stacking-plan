@@ -36,31 +36,38 @@ function movers(b: Building, D: ISODate, today: ISODate): Mover[] {
   }))
 }
 
-function withoutLeases(b: Building, suiteId: string): Building {
-  const clear = (s: Suite): Suite => (s.id === suiteId ? { ...s, leases: [] } : s)
-  return { ...b, floors: b.floors.map((f) => ({ ...f, suites: f.suites.map(clear) })) }
+/**
+ * The block clearing the mover would free: the top fit with the mover's leases cleared. Nothing fits in the building,
+ * so every fit after clearing lies on the mover's floor; ranking that floor alone gives the same first fit.
+ */
+function freedBlock(b: Building, m: Mover, req: Requirement, D: ISODate, today: ISODate): Candidate | undefined {
+  const clear = (s: Suite): Suite => (s.id === m.suite.id ? { ...s, leases: [] } : s)
+  return findFits({ ...b, floors: [{ ...m.floor, suites: m.floor.suites.map(clear) }] }, req, D, today)[0]
 }
 
-/** The smallest firm vacant suite at least the mover's size and outside the freed block; ties to the higher floor. */
-function destination(b: Building, m: Mover, block: Candidate, D: ISODate, today: ISODate): Spot | null {
-  const spots = b.floors
+/** Firm vacant leasable suites on D: smallest first, ties to the higher floor, then building order. */
+function vacantSpots(b: Building, D: ISODate, today: ISODate): Spot[] {
+  return b.floors
     .flatMap((floor) => floor.suites.map((suite): Spot => ({ floor, suite })))
     .filter(({ suite }) => {
       const st = statusAt(suite, D, today)
       return suite.kind === 'leasable' && st.status === 'vacant' && st.overlay === 'none'
-        && suite.areaSf >= m.suite.areaSf && !block.suiteIds.includes(suite.id)
     })
     .sort((a, c) => a.suite.areaSf - c.suite.areaSf || c.floor.number - a.floor.number)
-  return spots[0] ?? null
 }
 
-function optionFor(b: Building, m: Mover, req: Requirement, D: ISODate, today: ISODate): MoveOption | null {
-  const block = findFits(withoutLeases(b, m.suite.id), req, D, today)[0]
-  const to = block && destination(b, m, block, D, today)
+/** An unproven option: the freed block and the smallest spot at least the mover's size outside it. */
+function draftFor(b: Building, m: Mover, spots: readonly Spot[], req: Requirement, D: ISODate, today: ISODate): MoveOption | null {
+  const block = freedBlock(b, m, req, D, today)
+  const to = block && spots.find(({ suite }) => suite.areaSf >= m.suite.areaSf && !block.suiteIds.includes(suite.id))
   if (!block || !to) return null
-  const draft: MoveOption = { key: `${m.lease.id}>${to.suite.id}`, lease: m.lease, from: endOf(m), to: endOf(to), freed: block }
+  return { key: `${m.lease.id}>${to.suite.id}`, lease: m.lease, from: endOf(m), to: endOf(to), freed: block }
+}
+
+/** The draft with `freed` as findFits returns it once the move is applied; null if the block is not among the fits. */
+function prove(b: Building, draft: MoveOption, req: Requirement, D: ISODate, today: ISODate): MoveOption | null {
   const applied = applyScenario(b, moveChanges(draft, D))
-  const freed = applied.ok ? findFits(applied.building, req, D, today).find((c) => c.key === block.key) : undefined
+  const freed = applied.ok ? findFits(applied.building, req, D, today).find((c) => c.key === draft.freed.key) : undefined
   return freed ? { ...draft, freed } : null
 }
 
@@ -72,11 +79,18 @@ function rank(a: MoveOption, b: MoveOption): number {
     || b.freed.floor - a.freed.floor
 }
 
-/** Up to MAX_MOVE_OPTIONS one-tenant moves that create a fit for `req` on D; [] when a fit already exists. */
+/**
+ * Up to MAX_MOVE_OPTIONS one-tenant moves that create a fit for `req` on D; [] when a fit already exists.
+ * Drafts are ranked, then proven in that order until enough pass. A proof keeps the draft's suites, so the excess and
+ * floor, hence every rank key, are unchanged; the stable sort gives the order that proving every draft would.
+ */
 export function makeRoom(b: Building, req: Requirement, D: ISODate, today: ISODate): MoveOption[] {
   if (findFits(b, req, D, today).length > 0) return []
-  return movers(b, D, today)
-    .flatMap((m) => optionFor(b, m, req, D, today) ?? [])
-    .sort(rank)
-    .slice(0, MAX_MOVE_OPTIONS)
+  const spots = vacantSpots(b, D, today)
+  const drafts = movers(b, D, today).flatMap((m) => draftFor(b, m, spots, req, D, today) ?? []).sort(rank)
+  return drafts.reduce<MoveOption[]>((proven, draft) => {
+    if (proven.length >= MAX_MOVE_OPTIONS) return proven
+    const option = prove(b, draft, req, D, today)
+    return option ? [...proven, option] : proven
+  }, [])
 }
