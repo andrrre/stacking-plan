@@ -130,6 +130,33 @@
   box-shadow: 0 0 0 1.5px var(--c-surface);
 }
 
+/* The previewed move's tag: words, not colour alone. Page-surface pill with text ink (readable in both themes on any
+   fill); a dashed edge for the suite the tenant leaves, a solid one for the suite it arrives in. */
+.moveTag {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  z-index: 1;
+  transform: translateY(-50%);
+  padding: 1px 5px;
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  line-height: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.suite[data-move='out'] .moveTag { border: 1px dashed var(--c-match); }
+.suite[data-move='in'] .moveTag { border: 1px solid var(--c-match); }
+
+/* A narrow cell drops the tag (data-move stays on the cell, the aria-label and tooltip carry the words). */
+@container (max-width: 120px) {
+  .moveTag { display: none; }
+}
+
 /* ---------- fills (shared by suites and legend swatches) ---------- */
 
 .suite[data-fill='expiring'], .swatch[data-fill='expiring'] { --fill: var(--c-expiring); --ink: var(--c-expiring-ink); }

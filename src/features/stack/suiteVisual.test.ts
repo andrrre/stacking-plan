@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { BUNDLED_BUILDINGS } from '../../data'
 import type { Building, Candidate, ISODate } from '../../domain/types'
+import { applyMove, makeRoom } from '../../domain/makeRoom'
 import { building, floor, lease, suite } from '../../domain/testing/fixtures'
 import { buildStackModel, type StackModel, type SuiteVisual } from './suiteVisual'
 
@@ -332,5 +333,49 @@ describe('buildStackModel: edge cases', () => {
     const m = model({ building: b, matches: MATCHES })
     expect(m.floors[0]?.runs).toEqual([])
     expect(m.floors[0]?.suites[0]?.dimmed).toBe(true)
+  })
+})
+
+describe('buildStackModel: a previewed move', () => {
+  const option = makeRoom(ODT, { minSf: 12_000, includePotential: false }, TODAY, TODAY)[0]
+  if (!option) throw new Error('expected a move option on the hero building')
+  const move = { fromId: option.from.suiteId, toId: option.to.suiteId }
+  const moved = () => model({ building: applyMove(ODT, option, TODAY), matches: [option.freed], move })
+
+  it('a previewed move marks its two suites and keeps them undimmed', () => {
+    const m = moved()
+    expect(visual(m, '510')).toMatchObject({ move: 'out', matchRank: 1, status: { status: 'vacant' } })
+    expect(visual(m, '500')).toMatchObject({ matchRank: 1, move: null })
+    const arrival = visual(m, '410')
+    expect(arrival).toMatchObject({ move: 'in', dimmed: false })
+    expect(arrival.label.line2).toBe('Northpier Engineering')
+    expect(visual(m, '1200')).toMatchObject({ dimmed: true, move: null })
+  })
+
+  it('the move suffix ends the aria-label', () => {
+    const m = moved()
+    expect(visual(m, '510').ariaLabel.endsWith(', moves out in the previewed move')).toBe(true)
+    expect(visual(m, '410').ariaLabel.endsWith(', moves in in the previewed move')).toBe(true)
+  })
+
+  it('stays undimmed under a KPI highlight and unfiltered under a legend pill', () => {
+    const lit = moved()
+    const highlighted = model({
+      building: applyMove(ODT, option, TODAY), matches: [option.freed], move, highlightIds: new Set(['odt-700']),
+    })
+    expect(visual(highlighted, '410').dimmed).toBe(false)
+    expect(visual(highlighted, '510').dimmed).toBe(false)
+    expect(visual(highlighted, '1200').dimmed).toBe(true)
+    const filtered = model({
+      building: applyMove(ODT, option, TODAY), matches: [option.freed], move, legend: 'common',
+    })
+    expect(visual(filtered, '410')).toMatchObject({ filtered: false, move: 'in' })
+    expect(visual(filtered, '510').filtered).toBe(false)
+    expect(visual(filtered, '1200').filtered).toBe(true)
+    expect(visual(lit, '410').ariaLabel).not.toContain('filtered out')
+  })
+
+  it('without a move every suite has move null', () => {
+    expect(model().floors.flatMap((f) => f.suites).every((v) => v.move === null)).toBe(true)
   })
 })

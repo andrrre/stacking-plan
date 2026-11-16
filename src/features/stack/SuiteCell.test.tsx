@@ -9,14 +9,14 @@ import type { RovingItemProps } from './useRovingFocus'
 const TODAY = '2026-11-15'
 const roving: RovingItemProps = { tabIndex: 0, ref: () => {}, onFocus: () => {}, onKeyDown: () => {} }
 
-function visual(number: string): SuiteVisual {
+function visual(number: string, move: SuiteVisual['move'] = null): SuiteVisual {
   const model = buildStackModel({
     building: BUNDLED_BUILDINGS[0], asOf: TODAY, today: TODAY, mode: 'availability', matches: [],
     highlightIds: null, modifiedIds: new Set(), selectedSuiteId: null,
   })
   const v = model.floors.flatMap((f) => f.suites).find((x) => x.suite.number === number)
   if (!v) throw new Error(`suite ${number} not in model`)
-  return v
+  return { ...v, move }
 }
 
 describe('SuiteCell', () => {
@@ -50,5 +50,24 @@ describe('SuiteCell', () => {
     expect(el).toHaveTextContent(/^720$/)
     expect(el).toHaveAttribute('data-compact', 'true')
     expect(el).toHaveAccessibleName(/Halcyon Tide Realty/)
+  })
+
+  it('shows Moves out and Moves in tags', () => {
+    const { unmount } = render(<SuiteCell visual={visual('510', 'out')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const out = screen.getByTestId('suite-odt-510')
+    expect(out).toHaveAttribute('data-move', 'out')
+    expect(out).toHaveTextContent('Moves out')
+    unmount()
+    render(<SuiteCell visual={visual('410', 'in')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const arrival = screen.getByTestId('suite-odt-410')
+    expect(arrival).toHaveAttribute('data-move', 'in')
+    expect(arrival).toHaveTextContent('Moves in')
+  })
+
+  it('a suite without a move has no tag and no data-move', () => {
+    render(<SuiteCell visual={visual('500')} roving={roving} joinsNext={false} onSelect={() => {}} />)
+    const el = screen.getByTestId('suite-odt-500')
+    expect(el).not.toHaveAttribute('data-move')
+    expect(el).not.toHaveTextContent('Moves')
   })
 })

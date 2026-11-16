@@ -22,6 +22,7 @@ export type SuiteVisual = {
   dimmed: boolean // ghosted by a search or a KPI highlight
   filtered: boolean // painted otherwise than the pressed legend pill, and not a search match
   matchRank: number | null
+  move: 'out' | 'in' | null // the previewed move leaves this suite / arrives in it
   modified: boolean
   selected: boolean
 }
@@ -42,6 +43,7 @@ export type StackModelInput = {
   modifiedIds: ReadonlySet<string>
   selectedSuiteId: string | null
   legend?: FillKey | null // the pressed legend pill (none when absent)
+  move?: { fromId: string; toId: string } | null // the previewed move (none when absent)
 }
 
 const RISK_FILL: Record<'le6' | 'le12' | 'le24' | 'le36' | 'gt36' | 'openEnded', FillKey> = {
@@ -52,7 +54,7 @@ const RISK_WORDS: Partial<Record<RiskBucket, string>> = {
   le6: '6 months or less', le12: '12 months or less', le24: '24 months or less', le36: '36 months or less', gt36: 'over 36 months',
 }
 
-type Context = Omit<StackModelInput, 'building' | 'matches' | 'legend'> & { ranks: ReadonlyMap<string, number> }
+type Context = Omit<StackModelInput, 'building' | 'matches' | 'legend' | 'move'> & { ranks: ReadonlyMap<string, number>; move: StackModelInput['move'] }
 
 function availabilityFill(st: StatusResult): FillKey {
   return st.status === 'vacant' && st.overlay !== 'none' ? st.overlay : st.status
@@ -118,7 +120,16 @@ function ariaStatus(s: Suite, st: StatusResult, today: ISODate): string {
   }
 }
 
-type Marks = { risk: RiskBucket; mode: ColourMode; matchRank: number | null; modified: boolean; today: ISODate }
+type Marks = {
+  risk: RiskBucket; mode: ColourMode; matchRank: number | null; modified: boolean; move: SuiteVisual['move']; today: ISODate
+}
+
+const MOVE_WORDS = { out: 'moves out', in: 'moves in' } as const
+
+function moveOf(id: string, move: StackModelInput['move']): SuiteVisual['move'] {
+  if (!move) return null
+  return id === move.fromId ? 'out' : id === move.toId ? 'in' : null
+}
 
 /** Spoken risk bucket for leased suites, in risk mode only (the fill is the only other risk cue). */
 function riskWords(m: Marks): string | undefined {
@@ -131,6 +142,7 @@ function ariaLabelFor(s: Suite, floorNumber: number, st: StatusResult, m: Marks)
   if (risk) parts.push(`lease risk: ${risk}`)
   if (m.matchRank !== null) parts.push(`match ${m.matchRank}`)
   if (m.modified) parts.push('modified')
+  if (m.move) parts.push(`${MOVE_WORDS[m.move]} in the previewed move`)
   return parts.join(', ')
 }
 
@@ -161,8 +173,10 @@ function suiteVisual(s: Suite, floorNumber: number, ctx: Context): SuiteVisual {
   const status = statusAt(s, ctx.asOf, ctx.today)
   const risk = riskBucket(s, ctx.asOf, ctx.today)
   const matchRank = ctx.ranks.get(s.id) ?? null
-  const marks: Marks = { risk, mode: ctx.mode, matchRank, modified: ctx.modifiedIds.has(s.id), today: ctx.today }
-  const dimmed = ctx.highlightIds ? !ctx.highlightIds.has(s.id) : ctx.ranks.size > 0 && matchRank === null
+  const move = moveOf(s.id, ctx.move)
+  const marks: Marks = { risk, mode: ctx.mode, matchRank, modified: ctx.modifiedIds.has(s.id), move, today: ctx.today }
+  // A suite in the previewed move is the subject of the view: never ghosted, under a search or a KPI highlight.
+  const dimmed = move === null && (ctx.highlightIds ? !ctx.highlightIds.has(s.id) : ctx.ranks.size > 0 && matchRank === null)
   const fill = fillFor(status, risk, ctx.mode)
   return {
     suite: s,
@@ -175,6 +189,7 @@ function suiteVisual(s: Suite, floorNumber: number, ctx: Context): SuiteVisual {
     dimmed,
     filtered: false, // set by withFilter, once the whole building's fills are known
     matchRank,
+    move,
     modified: marks.modified,
     selected: s.id === ctx.selectedSuiteId,
   }
@@ -200,21 +215,21 @@ const plateOf = (f: Floor) => f.suites.reduce((sum, s) => sum + s.areaSf, 0)
 
 /**
  * The legend filter: a suite painted otherwise than the pressed pill fades and says so, unless it is a search
- * match (a match is what the search asked to see). A key no suite carries as of the date filters nothing, so a
+ * match (a match is what the search asked to see) or in the previewed move. A key no suite carries as of the date filters nothing, so a
  * pill left pressed past its last suite (or a shared link) never fades the whole building.
  */
 function withFilter(floors: FloorVisual[], legend: FillKey | null | undefined): FloorVisual[] {
   const carried = legend && floors.some((f) => f.suites.some((v) => v.fill === legend))
   if (!carried) return floors
   const filter = (v: SuiteVisual): SuiteVisual =>
-    v.fill === legend || v.matchRank !== null ? v : { ...v, filtered: true, ariaLabel: `${v.ariaLabel}, filtered out` }
+    v.fill === legend || v.matchRank !== null || v.move !== null ? v : { ...v, filtered: true, ariaLabel: `${v.ariaLabel}, filtered out` }
   return floors.map((f) => ({ ...f, suites: f.suites.map(filter) }))
 }
 
 export function buildStackModel(i: StackModelInput): StackModel {
   const matches = i.highlightIds ? [] : i.matches
-  const { legend, ...rest } = i
-  const ctx: Context = { ...rest, ranks: rankMap(matches) }
+  const { legend, move = null, ...rest } = i
+  const ctx: Context = { ...rest, move, ranks: rankMap(matches) }
   const maxPlate = Math.max(...i.building.floors.map(plateOf))
   const floors = [...i.building.floors].sort((a, b) => b.number - a.number).map((f): FloorVisual => {
     const plateSf = plateOf(f)

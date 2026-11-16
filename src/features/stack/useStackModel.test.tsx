@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { makeRoom } from '../../domain/makeRoom'
+import { BUNDLED_BUILDINGS } from '../../data'
 import { initState } from '../../app/state/init'
 import { AppStateContext } from '../../app/state/useAppState'
 import type { AppState } from '../../app/state/types'
@@ -39,5 +41,16 @@ describe('useStackModel', () => {
     const suites = renderModel({ mode: 'risk', asOf: '2027-07-01' })
     expect(suites.find((v) => v.suite.number === '600')?.fill).toBe('potential')
     expect(suites.find((v) => v.suite.number === '900')?.fill).toBe('risk-le36')
+  })
+
+  it('a preview shows the applied building and the freed block; state.changes stays empty', () => {
+    const [option] = makeRoom(BUNDLED_BUILDINGS[0], { minSf: 12_000, includePotential: false }, TODAY, TODAY)
+    if (!option) throw new Error('expected a move option')
+    const suites = renderModel({ movePreview: option })
+    expect(suites.find((v) => v.suite.number === '410')).toMatchObject({ move: 'in', dimmed: false })
+    expect(suites.find((v) => v.suite.number === '410')?.label.line2).toBe('Northpier Engineering')
+    expect(suites.find((v) => v.suite.number === '510')).toMatchObject({ move: 'out', matchRank: 1 })
+    expect(suites.find((v) => v.suite.number === '500')?.matchRank).toBe(1)
+    expect(suites.filter((v) => v.matchRank !== null)).toHaveLength(2)
   })
 })

@@ -13,6 +13,7 @@ export function suiteDataAttributes(v: SuiteVisual, joinsNext: boolean) {
     'data-match-rank': v.matchRank ?? undefined,
     'data-dimmed': String(v.dimmed),
     'data-filtered': String(v.filtered),
+    'data-move': v.move ?? undefined,
     'data-modified': String(v.modified),
     'data-joins-next': joinsNext ? 'true' : undefined,
   }

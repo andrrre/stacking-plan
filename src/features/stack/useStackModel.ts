@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { applyMove } from '../../domain/makeRoom'
 import { kpis } from '../../domain/kpis'
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { selectBaseBuilding } from '../../app/state/selectors'
@@ -9,10 +10,20 @@ import { buildStackModel, type StackModel } from './suiteVisual'
 
 export function useStackModel(): StackModel {
   const { state } = useAppState()
-  const { matches } = useMatches()
-  const building = selectBuilding(state)
+  const { matches: found } = useMatches()
+  const scenario = selectBuilding(state)
   const base = selectBaseBuilding(state)
-  const { asOf, today, mode, highlight, selection, changes, legend } = state
+  const { asOf, today, mode, highlight, selection, changes, legend, movePreview } = state
+  // A preview shows the move applied and the block it frees; the finder keeps its own matches (state.changes is untouched).
+  const building = useMemo(
+    () => (movePreview ? applyMove(scenario, movePreview, asOf) : scenario),
+    [scenario, movePreview, asOf],
+  )
+  const matches = useMemo(() => (movePreview ? [movePreview.freed] : found), [movePreview, found])
+  const move = useMemo(
+    () => (movePreview ? { fromId: movePreview.from.suiteId, toId: movePreview.to.suiteId } : null),
+    [movePreview],
+  )
   const includePotential = state.req.includePotential
   const selectedSuiteId = selection?.kind === 'suite' ? selection.suiteId : null
 
@@ -25,8 +36,8 @@ export function useStackModel(): StackModel {
 
   return useMemo(
     () => buildStackModel({
-      building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId, legend,
+      building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId, legend, move,
     }),
-    [building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId, legend],
+    [building, asOf, today, mode, matches, highlightIds, modifiedIds, selectedSuiteId, legend, move],
   )
 }
