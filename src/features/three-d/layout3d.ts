@@ -172,6 +172,17 @@ export function buildingLayout(model: StackModel, spread = 0): Layout3D {
   }
 }
 
+/**
+ * The plinth's half extents and the height with the floors together, as buildingLayout(model, 0) gives them,
+ * without laying out every suite (the sketched city is sized by these).
+ */
+export function buildingSite(model: StackModel): { halfW: number; halfD: number; height: number } {
+  const count = model.floors.length
+  const widest = Math.max(...model.floors.map((f) => (PLATE_W * f.widthPct) / 100 + 2 * SLAB_MARGIN), PLATE_W + 2 * SLAB_MARGIN)
+  const roof = count === 0 ? 0 : (count - 1) * PITCH + SLAB_T + SUITE_H + CAP_T + 0.01
+  return { halfW: widest / 2 + PLINTH_MARGIN, halfD: (DEPTH + 2 * SLAB_MARGIN + 2 * PLINTH_MARGIN) / 2, height: PLINTH_H + roof }
+}
+
 /** How far a floor-view label stops short of the top face's back edge (world units). */
 const FOCUS_LABEL_INSET = 0.2
 

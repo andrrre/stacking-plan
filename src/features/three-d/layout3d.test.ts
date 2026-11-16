@@ -4,6 +4,7 @@ import { findFits } from '../../domain/findFits'
 import { buildStackModel, type StackModel } from '../stack/suiteVisual'
 import { SEPARATED_VIEW } from './camera'
 import {
+  buildingSite,
   CAP_T, DEPTH, LIFT, PITCH, PLATE_W, PLINTH_H, SLAB_MARGIN, SLAB_T, SPREAD_PITCH, SUITE_GAP, SUITE_H, TOP_LABEL_DEPTH, boundsKey,
   MIN_TOP_STRIP, buildingLayout, floorLayout, labelDepth, labelFace, suiteRect, suiteWidths, topStrip, visibleTopDepth, type SuiteBox,
 } from './layout3d'
@@ -286,5 +287,17 @@ describe('floorLayout (floor view)', () => {
     const sep = buildingLayout(model(), 1)
     expect(labelDepth(sep, byId(sep.suites, 'odt-500'), eye)).toBe(topStrip(byId(sep.suites, 'odt-500'), eye))
     expect(labelDepth(buildingLayout(model(), 0), byId(sep.suites, 'odt-500'), eye)).toBeUndefined()
+  })
+})
+
+describe('buildingSite', () => {
+  it('is the plinth footprint and the floors-together height of buildingLayout, for every bundled building and an empty one', () => {
+    for (const b of BUNDLED_BUILDINGS) {
+      const m = model(null, b)
+      const l = buildingLayout(m, 0)
+      expect(buildingSite(m), b.id).toEqual({ halfW: l.plinth.w / 2, halfD: l.plinth.d / 2, height: l.bounds.max[1] })
+    }
+    const empty = buildingLayout({ floors: [] }, 0)
+    expect(buildingSite({ floors: [] })).toEqual({ halfW: empty.plinth.w / 2, halfD: empty.plinth.d / 2, height: empty.bounds.max[1] })
   })
 })

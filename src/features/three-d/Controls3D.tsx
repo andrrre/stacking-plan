@@ -3,7 +3,7 @@ import type { Rig } from './sceneTypes'
 import styles from './three-d.module.css'
 
 // Camera controls as real buttons (a labelled group, each its own tab stop), so rotate, zoom, reset,
-// separate floors and floor view work from the keyboard too.
+// separate floors, floor view and the city switch work from the keyboard too.
 
 type Props = {
   rig: RefObject<Rig | null>
@@ -11,6 +11,8 @@ type Props = {
   onSeparate: (on: boolean) => void
   floorView: boolean
   onFloorView: (on: boolean) => void
+  city: boolean
+  onCity: (on: boolean) => void
   onReset: () => void
 }
 
@@ -26,8 +28,27 @@ const ROTATE_LEFT = 'M3.5 6.5A5 5 0 1 1 3 9.5M3.5 6.5V3M3.5 6.5H7'
 const ROTATE_RIGHT = 'M12.5 6.5A5 5 0 1 0 13 9.5M12.5 6.5V3M12.5 6.5H9'
 const SEPARATE = 'M2.5 3.5h11M2.5 8h11M2.5 12.5h11'
 const FLOOR = 'M1.5 9.5 8 6l6.5 3.5L8 13ZM8 2v2.5'
+const CITY = 'M1.5 13.5h13M3 13.5V8h3v5.5M6 13.5V3.5h4v10M10 13.5V7h3v6.5'
 
-export function Controls3D({ rig, separated, onSeparate, floorView, onFloorView, onReset }: Props) {
+/** Shows or hides the sketched streets, neighbours and traffic around the building. */
+function CityToggle({ city, onCity }: Pick<Props, 'city' | 'onCity'>) {
+  return (
+    <button
+      type="button"
+      className={styles.ctlText}
+      aria-pressed={city}
+      aria-label="City"
+      data-testid="city-toggle"
+      title="Sketched streets and neighbours around the building"
+      onClick={() => onCity(!city)}
+    >
+      <Icon d={CITY} />
+      <span className={styles.ctlLabel}>City</span>
+    </button>
+  )
+}
+
+export function Controls3D({ rig, separated, onSeparate, floorView, onFloorView, city, onCity, onReset }: Props) {
   return (
     <div className={styles.controls} role="group" aria-label="3D view controls">
       <span className={styles.hint} aria-hidden="true">Drag to orbit · scroll to zoom</span>
@@ -65,6 +86,7 @@ export function Controls3D({ rig, separated, onSeparate, floorView, onFloorView,
         <Icon d={FLOOR} />
         Floor view
       </button>
+      <CityToggle city={city} onCity={onCity} />
       <button type="button" className={styles.ctlText} data-testid="reset-view" onClick={onReset}>
         Reset view
       </button>

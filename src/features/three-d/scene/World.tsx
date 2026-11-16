@@ -9,12 +9,14 @@ import type { Rig, ScreenPoint } from '../sceneTypes'
 import type { SuiteVisual } from '../../stack/suiteVisual'
 import { Ground, Suites } from './Building'
 import { CameraRig } from './CameraRig'
+import { City, type CityScene } from './City'
 import { useContextWatch, usePicker, useFrameSync } from './interaction'
 import type { OverlayRefs } from './overlayRefs'
 import { useSharedGeometry } from './resources'
 import { SuiteMaterials } from './suiteMaterials'
 
-// Everything inside the <Canvas>: camera rig, ground, building, picking and the overlay sync.
+// Everything inside the <Canvas>: camera rig, ground, building, picking, the overlay sync and the city. The
+// city is not in the picking group and plays no part in the framing (the rig frames the building's bounds).
 
 export type WorldProps = {
   mode: ColourMode
@@ -31,6 +33,7 @@ export type WorldProps = {
   onSelect: (id: string) => void
   onPoints: (p: ReadonlyMap<string, ScreenPoint>) => void
   onLost: () => void // the WebGL context was lost and did not come back
+  city: CityScene | null // the sketched city around the building (null: the plain stage)
 }
 
 const cssVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name)
@@ -58,6 +61,7 @@ export function World(p: WorldProps) {
   return (
     <>
       <CameraRig bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} rig={p.rig} />
+      {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
       <Ground bounds={layout.bounds} shapes={shapes} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} />
     </>

@@ -1,9 +1,11 @@
 import { Component, Suspense, lazy, useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { selectBuilding } from '../../app/state/selectBuilding'
+import { browserStorage } from '../../app/state/storage'
 import { useAppState } from '../../app/state/useAppState'
 import { StackView } from '../stack/StackView'
 import { useRovingFocus } from '../stack/useRovingFocus'
 import { useStackModel } from '../stack/useStackModel'
+import { loadCity, saveCity } from './city/motion'
 import { Controls3D } from './Controls3D'
 import { FloorSlider } from './FloorSlider'
 import { initialFloor } from './floorView'
@@ -88,6 +90,16 @@ function useViewModes(model: StackModel, selectedId: string | null) {
   }
 }
 
+/** The City switch, saved in localStorage (not the URL: it is a viewing preference, not a shared state). */
+function useCitySwitch(): [boolean, (on: boolean) => void] {
+  const [city, setCity] = useState(() => loadCity(browserStorage()))
+  const onCity = useCallback((on: boolean) => {
+    setCity(on)
+    saveCity(browserStorage(), on)
+  }, [])
+  return [city, onCity]
+}
+
 function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
   const model = useStackModel()
   const { state, dispatch } = useAppState()
@@ -105,6 +117,7 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
   const [points, setPoints] = useState(NO_POINTS)
   const rig = useRef<Rig | null>(null)
   const printing = usePrinting()
+  const [city, onCity] = useCitySwitch()
   const onReset = () => {
     rig.current?.reset() // drops the button turns and zooms, and reframes
     modes.leave()
@@ -117,7 +130,7 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
         <SceneBoundary onError={onLoadFailed}>
           <Suspense fallback={<Placeholder />}>
             <Scene
-              model={model} mode={state.mode} separated={modes.separated} floor={floor} focusedId={focusedId} rig={rig}
+              buildingId={state.buildingId} model={model} mode={state.mode} separated={modes.separated} floor={floor} focusedId={focusedId} city={city} rig={rig}
               onSelect={onSelect} onPoints={setPoints} onLost={onLost}
             />
           </Suspense>
@@ -125,7 +138,7 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
         {floor !== null && <FloorSlider model={model} floor={floor} onFloor={modes.setFloor} />}
         <Controls3D
           rig={rig} separated={modes.separated} onSeparate={modes.onSeparate}
-          floorView={floor !== null} onFloorView={modes.onFloorView} onReset={onReset}
+          floorView={floor !== null} onFloorView={modes.onFloorView} city={city} onCity={onCity} onReset={onReset}
         />
       </div>
       {printing && (

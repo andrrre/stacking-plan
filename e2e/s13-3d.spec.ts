@@ -622,6 +622,133 @@ test.describe('3D building', () => {
   })
 })
 
+test.describe('the sketched city around the building', () => {
+  const toggle = (page: Page) => page.getByTestId('stack-3d').getByTestId('city-toggle')
+  const scene = (page: Page) => page.getByTestId('stack-3d').getByTestId('scene3d')
+  const MOVING = { cityMotion: 'on' } // gotoApp holds the traffic still unless asked
+
+  /** How many ticks the city's own loop has run (the canvas counts them); 0 before the first. */
+  const ticks = async (page: Page) => Number(await canvas(page).getAttribute('data-city-ticks')) || 0
+  /** Ticks over `ms`. */
+  const ticksIn = async (page: Page, ms: number) => {
+    const before = await ticks(page)
+    await page.waitForTimeout(ms)
+    return (await ticks(page)) - before
+  }
+  /** Waits until the city's loop has stopped: its tick count holds over two reads 400 ms apart. */
+  const loopStopped = async (page: Page) => {
+    const seen: number[] = []
+    await expect.poll(async () => {
+      seen.push(await ticks(page))
+      return seen.length >= 2 && seen[seen.length - 1] === seen[seen.length - 2]
+    }, { intervals: [400], timeout: 5000 }).toBe(true)
+  }
+
+  test('the City switch is on by default; turned off it stays off after a reload', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(scene(page)).toHaveAttribute('data-city', 'on')
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
+    await toggle(page).click()
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+    await expect(scene(page)).toHaveAttribute('data-city', 'off')
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'off')
+    expect([...new URL(page.url()).searchParams.keys()]).not.toContain('city') // a local preference, not in the URL
+    await page.reload()
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+    await expect(scene(page)).toHaveAttribute('data-city', 'off')
+    await toggle(page).click()
+    await page.reload()
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('with the city on, the building is framed exactly as without it and a click on the facade selects', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await pointOf(page, '500')
+    await settled(page, '500')
+    const tag = page.getByTestId('floor3d-7')
+    const withCity = await tag.boundingBox()
+    const point = await pointKey(page, '500')
+    const at = await pointOf(page, '500')
+    await page.mouse.click(at.x, at.y)
+    await expect(suite3d(page, '500')).toHaveAttribute('aria-pressed', 'true')
+    await toggle(page).click()
+    await expect(scene(page)).toHaveAttribute('data-city', 'off')
+    await settled(page, '500')
+    expect(await tag.boundingBox()).toEqual(withCity)
+    expect(await pointKey(page, '500')).toBe(point)
+  })
+
+  test('the traffic animates on its own loop, which never stops the screen points from settling', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await pointOf(page, '300')
+    await settled(page, '300')
+    expect(await ticksIn(page, 1000), 'the city loop runs').toBeGreaterThan(10)
+    await toggle(page).click()
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'off')
+    await loopStopped(page)
+    expect(await ticksIn(page, 1000), 'nothing animates with the city off').toBe(0)
+  })
+
+  test('reduced motion: the cars and people stand still and the city loop never runs', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await gotoApp(page, '3d', MOVING)
+    await pointOf(page, '500')
+    await expect(scene(page)).toHaveAttribute('data-city', 'on')
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'off')
+    await settled(page, '500')
+    expect(await ticks(page)).toBe(0)
+    expect(await ticksIn(page, 1000)).toBe(0)
+  })
+
+  test('an open dialog stops the traffic; closing it starts it again', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await page.getByTestId('req-min-sf').fill('10000')
+    await page.getByTestId('save-match-1').click() // the summary needs a shortlist
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
+    await page.getByTestId('open-summary').click()
+    await expect(page.getByTestId('client-summary')).toBeVisible()
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'off')
+    await loopStopped(page)
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('client-summary')).toHaveCount(0)
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
+    expect(await ticksIn(page, 1000)).toBeGreaterThan(10)
+  })
+
+  test('floor view and separate floors keep the city moving, further back', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await expect(scene(page)).toHaveAttribute('data-city-dim', '1.00')
+    await page.getByTestId('floor-view').click()
+    await expect(scene(page)).toHaveAttribute('data-city', 'on')
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
+    await expect(scene(page)).toHaveAttribute('data-city-dim', '0.40')
+    await page.getByTestId('separate-floors').click()
+    await expect(scene(page)).toHaveAttribute('data-city-motion', 'on')
+    await expect(scene(page)).toHaveAttribute('data-city-dim', '0.50')
+    expect(await ticksIn(page, 1000)).toBeGreaterThan(10)
+  })
+
+  test('with the traffic moving, the date slider still updates the facade labels', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await pointOf(page, '600')
+    await page.getByTestId('date-slider').fill('8')
+    await expect(suite3d(page, '600')).toHaveAttribute('data-overlay', 'potential')
+    await expect(label(page, '600')).toContainText('Potential')
+    await expect(label(page, '600')).toBeVisible()
+  })
+
+  test('with the traffic moving, the scene settles after a Minimum size search', async ({ page }) => {
+    await gotoApp(page, '3d', MOVING)
+    await page.getByTestId('req-min-sf').fill('10000')
+    await expect(suite3d(page, '500')).toHaveAttribute('data-match-rank', '1')
+    await pointOf(page, '500')
+    await settled(page, '500')
+    await expect(page.getByTestId('badge3d-1')).toBeVisible()
+    await expect(page.locator('polygon[data-kind="run"][data-on="true"]')).toHaveCount(2)
+  })
+})
+
 function tallBuilding() {
   const floors = Array.from({ length: 25 }, (_, f) => ({
     number: 25 - f,

@@ -7,11 +7,13 @@ export const TODAY = '2026-11-15'
 export type View = '3d' | 'stack'
 
 /**
- * Loads the app in `view` with optional URL params; `today` is always pinned to TODAY. A `view` key in
- * `params` wins (for tests of the parameter itself).
+ * Loads the app in `view` with optional URL params; `today` is always pinned to TODAY. The 3D city's traffic
+ * is held still (`cityMotion=off`), so no spec waits on, or pays for, a scene that never stops drawing; pass
+ * `{ cityMotion: 'on' }` to let it move. A `view` key in `params` wins (for tests of the parameter itself).
  */
 export async function gotoApp(page: Page, view: View, params: string | Record<string, string> = {}): Promise<void> {
   const search = new URLSearchParams(view === 'stack' ? { view } : {})
+  search.set('cityMotion', 'off')
   for (const [k, v] of new URLSearchParams(params)) search.set(k, v)
   search.set('today', TODAY)
   await page.goto(`/?${search.toString()}`)

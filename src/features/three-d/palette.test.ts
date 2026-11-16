@@ -41,6 +41,11 @@ describe('readPalette', () => {
     expect(p.accent).toBe('#c2185b')
   })
 
+  it('reads the muted ink and the strong border the sketched city is drawn in', () => {
+    expect(p.muted).toBe('#5b6475')
+    expect(p.borderStrong).toBe('#b8c0cc')
+  })
+
   it('falls back to grey for a missing or malformed token instead of failing', () => {
     const bare = readPalette(() => '')
     expect(bare.fills.vacant).toBe('#808080')

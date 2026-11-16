@@ -21,6 +21,8 @@ export type Palette = {
   surface: string
   surface2: string
   border: string
+  muted: string // the sketched city's ink
+  borderStrong: string // its traffic
 }
 
 export type PatternKind = 'hatch' | 'committed' | 'none'
@@ -101,6 +103,8 @@ export function readPalette(read: (name: string) => string): Palette {
     surface: hex('--c-surface'),
     surface2: hex('--c-surface-2'),
     border: hex('--c-border'),
+    muted: hex('--c-text-muted'),
+    borderStrong: hex('--c-border-strong'),
   }
 }
 

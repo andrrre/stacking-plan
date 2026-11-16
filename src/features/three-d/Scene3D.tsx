@@ -1,14 +1,18 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { FOV_Y } from './camera'
+import { cityDim } from './city/motion'
+import { cityPlan } from './city/plan'
+import { cityTraffic } from './city/traffic'
 import { labelContent } from './labels3d'
-import { buildingLayout, floorLayout } from './layout3d'
+import { buildingLayout, buildingSite, floorLayout } from './layout3d'
 import { overlayActive, suiteLook } from './palette'
 import type { SceneProps } from './sceneTypes'
 import { Overlay } from './scene/Overlay'
 import { createOverlayRefs } from './scene/overlayRefs'
 import { COLOUR_MS } from './scene/suiteMaterials'
 import { World } from './scene/World'
+import { useCityMotion } from './useCityMotion'
 import { useReducedMotion } from './useReducedMotion'
 import styles from './three-d.module.css'
 
@@ -51,17 +55,33 @@ function useSpread(separated: boolean, reduced: boolean): number {
   return spread
 }
 
-function Scene3D({ model, mode, separated, floor, focusedId, rig, onSelect, onPoints, onLost }: SceneProps) {
+/** The city for this building: seeded by its id, sized by its footprint and height with the floors together. */
+function useCity(buildingId: string, model: SceneProps['model']) {
+  const { halfW, halfD, height } = useMemo(() => buildingSite(model), [model])
+  return useMemo(() => {
+    const plan = cityPlan(buildingId, { halfW, halfD, height })
+    return { plan, traffic: cityTraffic(buildingId, plan) }
+  }, [buildingId, halfW, halfD, height])
+}
+
+function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, rig, onSelect, onPoints, onLost }: SceneProps) {
   const reduced = useReducedMotion()
   const spread = useSpread(separated, reduced)
+  const root = useRef<HTMLDivElement>(null)
+  const running = useCityMotion(root, city, reduced)
+  const town = useCity(buildingId, model)
+  // Floor view and separated floors push the city further back, so the floor being read stands clear.
+  const dim = cityDim(floor, spread)
   // Floor view ignores the spread, so a floors-moving animation does not rebuild its layout every step.
   const wholeSpread = floor === null ? spread : 0
   const layout = useMemo(() => (floor === null ? buildingLayout(model, wholeSpread) : floorLayout(model, floor)), [model, wholeSpread, floor])
   const derived = useDerived(model, focusedId)
   const [refs] = useState(createOverlayRefs)
   return (
-    <div className={styles.scene} data-testid="scene3d" data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
-      data-floors-moving={String(spread > 0 && spread < 1)} data-colour-transition-ms={reduced ? 0 : COLOUR_MS}>
+    <div ref={root} className={styles.scene} data-testid="scene3d" data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
+      data-floors-moving={String(spread > 0 && spread < 1)} data-colour-transition-ms={reduced ? 0 : COLOUR_MS}
+      data-city={city ? 'on' : 'off'} data-city-motion={running ? 'on' : 'off'}
+      data-city-dim={city ? dim.toFixed(2) : undefined}>
       <Canvas
         className={styles.canvas}
         aria-hidden="true"
@@ -74,6 +94,7 @@ function Scene3D({ model, mode, separated, floor, focusedId, rig, onSelect, onPo
         <World
           {...derived} mode={mode} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced}
           refs={refs} rig={rig} onSelect={onSelect} onPoints={onPoints} onLost={onLost}
+          city={city ? { ...town, running, dim } : null}
         />
       </Canvas>
       <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />

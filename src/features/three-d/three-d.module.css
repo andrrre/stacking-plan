@@ -231,6 +231,11 @@
 
 .icon { width: 16px; height: 16px; flex: none; }
 
+/* On a narrow stage the control bar has no room for the City switch's word: it keeps its icon (and its name). */
+@container stage (width < 720px) and (aspect-ratio < 3 / 2) {
+  .ctlLabel { display: none; }
+}
+
 /* ---------- floor view: the vertical floor slider down the left edge ---------- */
 
 /* 84px wide at 8px from the edge: FLOOR_PANEL_W (camera.ts) keeps the building clear of it. Below the

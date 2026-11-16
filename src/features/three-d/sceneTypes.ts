@@ -11,11 +11,13 @@ export type Rig = { reset: () => void; rotate: (degrees: number) => void; zoom: 
 export type ScreenPoint = { x: number; y: number; hit: boolean }
 
 export type SceneProps = {
+  buildingId: string // seeds the sketched city around the building
   model: StackModel
   mode: ColourMode
   separated: boolean
   floor: number | null // floor view: the floor shown (null: the whole building)
   focusedId: string | null
+  city: boolean // the City switch: the sketched neighbourhood and its traffic around the building
   rig: RefObject<Rig | null>
   onSelect: (suiteId: string) => void
   onPoints: (points: ReadonlyMap<string, ScreenPoint>) => void

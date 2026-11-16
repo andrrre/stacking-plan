@@ -7,6 +7,7 @@ import type { ScreenPoint } from '../sceneTypes'
 import type { SuiteVisual } from '../../stack/suiteVisual'
 import { faceCentre, syncOverlay, type OverlayState } from './overlaySync'
 import type { SuiteMaterials } from './suiteMaterials'
+import { syncNeeded, type SyncMark } from './syncGate'
 
 // Picking, hover, and the per-frame overlay sync. Whether a release is a click (not an orbit, a pinch or a
 // cancelled touch) is decided by the pure gesture module.
@@ -42,16 +43,28 @@ type Sync = Omit<OverlayState, 'camera' | 'width' | 'height' | 'hoverId'> & {
   onPoints: (p: ReadonlyMap<string, ScreenPoint>) => void
 }
 
-/** Every frame: advance colour fades, move the overlay; once the camera has been still a moment, report screen points. */
+/** What the overlay follows: the camera's place and lens, the canvas size and the hovered suite. */
+const viewKey = (camera: Camera, w: number, h: number, hover: string | null) =>
+  `${camera.matrixWorld.elements.join()}|${camera.projectionMatrix.elements.join()}|${w}x${h}|${hover ?? ''}`
+
+/**
+ * Every frame: advance colour fades, move the overlay; once the camera has been still a moment, report screen
+ * points. A frame in which neither the view nor the scene's inputs changed (the city's traffic redraws the
+ * canvas while the building stands still) leaves the overlay and the pending report alone.
+ */
 export function useFrameSync(o: Sync): void {
   const invalidate = useThree((s) => s.invalidate)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastPoints = useRef<ReadonlyMap<string, ScreenPoint>>(new Map())
+  const synced = useRef<SyncMark>({ key: '', inputs: null })
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
   useFrame((state) => {
     if (o.mats.step(performance.now())) invalidate()
     const { camera, size } = state
     camera.updateMatrixWorld()
+    const key = viewKey(camera, size.width, size.height, o.hover.current)
+    if (!syncNeeded(synced.current, key, o)) return
+    synced.current = { key, inputs: o }
     syncOverlay({ ...o, camera, width: size.width, height: size.height, hoverId: o.hover.current })
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
