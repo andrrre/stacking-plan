@@ -6,7 +6,7 @@ Built for the Ascendix "Vice City" tech challenge, November 2026. All buildings,
 
 **Live app:** https://stacking-plan-ten.vercel.app/
 
-**Status of the other deliverables:** there is no demo video yet (see [Status](#status-of-the-other-deliverables)). The app also runs locally in two commands. The plan for turning it into a real feature is in [docs/development-plan.md](docs/development-plan.md).
+**Status of the other deliverables:** the demo video is recorded and is submitted with the other deliverables, not kept in this repository (see [Status](#status-of-the-other-deliverables)). The app also runs locally in two commands. The plan for turning it into a real feature is in [docs/development-plan.md](docs/development-plan.md).
 
 ## The problem
 
@@ -181,6 +181,7 @@ For a public deploy, use a dedicated key with a spend limit set at the provider,
 - **AI in the product:** Vercel AI SDK (`ai` 7) with an Anthropic model, server-side only and optional. The chat uses `@ai-sdk/react` in the browser.
 - **Tests:** Vitest 5 with Testing Library, Playwright 1.65, ESLint 10.
 - **Hosting:** Vercel (`vercel.json`, `api/`), deployed at https://stacking-plan-ten.vercel.app/.
+- **Demo video:** Playwright for the capture, ffmpeg for the encoding, and Kokoro (`kokoro-onnx`) for the voice.
 
 ### How it was built
 
@@ -253,9 +254,17 @@ From the design:
 | README | This file | |
 | Development plan | [docs/development-plan.md](docs/development-plan.md) | |
 | Public app link | https://stacking-plan-ten.vercel.app/ | Deployed on Vercel from `main`, with an Anthropic key set for Production. |
-| Demo video (60 s or less) | Not done | The planned tooling needs an ElevenLabs account. The beats are written in DESIGN.md section 9. |
+| Demo video (1 min 30 s) | Recorded; submitted separately, not in this repository | An MP4 at 1600 × 900 in the dark theme, with an AI voiceover. It is made by `scripts/demo-video/`. |
 
-**Recording the demo:** the demo starts on the 3D building. Go back to the match list ("All matches") before dragging the date. An open "why this works" panel hides the re-ranking. The search frame and **Separate floors** are the strongest 3D moments.
+**Recording the demo:** `node scripts/demo-video/record.mjs` writes `.demo-video/stackmatch-demo.mp4` (the folder is ignored by git). It takes about three minutes and runs on macOS only.
+
+- It drives the live deploy in headless Chrome on the real GPU, so no window opens. `DEMO_URL` points it at another address.
+- The beats and the narration are in `scripts/demo-video/storyboard.mjs`. Each beat lasts as long as its line, so editing a line re-times the video.
+- The beats, in order: opening orbit, KPI tiles, **Separate floors**, **Floor view**, a 10,000 SF question to the assistant, "why this works", the date moved to Jul 2027, Make room for 12,000 SF (**Show move**, **Apply as scenario**), the suite tour, the client summary, closing orbit.
+- It needs an `ffmpeg` with libx264 and aac on the PATH, or its path in `FFMPEG`.
+- The voice is the macOS `say` voice by default (`VOICE`). The submitted video uses Kokoro, a neural voice that runs locally with no account: set `KOKORO_DIR` to a folder holding a Python `venv` with `kokoro-onnx` and `soundfile`, plus the model files `kokoro-v1.0.onnx` and `voices-v1.0.bin`.
+- Each run sends one real chat question and one summary request to the deployed AI key.
+- The page runs at half speed while recording and the video plays at normal speed, which keeps the 3D motion at 30 frames a second. CSS transitions are not slowed, so they play about twice as fast in the video as in the app.
 
 ## Repository map
 
@@ -271,6 +280,7 @@ From the design:
 | `api/`, `server/` | The three optional AI endpoints (`ask`, `summary`, `chat`) and their shared code, including the chat's tools |
 | `server/dev/` | The Vite plugin that serves `/api/*` under `npm run dev` and `npm run preview`, and reads `.env` |
 | `e2e/` | Playwright tests, including the three judging questions |
+| `scripts/demo-video/` | The demo video recorder: the storyboard, the capture and the ffmpeg encoding |
 | `docs/` | The development plan, and `docs/spec/`: the requirement resolutions and technical specification written before the build |
 
 Code comments that cite "spec" (for example "spec A6" or "spec-technical §5.4") refer to the files in `docs/spec/`.
