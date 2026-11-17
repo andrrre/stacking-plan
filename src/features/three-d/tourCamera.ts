@@ -1,5 +1,7 @@
 import { FOV_Y, type Vec3, type View } from './camera'
-import { DEPTH, PITCH, type Bounds, type Box } from './layout3d'
+import type { Via } from './glide'
+import { DEPTH, PITCH, SUITE_H, type Bounds, type Box } from './layout3d'
+import { columnXs } from './tourRoom'
 
 // The suite tour's camera: where it stands outside to show the stop's floor, where it stands inside the suite,
 // where it looks and how it pans. Pure numbers on plain tuples (axes as in layout3d.ts: x along the facade,
@@ -12,9 +14,14 @@ export const EYE_HEIGHT = (1.6 / METRES_PER_FLOOR) * PITCH
 export const EXTERIOR_FOV = FOV_Y
 /** Inside: a person's field of view, wide enough to read a room (vertical degrees). */
 export const INTERIOR_FOV = 60
-/** The near plane inside, so the floor a step ahead is not clipped (the exterior camera's is 0.5). */
+/** The near plane inside, so the floor a step ahead is not clipped. */
 export const INTERIOR_NEAR = 0.05
+/** The scene camera's own near plane (Scene3D), kept outside so depth stays precise out to the far plane. */
 export const EXTERIOR_NEAR = 0.5
+/** How close to the room's walls, floor or ceiling the camera takes the interior near plane (world units). */
+const NEAR_REACH = 2 * EXTERIOR_NEAR
+/** How far out of the facade the way into a suite turns square to it (world units; ≈ 6 m). */
+export const APPROACH = 1.5
 
 export const FLY_MS = 1400 // from wherever the camera is to the stop's floor, outside
 export const ENTER_MS = 1600 // from outside into the suite
@@ -105,4 +112,39 @@ export function exteriorView(f: Footprint, building: Bounds): View {
   const half = Math.max((building.max[0] - building.min[0]) / 2, 1)
   const side = clamp(((f.x0 + f.x1) / 2) / half, -1, 1)
   return { azimuth: 6 + 18 * side, elevation: 9 }
+}
+
+/**
+ * The near plane for a camera at `p`: the interior one in the stop's room or within reach of its walls (where the
+ * exterior one would clip the columns and floor), else the exterior one. Switched where the camera crosses the
+ * facade or roof line, not at a phase boundary.
+ */
+export function nearFor(p: Readonly<Vec3>, room: Footprint | null): number {
+  if (!room) return EXTERIOR_NEAR
+  const m = NEAR_REACH
+  const inX = p[0] > room.x0 - m && p[0] < room.x1 + m
+  const inZ = p[2] > room.z0 - m && p[2] < room.z1 + m
+  const inY = p[1] > room.floor - m && p[1] < room.floor + SUITE_H + m
+  return inX && inY && inZ ? INTERIOR_NEAR : EXTERIOR_NEAR
+}
+
+/** The middle of the facade bay nearest the suite's middle: a way in that passes no column. */
+function bayMiddle(f: Footprint): number {
+  const xs = columnXs(f.x0, f.x1)
+  const centre = (f.x0 + f.x1) / 2
+  const mids = xs.slice(1).map((x, i) => (x + (xs[i] ?? x)) / 2)
+  return mids.reduce((best, m) => (Math.abs(m - centre) < Math.abs(best - centre) ? m : best), mids[0] ?? centre)
+}
+
+/**
+ * The way into a suite from `from` (outside) to `eye`: curving round to a point APPROACH out of the facade at eye
+ * height, in the middle of a bay near the suite's middle, then straight in, square to the facade, so even a narrow
+ * suite is entered between its own columns and never through a neighbour. The share before the point is its share
+ * of the length, so the speed carries on through it.
+ */
+export function enterVia(from: Readonly<Vec3>, f: Footprint, eye: Readonly<Vec3>): Via {
+  const point: Vec3 = [bayMiddle(f), eye[1], f.z1 + APPROACH]
+  const l1 = Math.hypot(point[0] - from[0], point[1] - from[1], point[2] - from[2])
+  const l2 = Math.hypot(eye[0] - point[0], eye[1] - point[1], eye[2] - point[2])
+  return { point, control: [point[0], point[1], point[2] + l1 / 2], k: l1 + l2 > 0 ? l1 / (l1 + l2) : 0 }
 }

@@ -19,7 +19,7 @@ import { SuiteMaterials } from './suiteMaterials'
 import { useMoveFlight } from './useMoveFlight'
 import type { TourCue } from './useTourCamera'
 import { TourRoom } from './TourRoom'
-import { footprint } from '../tourCamera'
+import { footprint, type Footprint } from '../tourCamera'
 import type { TourStop } from '../sceneTypes'
 
 // Everything inside the <Canvas>: camera rig, ground, building, picking, the overlay sync and the city. The
@@ -28,7 +28,9 @@ import type { TourStop } from '../sceneTypes'
 export type WorldProps = {
   mode: ColourMode
   theme: Theme // the palette is read again, and the frame redrawn, when it changes
-  layout: Layout3D
+  layout: Layout3D // what is drawn
+  frame?: Layout3D // what the camera frames and the tour's flights aim at (default: `layout`); on a suite tour the
+  // drawn layout keeps the room's floor open while the camera leaves it
   visuals: ReadonlyMap<string, SuiteVisual>
   contents: ReadonlyMap<string, LabelContent>
   looks: ReadonlyMap<string, SuiteLook>
@@ -45,8 +47,10 @@ export type WorldProps = {
   onLost: () => void // the WebGL context was lost and did not come back
   city: CityScene | null // the sketched city around the building (null: the plain stage)
   tour?: TourStop | null // the suite tour's stop (null: no tour)
+  room?: TourStop | null // the stop whose room the camera is in, going into or leaving (drawn from inside)
   onTourPhase?: (index: number, phase: TourPhase) => void
   onTourLook?: () => void
+  onTourOutside?: () => void
 }
 
 /**
@@ -62,6 +66,17 @@ function useTourCue(tour: TourStop | null, layout: Layout3D): TourCue | null {
   const cue = tour && foot ? { index: tour.index, phase: tour.phase, foot, building: layout.bounds } : null
   setKept({ key, cue })
   return cue
+}
+
+const NO_ROOM = { foot: null, inside: new Set<string>() }
+
+/** The tour room's floor area in the drawn layout, and its suites (drawn from inside, not as boxes). */
+function useRoom(room: TourStop | null, layout: Layout3D): { foot: Footprint | null; inside: ReadonlySet<string> } {
+  return useMemo(() => {
+    if (!room) return NO_ROOM
+    const foot = footprint(layout.suites.filter((b) => room.suiteIds.includes(b.id)))
+    return foot ? { foot, inside: new Set(room.suiteIds) } : NO_ROOM
+  }, [room, layout])
 }
 
 /**
@@ -97,29 +112,36 @@ export function World(p: WorldProps) {
   const group = useRef<Group>(null)
   const hover = useRef<string | null>(null)
   const animateAt = useCallback(() => (reduced ? null : performance.now()), [reduced])
-  const pick = useMemo(() => ({ group, hover, mats, tooltip: refs.tooltip, visuals, onSelect }), [mats, refs, visuals, onSelect])
+  const quiet = Boolean(p.tour)
+  const pick = useMemo(() => ({ group, hover, mats, tooltip: refs.tooltip, visuals, onSelect, quiet }), [mats, refs, visuals, onSelect, quiet])
   usePicker(pick)
+  useEffect(() => { // a tour starting under the pointer leaves no hover or tooltip behind
+    if (!quiet) return
+    hover.current = null
+    mats.setHover(null)
+    refs.tooltip.current?.toggleAttribute('hidden', true)
+  }, [quiet, mats, refs])
   useContextWatch(p.onLost)
   const flight = useMoveFlight(visuals, layout, reduced)
   const hidden = flight.flying && flight.pair ? flight.pair.inId : null // until the block lands
   useFrameSync({ layout, visuals, contents, ghosts, faded, refs, focusedId, hover, mats, group, onPoints, hidden })
-  const focus = layout.focus?.floor ?? null
+  const framed = p.frame ?? layout
+  const focus = framed.focus?.floor ?? null
   // The framing angle: floor view's own, or part-way between the default and the separated view.
   const view = useMemo(() => (focus === null ? lerpView(DEFAULT_VIEW, SEPARATED_VIEW, p.spread) : FLOOR_VIEW), [focus, p.spread])
-  const cue = useTourCue(p.tour ?? null, layout)
-  const room = cue && cue.phase !== 'fly' ? cue : null
-  const inside = useMemo(() => new Set(room ? p.tour?.suiteIds : []), [room, p.tour])
-  const roomFill = palette.fills[looks.get(p.tour?.suiteIds[0] ?? '')?.fill ?? 'vacant']
+  const cue = useTourCue(p.tour ?? null, framed)
+  const room = useRoom(p.room ?? null, layout)
+  const roomFill = palette.fills[looks.get(p.room?.suiteIds[0] ?? '')?.fill ?? 'vacant']
   return (
     <>
       <CameraRig
-        bounds={layout.focus?.bounds ?? layout.bounds} view={view} focus={focus} reduced={reduced} wide={p.wide} rig={p.rig}
-        tour={cue} onTourPhase={p.onTourPhase} onTourLook={p.onTourLook}
+        bounds={framed.focus?.bounds ?? framed.bounds} view={view} focus={focus} reduced={reduced} wide={p.wide} rig={p.rig}
+        tour={cue} room={room.foot} onTourPhase={p.onTourPhase} onTourLook={p.onTourLook} onTourOutside={p.onTourOutside}
       />
       {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
       <Ground bounds={layout.bounds} shapes={shapes} shadow={palette.shadow} />
-      <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} hidden={hidden} inside={inside} />
-      {room && <TourRoom foot={room.foot} fill={roomFill} palette={palette} shapes={shapes} />}
+      <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} hidden={hidden} inside={room.inside} />
+      {room.foot && <TourRoom foot={room.foot} fill={roomFill} palette={palette} shapes={shapes} />}
       <MoveFlight flight={flight} layout={layout} palette={palette} shapes={shapes} />
     </>
   )

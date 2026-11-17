@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode, type Ref } from 'react'
 import styles from './hintButton.module.css'
 
 // A button that cannot be pressed yet and says why. It stays focusable (aria-disabled, not disabled, which most
@@ -12,7 +12,7 @@ type Props = {
   className?: string
   testId: string
   onClick: () => void
-  pressed?: boolean
+  buttonRef?: Ref<HTMLButtonElement>
   children: ReactNode
 }
 
@@ -30,7 +30,8 @@ function useTip(active: boolean) {
   const [focused, setFocused] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const open = active && (hovered || focused) && !dismissed
-  // Escape hides it wherever the pointer or focus is, and is handled so it does nothing else (presentation mode).
+  // Escape hides it wherever the pointer or focus is, and is handled so it does nothing else (a suite tour,
+  // presentation mode): in the capture phase, so it comes first whenever the others started listening.
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e: KeyboardEvent) => {
@@ -38,8 +39,8 @@ function useTip(active: boolean) {
       e.preventDefault()
       setDismissed(true)
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
   }, [open])
   return {
     open,
@@ -60,13 +61,13 @@ function useTip(active: boolean) {
   }
 }
 
-export function HintButton({ hint, className, testId, onClick, pressed, children }: Props) {
+export function HintButton({ hint, className, testId, onClick, buttonRef, children }: Props) {
   const id = useId()
   const tip = useTip(hint !== null)
   return (
     <span className={styles.wrap} {...tip.wrap}>
       <button
-        type="button" className={className} data-testid={testId} aria-pressed={pressed}
+        ref={buttonRef} type="button" className={className} data-testid={testId}
         aria-disabled={hint !== null ? true : undefined} aria-describedby={hint !== null ? id : undefined}
         onClick={hint !== null ? undefined : onClick} {...tip.button}
       >

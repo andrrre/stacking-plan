@@ -8,13 +8,14 @@ import type { Shot } from '../glide'
 import type { Bounds } from '../layout3d'
 import {
   ENTER_MS, EXIT_MS, EXTERIOR_FOV, EXTERIOR_NEAR, FLY_MS, INTERIOR_FOV, INTERIOR_NEAR,
-  exteriorBounds, exteriorView, interiorLook, lookTarget, type Footprint, type Look,
+  enterVia, exteriorBounds, exteriorView, interiorLook, lookTarget, nearFor, type Footprint, type Look,
 } from '../tourCamera'
 import { TourRig } from './tourRig'
 
 // The suite tour's part of the camera rig. While a tour runs it owns the camera: the orbit controls are off
-// (they would clamp a camera looking out of the facade back to the front half), the projection is centred, the
-// near plane comes in for the interior, and the camera flies out to the stop's floor, then into the suite, where
+// (they would clamp a camera looking out of the facade back to the front half), the projection is centred (the
+// orbit view's offset eases out over the first flight and back in over the last), the near plane comes in while
+// the camera is in or at the stop's room, and the camera flies out to the stop's floor, then into the suite, where
 // it looks around once and can be dragged to look about. When the tour ends it flies back to the building's
 // framing and hands the camera back. Rendering is on demand: a frame is asked for each frame only while the
 // camera flies or pans, so an idle tour (and an idle stage) renders nothing.
@@ -33,19 +34,49 @@ type Input = {
   framing: () => Pose // the building's framing, to fly back to
   stopOrbit: () => void // drops an orbit glide in flight
   restore: () => void // puts the camera on the framing, with its shift and zoom limits
+  shift: () => { x: number; y: number } // the orbit view's offset clear of the controls (CSS px)
+  room: Footprint | null // the room the camera is in, going into or leaving (its floor opened)
+  onOutside?: () => void // the camera has left that room
   onPhase?: (index: number, phase: TourPhase) => void
   onLook?: () => void // the user dragged to look about (pauses the tour)
 }
 
 const TOUR_INSETS: Insets = { top: 60, right: 60, bottom: 60, left: 60 }
 
-/** Writes the camera each frame while the tour moves it, and reports the tour camera's state on the canvas (tests). */
-function useTourFrame(rig: TourRig, camera: PerspectiveCamera, el: HTMLElement, invalidate: () => void): void {
+/** Applies `share` of the stage's view offset (0: a centred projection), only when it changed. */
+function applyShare(i: Input, share: number, last: { current: string }): void {
+  const { x, y } = i.shift()
+  const { width: w, height: h } = i.size
+  const key = `${share}|${x}|${y}|${w}x${h}`
+  if (key === last.current) return
+  last.current = key
+  if (share === 0) i.camera.clearViewOffset()
+  else i.camera.setViewOffset(w, h, x * share, y * share, w, h)
+}
+
+/**
+ * Writes the camera each frame while the tour moves it: its place, its share of the view offset and its near
+ * plane (the interior one only in or at the room, switched as it crosses the facade or roof line). Tells when
+ * it has left the room, and reports the tour camera's state on the canvas (tests).
+ */
+function useTourFrame(rig: TourRig, live: { current: Input }): void {
+  const inside = useRef(false)
+  const shared = useRef('')
   useFrame(() => {
-    if (rig.mode === 'idle') return
-    if (rig.step(camera, performance.now())) invalidate()
-    el.setAttribute('data-tour-camera', rig.mode)
-    el.setAttribute('data-tour-pan', rig.panning ? 'on' : 'off')
+    const i = live.current
+    if (rig.mode === 'idle') {
+      inside.current = false
+      shared.current = ''
+      return
+    }
+    if (rig.step(i.camera, performance.now())) i.invalidate()
+    applyShare(i, rig.share, shared)
+    const near = nearFor(rig.at, i.room)
+    setNear(i.camera, near)
+    if (inside.current && near !== INTERIOR_NEAR) i.onOutside?.()
+    inside.current = near === INTERIOR_NEAR
+    i.el.setAttribute('data-tour-camera', rig.mode)
+    i.el.setAttribute('data-tour-pan', rig.panning ? 'on' : 'off')
   })
 }
 
@@ -90,25 +121,25 @@ function setNear(camera: PerspectiveCamera, near: number): void {
   camera.updateProjectionMatrix()
 }
 
-/** Takes the camera from the orbit controls, starting from the view they left. */
+/** Takes the camera from the orbit controls, starting from the view they left (its view offset still on). */
 function takeOver(i: Input, rig: TourRig): void {
   i.stopOrbit()
   i.controls.enabled = false
-  i.camera.clearViewOffset()
   const t = i.controls.target
   rig.from(i.camera, [t.x, t.y, t.z])
 }
 
-/** One phase of a stop: fly out to its floor, fly in, or stand inside; under reduced motion it cuts straight inside. */
+/**
+ * One phase of a stop: fly out to its floor, fly in (square to the facade for the last stretch: enterVia), or
+ * stand inside; under reduced motion it cuts straight inside.
+ */
 function playPhase(i: Input, rig: TourRig, cue: TourCue): void {
   const report = (phase: TourPhase) => () => i.onPhase?.(cue.index, phase)
   const look = interiorLook(cue.foot)
   const now = performance.now()
-  // The near plane comes in only for the interior: outside, the building's own keeps the depth precise.
-  setNear(i.camera, cue.phase === 'fly' && !i.reduced ? EXTERIOR_NEAR : INTERIOR_NEAR)
   if (cue.phase !== 'look' && i.reduced) report('look')()
   else if (cue.phase === 'fly') rig.fly(exteriorShot(cue, i.size), FLY_MS, report('enter'), now)
-  else if (cue.phase === 'enter') rig.fly(interiorShot(look), ENTER_MS, report('look'), now)
+  else if (cue.phase === 'enter') rig.fly(interiorShot(look), ENTER_MS, report('look'), now, { via: enterVia(rig.at, cue.foot, look.eye) })
   else rig.stand(look, i.reduced ? null : now)
 }
 
@@ -126,6 +157,7 @@ function handBack(live: { current: Input }, rig: TourRig, owns: { current: boole
     i.camera.updateProjectionMatrix()
     i.controls.enabled = true
     i.restore()
+    i.onOutside?.() // a cut (reduced motion) leaves the room without a frame that would say so
     i.el.setAttribute('data-tour-camera', 'idle')
     i.el.setAttribute('data-tour-pan', 'off')
   }
@@ -134,7 +166,7 @@ function handBack(live: { current: Input }, rig: TourRig, owns: { current: boole
     return
   }
   const f = live.current.framing()
-  rig.fly({ position: f.position, target: f.target, fov: EXTERIOR_FOV }, EXIT_MS, finish, performance.now(), 'exit')
+  rig.fly({ position: f.position, target: f.target, fov: EXTERIOR_FOV }, EXIT_MS, finish, performance.now(), { mode: 'exit', share: 1 })
 }
 
 /**
@@ -150,7 +182,7 @@ export function useTourCamera(i: Input): { owns: RefObject<boolean>; reframe: ()
   useEffect(() => {
     live.current = i
   })
-  useTourFrame(rig, i.camera, i.el, i.invalidate)
+  useTourFrame(rig, live)
   useLookDrag(rig, i.el, i.invalidate, i.onLook)
   const { cue, reduced } = i
   useEffect(() => {

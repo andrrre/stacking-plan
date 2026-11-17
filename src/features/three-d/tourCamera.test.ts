@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { buildStackModel } from '../stack/suiteVisual'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { cityPlan } from './city/plan'
-import { DEPTH, PITCH, SLAB_T, buildingLayout, type SuiteBox } from './layout3d'
+import { tourGlideAt, type Shot } from './glide'
+import { DEPTH, PITCH, SLAB_T, SUITE_H, buildingLayout, floorLayout, type SuiteBox } from './layout3d'
 import {
-  EYE_HEIGHT, LOOK_LIMITS, PAN_DEG, PAN_MS, clampLook, exteriorBounds, exteriorView, footprint, interiorLook, lookTarget, panYaw,
+  ENTER_MS, EXTERIOR_NEAR, EYE_HEIGHT, INTERIOR_NEAR, LOOK_LIMITS, PAN_DEG, PAN_MS, clampLook, enterVia, exteriorBounds, exteriorView,
+  footprint, interiorLook, lookTarget, nearFor, panYaw,
 } from './tourCamera'
+import { columnXs } from './tourRoom'
 
 const TODAY = '2026-11-15'
 const box = (over: Partial<SuiteBox>): SuiteBox =>
@@ -133,5 +136,95 @@ describe('exterior shot', () => {
     expect(right.azimuth).toBeGreaterThan(left.azimuth)
     expect(Math.abs(right.azimuth)).toBeLessThanOrEqual(30)
     expect(right.elevation).toBeGreaterThan(0)
+  })
+})
+
+const heroModel = () => buildStackModel({
+  building: BUNDLED_BUILDINGS[0], asOf: TODAY, today: TODAY, mode: 'availability', matches: [], highlightIds: null, modifiedIds: new Set(), selectedSuiteId: null,
+})
+
+describe('the stop\'s floor between the flight out and the room', () => {
+  it('a suite\'s footprint is the same in the whole building (flying to it) and in its floor opened (inside it)', () => {
+    for (const b of BUNDLED_BUILDINGS) {
+      const model = buildStackModel({
+        building: b, asOf: TODAY, today: TODAY, mode: 'availability', matches: [], highlightIds: null, modifiedIds: new Set(), selectedSuiteId: null,
+      })
+      const whole = buildingLayout(model, 0)
+      for (const f of model.floors) {
+        const opened = floorLayout(model, f.number)
+        for (const v of f.suites) {
+          const a = footprint(whole.suites.filter((x) => x.id === v.suite.id))
+          const c = footprint(opened.suites.filter((x) => x.id === v.suite.id))
+          expect(c).toEqual(a)
+        }
+      }
+    }
+  })
+})
+
+describe('nearFor', () => {
+  const f = footprint([box({ x: 0, w: 2 })])!
+  const mid = (f.floor + SUITE_H / 2)
+
+  it('in the room, or close enough to its walls for the near plane to clip them: the interior near plane', () => {
+    expect(nearFor([0, f.floor + EYE_HEIGHT, -1], f)).toBe(INTERIOR_NEAR)
+    expect(nearFor([0, mid, f.z1 + EXTERIOR_NEAR], f)).toBe(INTERIOR_NEAR) // just out of the facade
+  })
+
+  it('anywhere else, and with no room: the exterior one (depth stays precise out to the far plane)', () => {
+    expect(nearFor([0, mid, f.z1 + 5], f)).toBe(EXTERIOR_NEAR)
+    expect(nearFor([0, f.floor + SUITE_H + 3, 0], f)).toBe(EXTERIOR_NEAR) // over the roof
+    expect(nearFor([0, f.floor + EYE_HEIGHT, -1], null)).toBe(EXTERIOR_NEAR)
+  })
+})
+
+describe('enterVia: the flight into the suite', () => {
+  const cases: [string, SuiteBox[]][] = [
+    ['a narrow suite between neighbours', [box({ x: -2, w: 0.45 })]],
+    ['a suite with a column at its centre (two bays)', [box({ x: 1, w: 2.4 })]],
+    ['a wide suite', [box({ x: 0, w: 14 })]],
+    ['a two-suite option', [box({ x: 1, w: 2 }), box({ x: 3.1, w: 2.2 })]],
+  ]
+  const outside: Shot = { position: [14, 12, 60], target: [0, 7, 0], fov: 20 }
+
+  it.each(cases)('%s: comes in square to the facade, between two columns, inside the suite\'s width', (_name, boxes) => {
+    const f = footprint(boxes)!
+    const look = interiorLook(f)
+    const to: Shot = { position: [...look.eye], target: lookTarget(look.eye, look.yaw, look.pitch), fov: 60 }
+    const via = enterVia(outside.position, f, look.eye)
+    const flight = { from: outside, to, start: 0, ms: ENTER_MS, via }
+    const out: Shot = { position: [0, 0, 0], target: [0, 0, 0], fov: 0 }
+    const columns = columnXs(f.x0, f.x1)
+    let crossed = false
+    let last: number[] = [...outside.position]
+    for (let t = 0; t <= ENTER_MS; t += 4) {
+      tourGlideAt(flight, t, out)
+      const p = out.position
+      expect(Math.hypot(p[0] - last[0]!, p[1] - last[1]!, p[2] - last[2]!)).toBeLessThan(1.5) // no jump
+      if (!crossed && p[2] <= f.z1 + 0.3) { // within reach of the facade, and from there in
+        crossed = true
+      }
+      if (crossed) {
+        expect(p[0]).toBeGreaterThan(f.x0 + 0.05)
+        expect(p[0]).toBeLessThan(f.x1 - 0.05)
+        expect(p[1]).toBeGreaterThan(f.floor)
+        expect(p[1]).toBeLessThan(f.floor + SUITE_H)
+        if (Math.abs(p[2] - f.z1) < 0.1) for (const c of columns) expect(Math.abs(p[0] - c)).toBeGreaterThan(0.1)
+      }
+      last = [...p]
+    }
+    expect(crossed).toBe(true)
+    out.position.forEach((v, i) => expect(v).toBeCloseTo(to.position[i]!, 9))
+  })
+
+  it('on the real hero building, every suite\'s way in passes no neighbour', () => {
+    const layout = buildingLayout(heroModel())
+    for (const b of layout.suites) {
+      const f = footprint([b])!
+      const via = enterVia(outside.position, f, interiorLook(f).eye)
+      expect(via.point[0]).toBeGreaterThan(f.x0)
+      expect(via.point[0]).toBeLessThan(f.x1)
+      expect(via.point[2]).toBeGreaterThan(f.z1)
+    }
   })
 })

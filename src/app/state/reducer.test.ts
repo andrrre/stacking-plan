@@ -460,7 +460,6 @@ describe('reducer', () => {
       ['asOf/set', { type: 'asOf/set', asOf: '2027-06-01' }],
       ['noFit/jump', { type: 'noFit/jump', asOf: '2027-06-01' }],
       ['shortlist/add', { type: 'shortlist/add', entry: entry(1) }],
-      ['shortlist/remove', { type: 'shortlist/remove', id: 'x' }],
       ['scenario/add', { type: 'scenario/add', change: { kind: 'vacate', leaseId: 'odt-600-l1', on: '2027-01-31' } }],
       ['req/set', { type: 'req/set', patch: { minSf: 5000 } }],
       ['view/set stack', { type: 'view/set', view: 'stack' }],
@@ -470,6 +469,48 @@ describe('reducer', () => {
 
     it.each(ending)('the tour ends on %s', (_name, action) => {
       expect(reducer(touring(), action).tour).toBeNull()
+    })
+
+    // Each with a state the action really changes.
+    const csv = building({ id: 'csv-x' })
+    const endingFrom: [string, Partial<AppState>, Action][] = [
+      ['shortlist/remove', { shortlist: [entry(1)] }, { type: 'shortlist/remove', id: entry(1).id }],
+      ['scenario/reset', { changes: [{ kind: 'vacate', leaseId: 'odt-600-l1', on: '2027-01-31' }] }, { type: 'scenario/reset' }],
+      ['req/clear', { req: { minSf: 5000, maxSf: null, maxRentPsf: null, includePotential: true } }, { type: 'req/clear' }],
+      ['ask/apply', {}, { type: 'ask/apply', parsed: { minSf: 8000 } }],
+      ['building/import', {}, { type: 'building/import', buildings: [csv] }],
+      ['building/remove', { importedBuildings: [csv], buildingId: 'csv-x' }, { type: 'building/remove', buildingId: 'csv-x' }],
+      ['move/preview', {}, { type: 'move/preview', option }],
+    ]
+
+    it.each(endingFrom)('the tour ends on %s', (_name, state, action) => {
+      expect(reducer(touring({}, state), action).tour).toBeNull()
+    })
+
+    // Actions that leave the tour's inputs as they were (the reducer may still hand back a new, equal object).
+    const full = Array.from({ length: 10 }, (_, n) => entry(n))
+    const unchanged: [string, Partial<AppState>, Action][] = [
+      ['shortlist/add of an option already held', { shortlist: [entry(1)] }, { type: 'shortlist/add', entry: entry(1) }],
+      ['shortlist/add with the shortlist full', { shortlist: full }, { type: 'shortlist/add', entry: entry(11) }],
+      ['shortlist/remove of an id not held', { shortlist: [entry(1)] }, { type: 'shortlist/remove', id: 'nope' }],
+      ['move/preview null with nothing previewed', {}, { type: 'move/preview', option: null }],
+      ['asOf/set to the date shown', {}, { type: 'asOf/set', asOf: TODAY }],
+      ['scenario/reset with no scenario', {}, { type: 'scenario/reset' }],
+      ['req/clear with no search', {}, { type: 'req/clear' }],
+      ['req/set to the values held', {}, { type: 'req/set', patch: { includePotential: true } }],
+      ['floor/set null outside floor view', {}, { type: 'floor/set', floor: null }],
+    ]
+
+    it.each(unchanged)('the tour survives %s', (_name, state, action) => {
+      expect(reducer(touring({}, state), action).tour).not.toBeNull()
+    })
+
+    it('opening a dialog over the tour pauses it; closing it does not play it again', () => {
+      const paused = run(touring({ playing: true }), { type: 'overlay/set', overlay: 'summary' })
+      expect(paused.overlay).toBe('summary')
+      expect(paused.tour).toMatchObject({ index: 1, playing: false })
+      expect(run(paused, { type: 'overlay/set', overlay: 'none' }).tour?.playing).toBe(false)
+      expect(run(touring({ playing: true }), { type: 'overlay/set', overlay: 'compare' }).tour?.playing).toBe(false)
     })
 
     it('the tour survives what does not change its stops', () => {

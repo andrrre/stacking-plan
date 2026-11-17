@@ -106,4 +106,16 @@ describe('tourGlideAt', () => {
     expect(tourGlideAt({ ...flight, ms: 0 }, 1000, out)).toBe(true)
     expect(out).toEqual(shot(10, 60))
   })
+
+  it('by way of a point: through it, on to the end, and still eased from rest to rest', () => {
+    const via = { point: [5, 1, 20] as [number, number, number], control: [5, 1, 30] as [number, number, number], k: 0.5 }
+    const out = shot(0, 0)
+    tourGlideAt({ ...flight, via }, 1000, out)
+    expect(out.position).toEqual(shot(0, 20).position)
+    tourGlideAt({ ...flight, via }, 1500, out) // eased half way: the point
+    expect(out.position[0]).toBeCloseTo(5, 6)
+    expect(out.position[2]).toBeCloseTo(20, 6)
+    expect(tourGlideAt({ ...flight, via }, 2000, out)).toBe(true)
+    expect(out.position).toEqual(shot(10, 60).position)
+  })
 })

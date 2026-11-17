@@ -164,12 +164,12 @@ function Stage({ Scene, onLoadFailed, onLost }: StageProps) {
     <>
       <div ref={stageRef} className={styles.stage} data-testid="stack-3d" data-wide={String(wide)} data-separated={String(modes.separated)} data-floor={floor ?? undefined}
         data-tour-phase={state.tour?.phase} data-tour-stop={state.tour ? state.tour.index + 1 : undefined}
-        role="group" aria-label={`3D building, ${selectBuilding(state).name}`}>
-        <Mirror model={shown} points={points} getItemProps={getItemProps} onSelect={onSelect} onFocusChange={setFocusedId} />
+        role="group" aria-label={`3D building, ${selectBuilding(state).name}`} data-tour-return="" tabIndex={-1}>
+        <Mirror model={shown} points={points} getItemProps={getItemProps} onSelect={onSelect} onFocusChange={setFocusedId} off={state.tour !== null} />
         <SceneBoundary onError={onLoadFailed}>
           <Suspense fallback={<Placeholder />}>
             <Scene
-              buildingId={state.buildingId} model={model} mode={state.mode} separated={modes.separated} floor={floor} focusedId={focusedId} city={city} wide={wide} rig={rig}
+              buildingId={state.buildingId} model={model} mode={state.mode} separated={modes.separated && !state.tour} floor={floor} focusedId={focusedId} city={city} wide={wide} rig={rig}
               onSelect={tour.shown ? NO_SELECT : onSelect} onPoints={setPoints} onLost={onLost}
               tour={tour.shown} onTourPhase={tour.onPhase} onTourLook={tour.onLook}
             />

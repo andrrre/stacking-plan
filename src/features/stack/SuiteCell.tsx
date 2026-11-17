@@ -38,6 +38,7 @@ export function SuiteCell({ visual: v, roving, joinsNext, onSelect }: Props) {
       className={styles.suite}
       style={style}
       data-testid={`suite-${v.suite.id}`}
+      data-suite-id={v.suite.id}
       {...suiteDataAttributes(v, joinsNext)}
       data-compact={String(v.label.compact)}
       aria-pressed={v.selected}

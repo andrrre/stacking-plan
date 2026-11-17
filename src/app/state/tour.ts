@@ -10,12 +10,32 @@ const ENDS_TOUR: ReadonlySet<Action['type']> = new Set([
 
 const clamp = (i: number, stops: Tour['stops']) => Math.min(Math.max(i, 0), stops.length - 1)
 
+const sameList = <T>(a: readonly T[], b: readonly T[]) => a.length === b.length && a.every((x, n) => x === b[n])
+const sameReq = (a: AppState['req'], b: AppState['req']) =>
+  a.minSf === b.minSf && a.maxSf === b.maxSf && a.maxRentPsf === b.maxRentPsf && a.includePotential === b.includePotential
+
+/**
+ * Whether anything the tour depends on differs between `a` and `b`. Field by field: a reducer may hand back a new
+ * but equal object (a shortlist already full, a preview cleared when none was shown, the same date again).
+ */
+function tourInputsChanged(a: AppState, b: AppState): boolean {
+  return a.buildingId !== b.buildingId || a.asOf !== b.asOf || a.floor !== b.floor || a.movePreview !== b.movePreview
+    || !sameList(a.importedBuildings, b.importedBuildings) || !sameList(a.shortlist, b.shortlist)
+    || !sameList(a.changes, b.changes) || !sameReq(a.req, b.req)
+}
+
 /** Whether `action`, which turned `before` into `after`, ends a running tour. */
 export function endsTour(before: AppState, after: AppState, action: Action): boolean {
   if (after.tour === null || after === before) return false
   if (action.type === 'view/set') return action.view !== '3d'
   if (action.type === 'present/set') return !action.on
-  return ENDS_TOUR.has(action.type)
+  return ENDS_TOUR.has(action.type) && tourInputsChanged(before, after)
+}
+
+/** A dialog opened over a running tour pauses it (closing it again leaves it paused). */
+export function setOverlay(state: AppState, overlay: AppState['overlay']): AppState {
+  const next = { ...state, overlay }
+  return overlay === 'none' ? next : setPlaying(next, false)
 }
 
 /** Presents the 3D building at the chosen stop, with nothing else lit or filtered over it. */

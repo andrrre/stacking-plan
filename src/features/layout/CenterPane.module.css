@@ -50,6 +50,9 @@
 .pane > .card[data-view='3d'] { flex: 1 1 0px; min-height: 340px; padding: var(--sp-1) var(--sp-1) var(--sp-2); }
 .card[data-view='3d'] .stackArea:has(> [data-testid='stack-3d']) { position: relative; flex: 1 1 0px; overflow: hidden; padding: 0; }
 .card[data-view='3d'] .stackArea > [data-testid='stack-3d'] { flex: 1 1 0px; }
+/* A suite tour over the stand-in 2D stack: it takes the stage's place, and scrolls inside (Fallback3D). */
+.card[data-view='3d'] .stackArea:has(> [data-touring]) { position: relative; flex: 1 1 0px; overflow: hidden; padding: 0; }
+.card[data-view='3d'] .stackArea > [data-touring] { flex: 1 1 0px; }
 
 /* The stage hint: a caption under the 2D stack, or over the bottom-left corner of the 3D stage (the ground in
    front of the building, clear of the floor numbers and facade labels; it never takes a click). */

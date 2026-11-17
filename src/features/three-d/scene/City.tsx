@@ -21,7 +21,8 @@ import type { Shapes } from './resources'
 // (three uploads them again). The traffic moves on its own throttled loop only while `running`; otherwise it
 // stands still where the clock stopped.
 
-export type CityScene = { plan: CityPlan; traffic: Traffic; running: boolean; dim: number }
+/** `strong`: drawn bolder (a light stage seen from inside a suite on a tour, where the pale blocks would vanish). */
+export type CityScene = { plan: CityPlan; traffic: Traffic; running: boolean; dim: number; strong?: boolean }
 
 const lines = (segs: Float32Array) => {
   const g = new BufferGeometry()
@@ -63,17 +64,21 @@ function Blocks({ blocks, fill, depth }: BlocksProps) {
   )
 }
 
-type SketchProps = { plan: CityPlan; palette: Palette; shapes: Shapes; u: FadeUniforms }
+type SketchProps = { plan: CityPlan; palette: Palette; shapes: Shapes; u: FadeUniforms; strong: boolean }
 
-/** The still part of the city: roads, neighbour blocks, trees. */
-function Sketch({ plan, palette, shapes, u }: SketchProps) {
+/** The still part of the city: roads, neighbour blocks, trees (`strong`: greyer, more opaque fills and darker ink). */
+function Sketch({ plan, palette, shapes, u, strong }: SketchProps) {
   const mats = useMemo(() => ({
     road: flatMaterial(palette.roof, 0.7, u),
-    fill: fillMaterial(palette.surface, 0.62, u, false),
+    fill: strong
+      ? fillMaterial(mix(palette.roofEdge, palette.muted, 0.18).getStyle(), 0.9, u, false)
+      : fillMaterial(palette.surface, 0.62, u, false),
     depth: depthMaterial(u),
-    ink: lineMaterial(mix(palette.roofEdge, palette.muted, 0.3).getStyle(), 0.9, u),
+    ink: strong
+      ? lineMaterial(mix(palette.muted, palette.text, 0.35).getStyle(), 1, u)
+      : lineMaterial(mix(palette.roofEdge, palette.muted, 0.3).getStyle(), 0.9, u),
     kerb: lineMaterial(palette.roofEdge, 0.7, u),
-  }), [palette, u])
+  }), [palette, u, strong])
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
   const geo = useMemo(() => ({
     ink: lines(flatten([...plan.blocks.flatMap(blockSegments), ...plan.trees.flatMap(treeSegments)])),
@@ -215,7 +220,7 @@ function Life({ traffic, palette, u, running }: LifeProps) {
 
 type CityProps = CityScene & { palette: Palette; shapes: Shapes }
 
-export function City({ plan, traffic, running, dim, palette, shapes }: CityProps) {
+export function City({ plan, traffic, running, dim, strong = false, palette, shapes }: CityProps) {
   const invalidate = useThree((s) => s.invalidate)
   const [u] = useState(fadeUniforms)
   const hazeTop = Math.max(...plan.blocks.map((b) => b.h), 1)
@@ -225,7 +230,7 @@ export function City({ plan, traffic, running, dim, palette, shapes }: CityProps
   }, [u, dim, hazeTop, invalidate])
   return (
     <group>
-      <Sketch plan={plan} palette={palette} shapes={shapes} u={u} />
+      <Sketch plan={plan} palette={palette} shapes={shapes} u={u} strong={strong} />
       <Life traffic={traffic} palette={palette} u={u} running={running} />
     </group>
   )

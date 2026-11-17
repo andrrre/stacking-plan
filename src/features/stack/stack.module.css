@@ -339,3 +339,6 @@
   color: var(--c-text-muted);
   font-size: var(--fs-xs);
 }
+
+/* A suite tour over the stack (the 3D building's stand-in) is shown to a prospective tenant: no tenant names. */
+.stack[data-tour] .line2, .stack[data-tour] .moveTag { visibility: hidden; }

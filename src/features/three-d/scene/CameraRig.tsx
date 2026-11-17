@@ -10,6 +10,7 @@ import { MAX_ZOOM_OUT, glideAt, limitsAfter, limitsDuring, limitsFor, retarget, 
 import { boundsKey, type Bounds } from '../layout3d'
 import type { Rig } from '../sceneTypes'
 import type { TourPhase } from '../../../app/state/types'
+import type { Footprint } from '../tourCamera'
 import { useTourCamera, type TourCue } from './useTourCamera'
 
 // Orbit controls limited to the front half (labels are on the front faces) and above the ground, with no
@@ -93,13 +94,17 @@ function restingPose(camera: PerspectiveCamera, c: OrbitControls, fit: Pose, d: 
   return { target: t, distance, position: [t[0] + dir.x * distance, t[1] + dir.y * distance, t[2] + dir.z * distance] }
 }
 
-/** `view` is the framing angle; `focus` the floor shown in floor view (null: the whole building); `tour` the suite tour's stop. */
+/**
+ * `view` is the framing angle; `focus` the floor shown in floor view (null: the whole building); `tour` the suite
+ * tour's stop and `room` the room its camera is in, going into or leaving.
+ */
 type Props = {
   bounds: Bounds; view: View; focus: number | null; reduced: boolean; wide?: boolean; rig: RefObject<Rig | null>
-  tour?: TourCue | null; onTourPhase?: (index: number, phase: TourPhase) => void; onTourLook?: () => void
+  tour?: TourCue | null; room?: Footprint | null; onTourPhase?: (index: number, phase: TourPhase) => void; onTourLook?: () => void
+  onTourOutside?: () => void
 }
 
-export function CameraRig({ bounds, view, focus, reduced, wide, rig, tour = null, onTourPhase, onTourLook }: Props) {
+export function CameraRig({ bounds, view, focus, reduced, wide, rig, tour = null, room = null, onTourPhase, onTourLook, onTourOutside }: Props) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const gl = useThree((s) => s.gl)
   const width = useThree((s) => s.size.width)
@@ -116,7 +121,8 @@ export function CameraRig({ bounds, view, focus, reduced, wide, rig, tour = null
   const { framing, frame } = useFraming({ camera, controls, glide, invalidate, fitted, view, width, height, insets })
   const tourCam = useTourCamera({
     camera, controls, el: gl.domElement, invalidate, cue: tour, reduced, size: { width, height }, framing,
-    stopOrbit: glide.stop, restore: () => frame(NO_OFFSET), onPhase: onTourPhase, onLook: onTourLook,
+    stopOrbit: glide.stop, restore: () => frame(NO_OFFSET), shift: () => viewShift(insets), room, onOutside: onTourOutside,
+    onPhase: onTourPhase, onLook: onTourLook,
   })
   const began = useRef<Zoom | null>(null)
   const begin = useMemo(() => () => {

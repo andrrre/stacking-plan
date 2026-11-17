@@ -7,7 +7,8 @@ import styles from './three-d.module.css'
 
 // The canvas is not accessible, so every suite also has a real, visually hidden button with the 2D stack's
 // accessible name, state attributes and roving focus. The scene draws the focus indicator for the focused
-// button; `data-screen-*` say where the suite is on the canvas once the camera has settled.
+// button; `data-screen-*` say where the suite is on the canvas once the camera has settled. During a suite tour
+// (`off`) it is out of reach: no focus, no selection and no names read out (those name tenants).
 
 type Props = {
   model: StackModel
@@ -15,11 +16,12 @@ type Props = {
   getItemProps: (id: string) => RovingItemProps
   onSelect: (id: string) => void
   onFocusChange: (id: string | null) => void
+  off?: boolean
 }
 
-export function Mirror({ model, points, getItemProps, onSelect, onFocusChange }: Props) {
+export function Mirror({ model, points, getItemProps, onSelect, onFocusChange, off = false }: Props) {
   return (
-    <div className={styles.mirror} data-testid="mirror3d">
+    <div className={styles.mirror} data-testid="mirror3d" inert={off} aria-hidden={off || undefined}>
       {model.floors.map((f) => (
         <div key={f.number} role="group" aria-label={`Floor ${f.number}`}>
           {f.suites.map((v, i) => {
@@ -40,7 +42,7 @@ export function Mirror({ model, points, getItemProps, onSelect, onFocusChange }:
                 aria-pressed={v.selected}
                 aria-label={v.ariaLabel}
                 title={v.tooltip}
-                onClick={() => onSelect(id)}
+                onClick={() => { if (!off) onSelect(id) }}
                 {...roving}
                 onFocus={() => {
                   roving.onFocus()

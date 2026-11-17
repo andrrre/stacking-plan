@@ -35,7 +35,8 @@ export function Header() {
         {isDemo && <span className={styles.badge} data-testid="demo-badge">Demo data</span>}
       </div>
       <div className={styles.actions} data-print="hide">
-        <ImportCsv buttonClassName={styles.button} />
+        {/* Importing is not a presentation action: hidden while presenting, so the header stays one row. */}
+        {!state.presenting && <ImportCsv buttonClassName={styles.button} />}
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
         <PresentButton className={styles.button} />
         <TourButton className={styles.button} />

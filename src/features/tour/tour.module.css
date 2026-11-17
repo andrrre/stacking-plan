@@ -10,6 +10,17 @@
 
 .caption, .bar { pointer-events: auto; }
 
+/* The live region: read out, never seen. */
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .caption {
   position: absolute;
   bottom: var(--sp-4);
@@ -82,7 +93,6 @@
 
 .button:hover:not([aria-disabled='true']), .exit:hover { background: var(--c-surface-2); }
 .button[aria-disabled='true'] { color: var(--c-text-muted); cursor: not-allowed; }
-.button[aria-pressed='true'] { border-color: var(--c-accent); background: var(--c-accent); color: var(--c-accent-ink); }
 .exit { border-color: var(--c-accent); }
 .button:focus-visible, .exit:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
 

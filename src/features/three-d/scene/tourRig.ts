@@ -1,11 +1,13 @@
 import type { PerspectiveCamera } from 'three'
 import type { Vec3 } from '../camera'
-import { tourGlideAt, type Shot, type TourGlide } from '../glide'
+import { tourGlideAt, tourGlideEased, type Shot, type TourGlide, type Via } from '../glide'
 import { EXTERIOR_FOV, INTERIOR_FOV, PAN_MS, clampLook, lookTarget, panYaw, type Look } from '../tourCamera'
 
 // The suite tour camera's moving parts: a flight in progress (position, aim and lens together), or the interior
 // look (standing still, a slow pan and the user's drag). One instance per rig; each frame `step` writes the camera
-// from a shot it owns, so a running tour allocates nothing per frame.
+// from a shot it owns, so a running tour allocates nothing per frame. `share` is how much of the stage's view
+// offset (the orbit view's shift clear of the controls) the projection keeps: a flight blends it to its own
+// (none on the tour, all of it on the way back), so taking the camera over and handing it back never jump.
 
 export type TourMode = 'idle' | 'fly' | 'look' | 'exit'
 
@@ -30,6 +32,10 @@ export class TourRig {
   private panStart: number | null = null
   private drag = { yaw: 0, pitch: 0 }
   private grabbedAt: { x: number; y: number } | null = null
+  private shareFrom = 1
+  private shareTo = 1
+  /** The share of the stage's view offset the projection keeps now (1: the orbit view's own; 0: centred). */
+  share = 1
 
   /** True while the interior pan runs. */
   get panning(): boolean {
@@ -45,16 +51,27 @@ export class TourRig {
     this.shot.target[1] = target[1]
     this.shot.target[2] = target[2]
     this.shot.fov = camera.fov
+    this.share = 1
   }
 
-  /** Flies from the current shot to `to` over `ms`; `arrive` runs once it is there. */
-  fly(to: Shot, ms: number, arrive: () => void, now: number, mode: TourMode = 'fly'): void {
+  /** Where the camera is now (the flight's or the look's position). */
+  get at(): Readonly<Vec3> {
+    return this.shot.position
+  }
+
+  /**
+   * Flies from the current shot to `to` over `ms` (by `via`, if set), the view offset's share easing to `share`;
+   * `arrive` runs once it is there.
+   */
+  fly(to: Shot, ms: number, arrive: () => void, now: number, o: { mode?: TourMode; via?: Via; share?: number } = {}): void {
     const s = this.shot
-    this.mode = mode
+    this.mode = o.mode ?? 'fly'
     this.look = null
     this.panStart = null
-    this.flight = { from: { position: [...s.position], target: [...s.target], fov: s.fov }, to, start: now, ms }
+    this.flight = { from: { position: [...s.position], target: [...s.target], fov: s.fov }, to, start: now, ms, via: o.via }
     this.arrive = arrive
+    this.shareFrom = this.share
+    this.shareTo = o.share ?? 0
   }
 
   /** Moves where the flight in progress ends (the stage was resized under it), keeping its progress. */
@@ -70,6 +87,7 @@ export class TourRig {
     this.look = look
     this.drag = { yaw: 0, pitch: 0 }
     this.shot.fov = INTERIOR_FOV // a cut (reduced motion) arrives here without the flight that widens the lens
+    this.share = 0
     this.panStart = now
   }
 
@@ -102,6 +120,7 @@ export class TourRig {
     const g = this.flight
     if (!g) return false
     const done = tourGlideAt(g, now, this.shot)
+    this.share = this.shareFrom + (this.shareTo - this.shareFrom) * tourGlideEased(g, now)
     applyShot(camera, this.shot)
     if (!done) return true
     this.flight = null

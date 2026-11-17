@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { SUITE_H } from './layout3d'
-import { COLUMN_BAY, roomParts } from './tourRoom'
+import { BAND_W, COLUMN_BAY, roomParts } from './tourRoom'
 
 const foot = { x0: -3, x1: 3, z0: -4.1, z1: 4.1, floor: 7.38 }
 
@@ -35,5 +35,18 @@ describe('roomParts', () => {
       expect(b.w).toBeCloseTo(6, 6)
       expect(b.y + b.h / 2).toBeCloseTo(foot.floor + SUITE_H, 6)
     }
+  })
+
+  it('a thin band in the status colour inside the floor\'s edge, all round: four strips on the floor, within it', () => {
+    expect(r.band).toHaveLength(4)
+    for (const b of r.band) {
+      expect(Math.min(b.w, b.d)).toBeCloseTo(BAND_W, 6)
+      expect(b.x - b.w / 2).toBeGreaterThanOrEqual(foot.x0 - 1e-9)
+      expect(b.x + b.w / 2).toBeLessThanOrEqual(foot.x1 + 1e-9)
+      expect(b.z - b.d / 2).toBeGreaterThanOrEqual(foot.z0 - 1e-9)
+      expect(b.z + b.d / 2).toBeLessThanOrEqual(foot.z1 + 1e-9)
+      expect(b.y).toBeGreaterThan(r.floor.y) // over the neutral floor
+    }
+    expect(BAND_W).toBeLessThan(0.25) // a band, not a carpet
   })
 })

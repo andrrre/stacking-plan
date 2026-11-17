@@ -5,7 +5,7 @@ import type { Building, ParsedQuery, ShortlistEntry } from '../../domain/types'
 import { selectBuilding } from './selectBuilding'
 import { selectBaseBuilding } from './selectors'
 import { legendKeys, type FillKey } from './legendKeys'
-import { endsTour, exitTour, goTo, setPhase, setPlaying, startTour } from './tour'
+import { endsTour, exitTour, goTo, setOverlay, setPhase, setPlaying, startTour } from './tour'
 import type { Action, AppState, ColourMode, RequirementDraft, Selection } from './types'
 
 /** Actions that change what a move preview was computed from: the requirement, date, building, scenario or floor. */
@@ -133,7 +133,7 @@ function step(state: AppState, action: Exclude<Action, TourAction>): AppState {
     case 'building/remove':
       return removeBuilding(state, action.buildingId)
     case 'overlay/set':
-      return { ...state, overlay: action.overlay }
+      return setOverlay(state, action.overlay)
     case 'floor/set':
       return { ...state, floor: knownFloor(state, action.floor) }
     case 'legend/toggle':

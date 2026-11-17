@@ -22,18 +22,18 @@ export function useTourStops(): Candidate[] {
 
 /**
  * Starts a tour: at its first stop, or (`suiteId`) at the stop holding that suite, `own` being the suite's own
- * stop when none does. Enters presentation mode (fullscreen where the browser allows it, as Present does). It
- * plays on its own unless the user asks for reduced motion.
+ * stop when none does. Enters presentation mode, and fullscreen where the browser allows it whenever the page is
+ * not in it (presenting, the user may have left it: a repeat tour asks again). It plays on its own unless the
+ * user asks for reduced motion.
  */
 export function useStartTour(): (suiteId?: string, own?: Candidate | null) => void {
-  const { state, dispatch } = useAppState()
+  const { dispatch } = useAppState()
   const stops = useTourStops()
   const reduced = useReducedMotion()
-  const { presenting } = state
   return useCallback((suiteId?: string, own: Candidate | null = null) => {
     const from = suiteId === undefined ? { stops, index: 0 } : tourFrom(stops, suiteId, own)
     if (from.stops.length === 0) return
     dispatch({ type: 'tour/start', stops: from.stops, index: from.index, playing: !reduced })
-    if (!presenting) void enterFullscreen(document.documentElement)
-  }, [stops, reduced, presenting, dispatch])
+    if (!document.fullscreenElement) void enterFullscreen(document.documentElement)
+  }, [stops, reduced, dispatch])
 }

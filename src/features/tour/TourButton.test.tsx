@@ -33,6 +33,18 @@ describe('TourButton', () => {
     expect(start?.type === 'tour/start' && start.stops[0]?.key).toBe('odt-700')
   })
 
+  it('a tour started while presenting but no longer fullscreen asks for fullscreen again', async () => {
+    const request = vi.fn(() => Promise.resolve())
+    Object.defineProperty(document.documentElement, 'requestFullscreen', { value: request, configurable: true })
+    try {
+      renderWith(<TourButton />, { presenting: true })
+      await userEvent.click(screen.getByTestId('tour'))
+      expect(request).toHaveBeenCalledTimes(1)
+    } finally {
+      Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
+    }
+  })
+
   it('with nothing to tour it is aria-disabled and says why', async () => {
     const full = building({ id: 'full', floors: [floor({ suites: [suite({ leases: [lease({ start: '2024-01-01', end: '2034-12-31' })] })] })] })
     const dispatch = renderWith(<TourButton />, { presenting: true, importedBuildings: [full], buildingId: 'full' })

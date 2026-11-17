@@ -21,7 +21,8 @@ export type CaptionInput = {
   count: number
 }
 
-export type TourCaption = { title: string; counter: string; lines: string[] }
+/** `summary`: the stop in one sentence, for the live region ("Stop 2 of 6: Suite 500, Floor 5, 10,250 SF, available now"). */
+export type TourCaption = { title: string; counter: string; lines: string[]; summary: string }
 
 function sizeLine(o: ClientOption): string {
   return o.suiteNumbers.length > 1 ? `${formatSf(o.totalSf)} · ${o.suiteNumbers.length} suites combined` : formatSf(o.totalSf)
@@ -30,11 +31,21 @@ function sizeLine(o: ClientOption): string {
 const availableLine = (o: ClientOption, today: ISODate) =>
   (o.availableFrom <= today ? 'Available now' : `Available from ${formatMmYyyy(o.availableFrom)}`)
 
-/** Asking rent only when every suite of the stop has one on file (a blend over a missing rent would understate it). */
-function askingLine(i: CaptionInput, o: ClientOption): string | null {
+/**
+ * Asking rent only when every suite of the stop has one on file (a blend over a missing rent would understate it),
+ * blended from those same suites: what decides whether it shows is what is printed.
+ */
+function askingLine(i: CaptionInput): string | null {
   const suites = i.building.floors.flatMap((f) => f.suites).filter((s) => i.stop.suiteIds.includes(s.id))
-  if (suites.length === 0 || suites.some((s) => s.askingRentPsf === undefined)) return null
-  return `${o.suiteNumbers.length > 1 ? 'Blended asking' : 'Asking'} ${formatPsf(o.blendedRentPsf)} /SF/yr`
+  if (suites.length !== i.stop.suiteIds.length) return null
+  let sf = 0
+  let rent = 0
+  for (const s of suites) {
+    if (s.askingRentPsf === undefined) return null
+    sf += s.areaSf
+    rent += s.areaSf * s.askingRentPsf
+  }
+  return sf > 0 ? `${suites.length > 1 ? 'Blended asking' : 'Asking'} ${formatPsf(rent / sf)} /SF/yr` : null
 }
 
 /** "Combines with 710 → 10,500 SF": the rest of the contiguous available run (the KPI's block logic) the stop sits in. */
@@ -55,11 +66,15 @@ function fitLine(i: CaptionInput): string | null {
 
 export function tourCaption(i: CaptionInput): TourCaption {
   const [o] = clientOptions([createEntry(i.building.id, i.stop, i.asOf, i.whatIf)])
-  if (!o) return { title: '', counter: '', lines: [] }
-  const lines = [sizeLine(o), availableLine(o, i.today), askingLine(i, o), combineLine(i), fitLine(i), ...o.notes]
+  if (!o) return { title: '', counter: '', lines: [], summary: '' }
+  const lines = [sizeLine(o), availableLine(o, i.today), askingLine(i), combineLine(i), fitLine(i), ...o.notes]
+  // Every line once: a multi-suite option carries one caveat per suite, which read the same when the leases end together.
+  const kept = lines.filter((l): l is string => l !== null)
+  const available = availableLine(o, i.today)
   return {
     title: `${o.label} · Floor ${o.floor}`,
     counter: `${i.index + 1} of ${i.count}`,
-    lines: lines.filter((l): l is string => l !== null),
+    summary: `Stop ${i.index + 1} of ${i.count}: ${o.label}, Floor ${o.floor}, ${formatSf(o.totalSf)}, ${available.charAt(0).toLowerCase()}${available.slice(1)}`,
+    lines: kept.filter((l, n) => kept.indexOf(l) === n),
   }
 }

@@ -1,13 +1,14 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { FOV_Y } from './camera'
 import { cityDim } from './city/motion'
 import { cityPlan } from './city/plan'
 import { cityTraffic } from './city/traffic'
 import { labelContent } from './labels3d'
+import { EXTERIOR_NEAR } from './tourCamera'
 import { buildingLayout, buildingSite, floorLayout } from './layout3d'
 import { overlayActive, suiteLook } from './palette'
-import type { SceneProps } from './sceneTypes'
+import type { SceneProps, TourStop } from './sceneTypes'
 import { Overlay } from './scene/Overlay'
 import { createOverlayRefs } from './scene/overlayRefs'
 import { COLOUR_MS } from './scene/suiteMaterials'
@@ -72,6 +73,32 @@ function useCity(buildingId: string, model: SceneProps['model']) {
 /** Inside a suite on the tour, the floors above it are gone, as in floor view (null: no floor taken away). */
 const tourFloor = (tour: SceneProps['tour']) => (tour && tour.phase !== 'fly' ? tour.floor : null)
 
+/**
+ * The room the tour's camera is in or going into (enter, look), kept while the camera flies out of it (on to the
+ * next stop, or back at the tour's end) until it reports it has left: the floor stays opened and the room drawn
+ * around it, so nothing pops back in while the camera is still inside.
+ */
+function useTourRoom(tour: TourStop | null) {
+  const [held, setHeld] = useState<TourStop | null>(null)
+  const current = tour && tour.phase !== 'fly' ? tour : null
+  if (current && held !== current) setHeld(current)
+  const onOutside = useCallback(() => setHeld(null), [])
+  return { room: current ?? held, onOutside }
+}
+
+/** The camera's layout (the tour's phase decides it) and the one drawn (the room's floor kept open while it is left). */
+function useLayouts(model: SceneProps['model'], spread: number, cameraFloor: number | null, shownFloor: number | null) {
+  // Floor view ignores the spread, so a floors-moving animation does not rebuild its layout every step.
+  const wholeSpread = cameraFloor === null ? spread : 0
+  const layout = useMemo(
+    () => (cameraFloor === null ? buildingLayout(model, wholeSpread) : floorLayout(model, cameraFloor)), [model, wholeSpread, cameraFloor],
+  )
+  const shown = useMemo(
+    () => (shownFloor === cameraFloor || shownFloor === null ? layout : floorLayout(model, shownFloor)), [model, layout, cameraFloor, shownFloor],
+  )
+  return { layout, shown }
+}
+
 function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, wide, rig, onSelect, onPoints, onLost, tour = null, onTourPhase, onTourLook }: SceneProps) {
   const reduced = useReducedMotion()
   const { theme } = useTheme()
@@ -82,19 +109,15 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
   // Floor view and separated floors push the city further back, so the floor being read stands clear. The tour
   // draws it a little stronger than usual: it is the view out of the suite's windows.
   const dim = tour ? TOUR_CITY : cityDim(floor, spread)
-  const shownFloor = tourFloor(tour) ?? floor
-  // Floor view ignores the spread, so a floors-moving animation does not rebuild its layout every step.
-  const wholeSpread = shownFloor === null ? spread : 0
-  const layout = useMemo(
-    () => (shownFloor === null ? buildingLayout(model, wholeSpread) : floorLayout(model, shownFloor)), [model, wholeSpread, shownFloor],
-  )
+  const { room, onOutside } = useTourRoom(tour)
+  const { layout, shown } = useLayouts(model, spread, tourFloor(tour) ?? floor, room?.floor ?? floor)
   const derived = useDerived(model, focusedId)
   const [refs] = useState(createOverlayRefs)
   return (
-    <div ref={root} className={styles.scene} data-testid="scene3d" data-theme={theme} data-labels={layout.onTop ? 'top' : 'front'} data-floor-view={String(layout.focus !== null)}
+    <div ref={root} className={styles.scene} data-testid="scene3d" data-theme={theme} data-labels={shown.onTop ? 'top' : 'front'} data-floor-view={String(shown.focus !== null)}
       data-floors-moving={String(spread > 0 && spread < 1)} data-colour-transition-ms={reduced ? 0 : COLOUR_MS}
       data-city={city ? 'on' : 'off'} data-city-motion={running ? 'on' : 'off'}
-      data-city-dim={city ? dim.toFixed(2) : undefined} data-tour-phase={tour?.phase}>
+      data-city-dim={city ? dim.toFixed(2) : undefined} data-tour-phase={tour?.phase} data-tour-room={room ? 'in' : undefined}>
       <Canvas
         className={styles.canvas}
         aria-hidden="true"
@@ -105,16 +128,16 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
         // 50 ms, so the canvas would stay its old size, clipped or short, until the slide ended). Pointer
         // events use offsetX/Y, so the scroll tracking the default adds is not needed.
         resize={RESIZE}
-        camera={{ fov: FOV_Y, near: 0.5, far: 2000, position: [0, 6, 60] }}
+        camera={{ fov: FOV_Y, near: EXTERIOR_NEAR, far: 2000, position: [0, 6, 60] }}
         gl={{ antialias: true, alpha: true }}
       >
         <World
-          {...derived} mode={mode} theme={theme} layout={layout} spread={spread} focusedId={focusedId} reduced={reduced} wide={wide}
+          {...derived} mode={mode} theme={theme} layout={shown} frame={layout} spread={spread} focusedId={focusedId} reduced={reduced} wide={wide}
           refs={refs} rig={rig} onSelect={onSelect} onPoints={onPoints} onLost={onLost}
-          city={city ? { ...town, running, dim } : null} tour={tour} onTourPhase={onTourPhase} onTourLook={onTourLook}
+          city={city ? { ...town, running, dim, strong: room !== null && theme === 'light' } : null} tour={tour} room={room} onTourPhase={onTourPhase} onTourLook={onTourLook} onTourOutside={onOutside}
         />
       </Canvas>
-      <Overlay layout={layout} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />
+      <Overlay layout={shown} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />
     </div>
   )
 }

@@ -34,10 +34,14 @@
 
 /* ---------- suite tour ---------- */
 
+/* A tour is shown to a prospective tenant: the facade labels keep "number · SF" and drop the tenant line. */
+.scene[data-tour-phase] .lTenant { display: none; }
+.stage:focus { outline: none; } /* focused only to hold focus after a tour (TourButton), never by the user */
 /* Inside a suite the facade labels, floor numbers and rings would float over the room: they wait outside. */
-.scene[data-tour-phase='enter'] .overlay, .scene[data-tour-phase='look'] .overlay { visibility: hidden; }
+/* (data-tour-room: the room is drawn, from going in until the camera has left it again.) */
+.scene[data-tour-room] .overlay { visibility: hidden; }
 /* The open sky over the suite (its floors above are lifted away): the stage's grid gives way to a soft horizon. */
-.stage[data-tour-phase='enter'], .stage[data-tour-phase='look'] {
+.stage:has(.scene[data-tour-room]) {
   background-image: linear-gradient(to bottom, color-mix(in srgb, var(--c-match) 24%, var(--c-surface)) 0%, color-mix(in srgb, var(--c-match) 12%, var(--c-surface)) 50%, var(--c-bg) 100%);
   background-size: auto;
 }
@@ -439,6 +443,11 @@
 /* ---------- fallback and print ---------- */
 
 .fallback { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* A suite tour over the 2D stack: the fallback fills the stage's place (CenterPane) and its card and bar sit on it
+   as on the 3D stage; the stack scrolls under them, with room at the end to bring the lowest floors above the card. */
+.fallback[data-touring] { container: stage / size; position: relative; }
+.fallbackScroll { flex: 1 1 0px; min-height: 0; overflow-y: auto; padding-bottom: 240px; scrollbar-width: thin; }
+.fallback:focus { outline: none; }
 .note { margin: 0; color: var(--c-text-muted); font-size: var(--fs-xs); }
 .retry { margin-left: var(--sp-2); padding: 0; border: 0; background: none; color: var(--c-text); font: inherit; font-weight: var(--fw-semibold); text-decoration: underline; cursor: pointer; }
 .retry:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }

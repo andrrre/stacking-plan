@@ -46,8 +46,14 @@ export function retarget(g: Glide, to: Pose, limit: number): Glide | null {
 /** Where a suite tour's camera is and looks, and its lens (vertical field of view, degrees). */
 export type Shot = { position: Vec3; target: Vec3; fov: number }
 
-/** A suite tour flight: position, aim and lens move together, eased in and out over `ms` from `start`. */
-export type TourGlide = { from: Shot; to: Shot; start: number; ms: number }
+/**
+ * A way in by `point`: the flight curves from its start to `point` (a quadratic through `control`, so it arrives
+ * there square to the facade), then runs straight on to its end; `k` is the share of the flight before `point`.
+ */
+export type Via = { point: Vec3; control: Vec3; k: number }
+
+/** A suite tour flight: position, aim and lens move together, eased in and out over `ms` from `start` (by `via`, if set). */
+export type TourGlide = { from: Shot; to: Shot; start: number; ms: number; via?: Via }
 
 const easeInOut = (k: number) => (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2)
 
@@ -57,11 +63,32 @@ function lerpInto(out: Vec3, a: Readonly<Vec3>, b: Readonly<Vec3>, e: number): v
   out[2] = a[2] + (b[2] - a[2]) * e
 }
 
+/** The position `e` (eased, 0…1) along a flight by `v`, written into `out`. */
+function viaInto(out: Vec3, from: Readonly<Vec3>, v: Via, to: Readonly<Vec3>, e: number): void {
+  if (e > v.k) {
+    lerpInto(out, v.point, to, (e - v.k) / (1 - v.k))
+    return
+  }
+  const s = v.k <= 0 ? 1 : e / v.k
+  const a = (1 - s) * (1 - s)
+  const b = 2 * s * (1 - s)
+  const c = s * s
+  out[0] = a * from[0] + b * v.control[0] + c * v.point[0]
+  out[1] = a * from[1] + b * v.control[1] + c * v.point[1]
+  out[2] = a * from[2] + b * v.control[2] + c * v.point[2]
+}
+
+const progress = (g: TourGlide, now: number) => (g.ms <= 0 ? 1 : Math.min(Math.max((now - g.start) / g.ms, 0), 1))
+
+/** How far a tour flight is at `now`, eased as its camera moves (0 … 1). */
+export const tourGlideEased = (g: TourGlide, now: number): number => easeInOut(progress(g, now))
+
 /** Writes where a tour flight is at `now` into `out` (no allocation: it runs every frame); true once it has arrived. */
 export function tourGlideAt(g: TourGlide, now: number, out: Shot): boolean {
-  const k = g.ms <= 0 ? 1 : Math.min(Math.max((now - g.start) / g.ms, 0), 1)
+  const k = progress(g, now)
   const e = easeInOut(k)
-  lerpInto(out.position, g.from.position, g.to.position, e)
+  if (g.via && k < 1) viaInto(out.position, g.from.position, g.via, g.to.position, e)
+  else lerpInto(out.position, g.from.position, g.to.position, e)
   lerpInto(out.target, g.from.target, g.to.target, e)
   out.fov = g.from.fov + (g.to.fov - g.from.fov) * e
   return k >= 1

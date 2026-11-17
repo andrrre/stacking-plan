@@ -92,6 +92,7 @@ type Pick = {
   tooltip: RefObject<HTMLDivElement | null>
   visuals: ReadonlyMap<string, SuiteVisual>
   onSelect: (id: string) => void
+  quiet?: boolean // a suite tour: no hover, no tooltip (it would name a tenant)
 }
 
 /** Shows a suite's tooltip by the pointer. The width is measured only when the text changes, not per move. */
@@ -117,7 +118,7 @@ function tooltipFor(tip: RefObject<HTMLDivElement | null>) {
 const input = (e: PointerEvent): PointerInput =>
   ({ id: e.pointerId, x: e.clientX, y: e.clientY, button: e.button, pointerType: e.pointerType, isPrimary: e.isPrimary })
 
-/** Click to select (never after a drag or a pinch), hover to highlight and show the suite's tooltip. */
+/** Click to select (never after a drag or a pinch), hover to highlight and show the suite's tooltip (not when `quiet`). */
 export function usePicker(p: Pick): void {
   const gl = useThree((s) => s.gl)
   const camera = useThree((s) => s.camera)
@@ -126,6 +127,7 @@ export function usePicker(p: Pick): void {
     const el = gl.domElement
     const ray = new Raycaster()
     const tooltip = tooltipFor(p.tooltip)
+    const quiet = p.quiet === true
     let gesture = IDLE
     const pick = (e: PointerEvent) => {
       const r = el.getBoundingClientRect()
@@ -134,7 +136,7 @@ export function usePicker(p: Pick): void {
       return { id: group ? raycastAt(ray, camera, group, at.x, at.y, r.width, r.height) : null, at }
     }
     const hover = (e: PointerEvent | null) => {
-      const hit = e && e.buttons === 0 ? pick(e) : null
+      const hit = e && e.buttons === 0 && !quiet ? pick(e) : null
       const id = hit?.id ?? null
       tooltip(id ? p.visuals.get(id) : undefined, hit?.at.x ?? 0, hit?.at.y ?? 0, hit?.at.w ?? 0)
       if (p.hover.current === id) return
