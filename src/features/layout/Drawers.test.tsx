@@ -254,105 +254,117 @@ describe('below 1100 px', () => {
   })
 })
 
-describe('presentation mode', () => {
-  const present = () => screen.getByTestId('present')
+describe('presentation mode (a suite tour)', () => {
+  const tour = () => screen.getByTestId('tour')
+  const touring = () => screen.queryByTestId('tour-bar') !== null
+  const importCsv = () => screen.queryByRole('button', { name: /Import CSV/ })
 
-  it('Present shuts both drawers; Exit presentation brings the left one back as it was', async () => {
+  it('one click on Tour presents and tours: both drawers shut, Import CSV hidden; End tour brings the left drawer back', async () => {
     renderApp()
     await userEvent.click(screen.getByTestId('suite-odt-500'))
     expect(rightPanel()).toHaveAttribute('data-open', 'true')
-    await userEvent.click(present())
-    expect(present()).toHaveAttribute('aria-pressed', 'true')
-    expect(present()).toHaveTextContent('Exit presentation')
+    await userEvent.click(tour())
+    expect(touring()).toBe(true)
+    expect(tour()).toHaveTextContent('End tour')
     expect(toggle()).toHaveAttribute('aria-expanded', 'false')
     expect(rightPanel()).toHaveAttribute('data-open', 'false')
+    expect(importCsv()).toBeNull()
+    expect(screen.queryByTestId('present')).toBeNull()
     expect(localStorage.getItem('stackmatch.v1.leftDrawer')).toBeNull() // never saved
-    await userEvent.click(present())
-    expect(present()).toHaveAttribute('aria-pressed', 'false')
-    expect(present()).toHaveTextContent('Present')
+    await userEvent.click(tour())
+    expect(touring()).toBe(false)
+    expect(tour()).toHaveTextContent(/^Tour$/)
+    expect(tour()).toHaveFocus()
     expect(toggle()).toHaveAttribute('aria-expanded', 'true')
+    expect(importCsv()).toBeInTheDocument()
   })
 
-  it('a hidden left drawer stays hidden after presenting', async () => {
+  it('a hidden left drawer stays hidden after the tour', async () => {
     localStorage.setItem('stackmatch.v1.leftDrawer', 'false')
     renderApp()
-    await userEvent.click(present())
-    await userEvent.click(present())
+    await userEvent.click(tour())
+    await userEvent.click(tour())
     expect(toggle()).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('selecting a suite while presenting shows its details', async () => {
+  it('one Escape ends the tour and the presentation where fullscreen is unavailable (jsdom has none)', async () => {
     renderApp()
-    await userEvent.click(present())
-    await userEvent.click(screen.getByTestId('suite-odt-700'))
-    expect(rightPanel()).toHaveAttribute('data-open', 'true')
+    await userEvent.click(tour())
+    expect(touring()).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    expect(touring()).toBe(false)
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true')
+    expect(importCsv()).toBeInTheDocument()
   })
 
-  it('Escape ends it where fullscreen is unavailable (jsdom has none)', async () => {
+  it('Tour suite in the details presents and tours from that suite, in one click; one Escape returns to the app', async () => {
     renderApp()
-    await userEvent.click(present())
+    await userEvent.click(screen.getByTestId('suite-odt-500'))
+    await userEvent.click(within(screen.getByTestId('suite-details')).getByTestId('tour-suite'))
+    expect(screen.getByTestId('tour-title')).toHaveTextContent('Suite 500')
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false')
+    expect(importCsv()).toBeNull()
     await userEvent.keyboard('{Escape}')
-    expect(present()).toHaveAttribute('aria-pressed', 'false')
+    expect(touring()).toBe(false)
+    expect(importCsv()).toBeInTheDocument()
   })
 
-  it('one Escape does one thing, innermost first: a KPI highlight clears, then the next Escape ends presenting', async () => {
+  it('leaving fullscreen by the browser ends the tour and the presentation', async () => {
     renderApp()
-    await userEvent.click(present())
-    await userEvent.click(screen.getByTestId('kpi-vacant'))
-    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'true')
-    await userEvent.keyboard('{Escape}')
-    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'false')
-    expect(present()).toHaveAttribute('aria-pressed', 'true')
-    await userEvent.keyboard('{Escape}')
-    expect(present()).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('Escape in the open details closes the drawer first, keeping the highlight and presentation', async () => {
-    renderApp({ highlight: 'vacant' })
-    await userEvent.click(present())
-    await userEvent.click(screen.getByTestId('suite-odt-700'))
-    within(screen.getByTestId('suite-details')).getByTestId('open-floor-plan').focus()
-    await userEvent.keyboard('{Escape}')
-    expect(rightPanel()).toHaveAttribute('data-open', 'false')
-    expect(screen.getByTestId('kpi-vacant')).toHaveAttribute('aria-pressed', 'true')
-    expect(present()).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('leaving fullscreen by the browser ends it', async () => {
-    renderApp()
-    await userEvent.click(present())
+    await userEvent.click(tour())
     fireEvent(document, new Event('fullscreenchange'))
-    expect(present()).toHaveAttribute('aria-pressed', 'false')
+    expect(touring()).toBe(false)
+    expect(importCsv()).toBeInTheDocument()
   })
 
-  it('the handle still opens the left drawer while presenting', async () => {
+  it('the handle still opens the left drawer during a tour', async () => {
     renderApp()
-    await userEvent.click(present())
+    await userEvent.click(tour())
     await userEvent.click(toggle())
     expect(toggle()).toHaveAttribute('aria-expanded', 'true')
   })
 })
 
-describe('presentation mode and browser fullscreen', () => {
+describe('the tour and browser fullscreen', () => {
   afterEach(() => {
     for (const key of ['exitFullscreen', 'fullscreenElement']) Reflect.deleteProperty(document, key)
     Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
   })
 
-  it('asks for fullscreen on Present, and leaves fullscreen granted after the mode already ended', async () => {
+  /** A page whose fullscreen the test grants by hand; returns the request and exit mocks and the grant. */
+  function stubFullscreen() {
     let fullscreen: Element | null = null
     Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => fullscreen })
     const exit = vi.fn(() => { fullscreen = null; return Promise.resolve() })
     Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exit })
     const request = vi.fn(() => Promise.resolve())
     Object.defineProperty(document.documentElement, 'requestFullscreen', { configurable: true, value: request })
+    const grant = () => {
+      fullscreen = document.documentElement
+      fireEvent(document, new Event('fullscreenchange'))
+    }
+    return { request, exit, grant }
+  }
+
+  it('asks for fullscreen on Tour, and leaves it when the tour ends', async () => {
+    const { request, exit, grant } = stubFullscreen()
     renderApp()
-    await userEvent.click(screen.getByTestId('present'))
+    await userEvent.click(screen.getByTestId('tour'))
     expect(request).toHaveBeenCalledOnce()
-    await userEvent.click(screen.getByTestId('present')) // Exit before the browser granted it
-    fullscreen = document.documentElement // granted late
-    fireEvent(document, new Event('fullscreenchange'))
+    grant()
+    expect(exit).not.toHaveBeenCalled()
+    expect(screen.getByTestId('tour-bar')).toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('tour-exit'))
+    expect(exit).toHaveBeenCalledOnce()
+  })
+
+  it('leaves fullscreen granted only after the tour already ended', async () => {
+    const { exit, grant } = stubFullscreen()
+    renderApp()
+    await userEvent.click(screen.getByTestId('tour'))
+    await userEvent.click(screen.getByTestId('tour')) // End tour before the browser granted it
+    grant() // granted late
     expect(exit).toHaveBeenCalled()
-    expect(screen.getByTestId('present')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByTestId('tour-bar')).toBeNull()
   })
 })

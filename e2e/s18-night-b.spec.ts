@@ -159,40 +159,46 @@ test.describe('suite details', () => {
   })
 })
 
-test.describe('presentation mode', () => {
-  test('Present shuts both drawers without errors; the button leaves it and the left drawer comes back', async ({ page }) => {
+test.describe('presentation mode (the Tour button)', () => {
+  test('one click on Tour presents and tours without errors; End tour leaves both and the left drawer comes back', async ({ page }) => {
     const problems: string[] = []
     page.on('pageerror', (e) => problems.push(e.message))
     page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
     await gotoApp(page, 'stack')
+    await expect(page.getByTestId('present')).toHaveCount(0)
     await suite(page, 500).click()
     await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'true')
-    const present = page.getByTestId('present')
-    await present.click()
-    await expect(present).toHaveAttribute('aria-pressed', 'true')
-    await expect(present).toHaveText('Exit presentation')
+    const tour = page.getByTestId('tour')
+    await tour.click()
+    await expect(tour).toHaveText('End tour')
+    await expect(page.getByTestId('tour-bar')).toBeVisible()
     await expect(page.getByTestId('left-drawer-toggle')).toHaveAttribute('aria-expanded', 'false')
     await expect(page.getByTestId('right-panel')).toHaveAttribute('data-open', 'false')
-    await present.click()
-    await expect(present).toHaveAttribute('aria-pressed', 'false')
+    await tour.click()
+    await expect(tour).toHaveText('Tour')
+    await expect(tour).toBeFocused()
+    await expect(page.getByTestId('tour-bar')).toHaveCount(0)
     await expect(page.getByTestId('left-drawer-toggle')).toHaveAttribute('aria-expanded', 'true')
     await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true) // left, wherever it was granted
     expect(problems).toEqual([])
   })
 
-  test('Escape leaves it', async ({ page }) => {
+  test('one Escape leaves the tour and the presentation', async ({ page }) => {
     await gotoApp(page, 'stack')
-    await page.getByTestId('present').click()
-    await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'true')
+    await page.getByTestId('tour').click()
+    await expect(page.getByTestId('tour-bar')).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByTestId('tour-bar')).toHaveCount(0)
+    await expect(page.getByTestId('tour')).toHaveText('Tour')
+    await expect(page.getByTestId('left-drawer-toggle')).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('is not printed and not put in the URL', async ({ page }) => {
     await gotoApp(page, 'stack')
-    await page.getByTestId('present').click()
-    await expect(page).not.toHaveURL(/present/)
+    await page.getByTestId('tour').click()
+    await expect(page.getByTestId('tour-bar')).toBeVisible()
+    await expect(page).not.toHaveURL(/present|tour/)
     await page.emulateMedia({ media: 'print' })
-    await expect(page.getByTestId('present')).toBeHidden()
+    await expect(page.getByTestId('tour')).toBeHidden()
   })
 })

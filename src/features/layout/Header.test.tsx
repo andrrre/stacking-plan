@@ -21,3 +21,13 @@ describe('Header while presenting', () => {
     expect(screen.getByRole('button', { name: /Import CSV/ })).toBeInTheDocument()
   })
 })
+
+describe('Header actions', () => {
+  it('has one Tour button and no Present button', () => {
+    renderHeader(false)
+    expect(screen.getByTestId('tour')).toHaveTextContent(/^Tour$/)
+    expect(screen.getAllByRole('button', { name: /Tour/ })).toHaveLength(1)
+    expect(screen.queryByTestId('present')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Present/ })).toBeNull()
+  })
+})

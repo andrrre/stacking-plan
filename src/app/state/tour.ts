@@ -28,7 +28,6 @@ function tourInputsChanged(a: AppState, b: AppState): boolean {
 export function endsTour(before: AppState, after: AppState, action: Action): boolean {
   if (after.tour === null || after === before) return false
   if (action.type === 'view/set') return action.view !== '3d'
-  if (action.type === 'present/set') return !action.on
   return ENDS_TOUR.has(action.type) && tourInputsChanged(before, after)
 }
 
@@ -38,7 +37,7 @@ export function setOverlay(state: AppState, overlay: AppState['overlay']): AppSt
   return overlay === 'none' ? next : setPlaying(next, false)
 }
 
-/** Presents the 3D building at the chosen stop, with nothing else lit or filtered over it. */
+/** Presents the 3D building at the chosen stop, with nothing else lit or filtered over it. The only way into presentation mode. */
 export function startTour(state: AppState, stops: Tour['stops'], index: number, playing: boolean): AppState {
   if (stops.length === 0) return state
   return {
@@ -71,9 +70,9 @@ export function setPlaying(state: AppState, playing: boolean): AppState {
   return !t || t.playing === playing ? state : { ...state, tour: { ...t, playing } }
 }
 
-/** Ends the tour; presentation mode stays on and the last toured suite stays selected. */
+/** Ends the tour and presentation mode with it; the last toured suite stays selected. */
 export function exitTour(state: AppState): AppState {
   const id = state.tour?.stops[state.tour.index]?.suiteIds[0]
   if (!state.tour) return state
-  return { ...state, tour: null, selection: id === undefined ? state.selection : { kind: 'suite', suiteId: id } }
+  return { ...state, tour: null, presenting: false, selection: id === undefined ? state.selection : { kind: 'suite', suiteId: id } }
 }

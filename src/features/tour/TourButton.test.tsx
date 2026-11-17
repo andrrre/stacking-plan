@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { initState } from '../../app/state/init'
@@ -19,40 +19,50 @@ function renderWith(ui: React.ReactNode, over: Partial<AppState> = {}) {
   return dispatch
 }
 
+/** Stubs requestFullscreen on the page; the returned mock records each request. */
+function stubRequest() {
+  const request = vi.fn(() => Promise.resolve())
+  Object.defineProperty(document.documentElement, 'requestFullscreen', { value: request, configurable: true })
+  return request
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
+})
+
 describe('TourButton', () => {
-  it('is there only while presenting', () => {
+  it('is always there, reading Tour, with no Present button beside it', () => {
     renderWith(<TourButton />)
-    expect(screen.queryByTestId('tour')).toBeNull()
+    expect(screen.getByTestId('tour')).toHaveTextContent(/^Tour$/)
+    expect(screen.queryByTestId('present')).toBeNull()
   })
 
   it('starts a tour of the available suites, top floor first', async () => {
-    const dispatch = renderWith(<TourButton />, { presenting: true })
+    const dispatch = renderWith(<TourButton />)
     await userEvent.click(screen.getByTestId('tour'))
     const start = dispatch.mock.calls[0]?.[0]
     expect(start).toMatchObject({ type: 'tour/start', index: 0 })
     expect(start?.type === 'tour/start' && start.stops[0]?.key).toBe('odt-700')
   })
 
-  it('a tour started while presenting but no longer fullscreen asks for fullscreen again', async () => {
-    const request = vi.fn(() => Promise.resolve())
-    Object.defineProperty(document.documentElement, 'requestFullscreen', { value: request, configurable: true })
-    try {
-      renderWith(<TourButton />, { presenting: true })
-      await userEvent.click(screen.getByTestId('tour'))
-      expect(request).toHaveBeenCalledTimes(1)
-    } finally {
-      Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
-    }
+  it('asks for fullscreen in the same click that starts the tour', async () => {
+    const request = stubRequest()
+    const dispatch = renderWith(<TourButton />)
+    await userEvent.click(screen.getByTestId('tour'))
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(dispatch.mock.calls[0]?.[0]?.type).toBe('tour/start')
   })
 
   it('with nothing to tour it is aria-disabled and says why', async () => {
     const full = building({ id: 'full', floors: [floor({ suites: [suite({ leases: [lease({ start: '2024-01-01', end: '2034-12-31' })] })] })] })
-    const dispatch = renderWith(<TourButton />, { presenting: true, importedBuildings: [full], buildingId: 'full' })
+    const request = stubRequest()
+    const dispatch = renderWith(<TourButton />, { importedBuildings: [full], buildingId: 'full' })
     const button = screen.getByTestId('tour')
     expect(button).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent(NO_STOPS_HINT)
     await userEvent.click(button)
     expect(dispatch).not.toHaveBeenCalled()
+    expect(request).not.toHaveBeenCalled()
   })
 
   it('during a tour it ends it', async () => {
@@ -69,9 +79,11 @@ describe('Tour suite (details)', () => {
     return { floor: f, suite: f.suites.find((s) => s.number === n)! }
   }
 
-  it('an available suite offers it, and starts the tour at its own stop', async () => {
+  it('an available suite offers it, and starts the tour at its own stop in fullscreen, in one click', async () => {
+    const request = stubRequest()
     const dispatch = renderWith(<DetailsActions {...at('410')} />)
     await userEvent.click(screen.getByTestId('tour-suite'))
+    expect(request).toHaveBeenCalledTimes(1)
     const start = dispatch.mock.calls[0]?.[0]
     expect(start?.type).toBe('tour/start')
     if (start?.type === 'tour/start') expect(start.stops[start.index]?.suiteIds).toEqual(['odt-410'])

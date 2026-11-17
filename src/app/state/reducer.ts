@@ -91,7 +91,7 @@ const isTourAction = (a: Action): a is TourAction => a.type.startsWith('tour/')
 export function reducer(state: AppState, action: Action): AppState {
   const next = isTourAction(action) ? stepTour(state, action) : step(state, action)
   const previewed = next.movePreview !== null && ENDS_MOVE_PREVIEW.has(action.type) ? { ...next, movePreview: null } : next
-  return endsTour(state, previewed, action) ? { ...previewed, tour: null } : previewed
+  return endsTour(state, previewed, action) ? { ...previewed, tour: null, presenting: false } : previewed
 }
 
 function step(state: AppState, action: Exclude<Action, TourAction>): AppState {
@@ -138,8 +138,6 @@ function step(state: AppState, action: Exclude<Action, TourAction>): AppState {
       return { ...state, floor: knownFloor(state, action.floor) }
     case 'legend/toggle':
       return toggleLegend(state, action.key)
-    case 'present/set':
-      return { ...state, presenting: action.on }
     case 'move/preview':
       return action.option === null ? { ...state, movePreview: null } : { ...state, movePreview: action.option, floor: null, highlight: null, legend: null }
   }

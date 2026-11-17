@@ -21,8 +21,8 @@ const command = (c: TourCommand, t: Tour): Action => {
 }
 
 /**
- * The tour's keys, on the document: they run before presentation mode's (on the window), so one Escape ends the
- * tour and the next the presentation. A key something else handled already (a drawer, a dialog) is left alone.
+ * The tour's keys, on the document: Escape ends the tour, and presentation mode with it. A key something else
+ * handled already (a tooltip, a drawer, a dialog, a KPI highlight) is left alone.
  */
 function useTourKeys(tour: Tour, dispatch: (a: Action) => void): void {
   useEffect(() => {

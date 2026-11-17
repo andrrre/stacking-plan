@@ -7,7 +7,6 @@ import type { AppState } from '../../app/state/types'
 import { useAppState } from '../../app/state/useAppState'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { HintButton } from '../layout/HintButton'
-import { PresentButton } from '../layout/PresentButton'
 import { TourButton } from './TourButton'
 import { STOP_MS } from '../three-d/tourCamera'
 import { TourOverlay } from './TourOverlay'
@@ -21,7 +20,6 @@ function Harness() {
   const { state } = useAppState()
   return (
     <>
-      <PresentButton />
       <TourButton />
       <HintButton hint="Why not" testId="why" onClick={() => undefined}>Why</HintButton>
       <div role="dialog" aria-label="A dialog"><button type="button" data-testid="in-dialog">In a dialog</button></div>
@@ -50,24 +48,18 @@ describe('TourOverlay', () => {
     expect(screen.getByTestId('tour-counter')).toHaveTextContent(`1 of ${stops.length}`)
   })
 
-  it('one Escape ends the tour and keeps presenting; the next ends the presentation', async () => {
+  it('one Escape ends the tour and the presentation with it', async () => {
     renderTour()
     await userEvent.keyboard('{Escape}')
-    expect(now()).toMatchObject({ presenting: true, index: null })
-    await userEvent.keyboard('{Escape}')
-    expect(now().presenting).toBe(false)
+    expect(now()).toMatchObject({ presenting: false, index: null })
   })
 
-  it('leaving fullscreen during a tour (the browser takes that Escape) ends the tour only', () => {
+  it('leaving fullscreen during a tour (the browser takes that Escape) ends the tour and the presentation', () => {
     renderTour()
     act(() => {
       document.dispatchEvent(new Event('fullscreenchange'))
     })
-    expect(now()).toMatchObject({ presenting: true, index: null })
-    act(() => {
-      document.dispatchEvent(new Event('fullscreenchange'))
-    })
-    expect(now().presenting).toBe(false)
+    expect(now()).toMatchObject({ presenting: false, index: null })
   })
 
   it('← → step between stops and stop at either end; Space plays and pauses', async () => {
@@ -82,7 +74,7 @@ describe('TourOverlay', () => {
     expect(now().playing).toBe(false)
   })
 
-  it('the bar\'s buttons: Previous is unavailable on the first stop, Next steps, Play plays, Exit tour ends the tour only', async () => {
+  it('the bar\'s buttons: Previous is unavailable on the first stop, Next steps, Play plays, Exit tour ends the tour and the presentation', async () => {
     renderTour()
     expect(screen.getByTestId('tour-prev')).toHaveAttribute('aria-disabled', 'true')
     await userEvent.click(screen.getByTestId('tour-prev'))
@@ -93,7 +85,7 @@ describe('TourOverlay', () => {
     expect(screen.getByTestId('tour-play')).toHaveTextContent('Pause')
     expect(screen.getByTestId('tour-play')).not.toHaveAttribute('aria-pressed') // the label says it
     await userEvent.click(screen.getByTestId('tour-exit'))
-    expect(now()).toMatchObject({ presenting: true, index: null })
+    expect(now()).toMatchObject({ presenting: false, index: null })
   })
 
   it('playing, it moves on after each stop\'s time and stops on the last one instead of looping', () => {
@@ -134,7 +126,7 @@ describe('TourOverlay', () => {
     expect(screen.getByTestId('why-hint')).toHaveAttribute('data-open', 'false')
     expect(now()).toMatchObject({ presenting: true, index: 0 })
     await userEvent.keyboard('{Escape}')
-    expect(now()).toMatchObject({ presenting: true, index: null })
+    expect(now()).toMatchObject({ presenting: false, index: null })
   })
 
   it('Escape inside a dialog over the tour belongs to the dialog: the tour keeps running', async () => {

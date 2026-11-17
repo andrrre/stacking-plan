@@ -7,7 +7,6 @@ import { ImportCsv } from '../import/ImportCsv'
 import { SummaryButton } from '../shortlist/SummaryButton'
 import { ThemeToggle } from '../theme/ThemeToggle'
 import { TourButton } from '../tour/TourButton'
-import { PresentButton } from './PresentButton'
 import styles from './Header.module.css'
 
 function BrandMark() {
@@ -39,7 +38,6 @@ export function Header() {
         {/* Importing is not a presentation action: hidden while presenting, so the header stays one row. */}
         {!state.presenting && <ImportCsv buttonClassName={styles.button} />}
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
-        <PresentButton className={styles.button} />
         <TourButton className={styles.button} />
         <ChatLauncher className={styles.button} />
         <SummaryButton className={styles.primary} />

@@ -30,8 +30,8 @@ function useTip(active: boolean) {
   const [focused, setFocused] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const open = active && (hovered || focused) && !dismissed
-  // Escape hides it wherever the pointer or focus is, and is handled so it does nothing else (a suite tour,
-  // presentation mode): in the capture phase, so it comes first whenever the others started listening.
+  // Escape hides it wherever the pointer or focus is, and is handled so it does nothing else (a suite tour):
+  // in the capture phase, so it comes first whenever the others started listening.
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e: KeyboardEvent) => {

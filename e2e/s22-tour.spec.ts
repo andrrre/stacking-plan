@@ -38,18 +38,27 @@ async function drag(page: Page, from: { x: number; y: number }, dx: number, dy: 
   await page.mouse.up()
 }
 
-async function startFromPresent(page: Page) {
-  await page.getByTestId('present').click()
-  await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'true')
+/** Presentation mode, seen from outside: Import CSV leaves the header and the left drawer shuts. */
+async function expectPresenting(page: Page, on: boolean) {
+  await expect(page.getByRole('button', { name: /Import CSV/ })).toHaveCount(on ? 0 : 1)
+  await expect(page.getByTestId('left-drawer-toggle')).toHaveAttribute('aria-expanded', on ? 'false' : 'true')
+}
+
+/** One click on the header's Tour button presents and starts the tour. */
+async function startTour(page: Page) {
   await page.getByTestId('tour').click()
+  await expect(page.getByTestId('tour-bar')).toBeVisible()
+  await expect(page.getByTestId('tour')).toHaveText('End tour')
 }
 
 test.describe('suite tour', () => {
-  test('from Present with no shortlist: the available suites, top floor first; it goes inside; Next; Escape twice', async ({ page }) => {
+  test('one click on Tour with no shortlist: presents, the available suites, top floor first; it goes inside; Next; one Escape ends it all', async ({ page }) => {
     const problems: string[] = []
     page.on('pageerror', (e) => problems.push(e.message)).on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
     await gotoApp(page, '3d')
-    await startFromPresent(page)
+    await expect(page.getByTestId('present')).toHaveCount(0)
+    await startTour(page)
+    await expectPresenting(page, true)
     await expect(page.getByTestId('tour-title')).toHaveText('Suite 700 · Floor 7')
     await expect(page.getByTestId('tour-counter')).toHaveText('1 of 6')
     await expect(page.getByTestId('kpi-occupancy')).toHaveCount(0) // the building has the screen
@@ -66,31 +75,42 @@ test.describe('suite tour', () => {
 
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('tour-caption')).toHaveCount(0)
-    await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'true')
+    await expectPresenting(page, false)
+    await expect(page.getByTestId('tour')).toHaveText('Tour')
+    await expect(page.getByTestId('tour')).toBeFocused()
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true) // left, wherever it was granted
     await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'idle')
     await expect(canvas(page)).toHaveAttribute('data-camera-fov', '20.0')
     await expect(page.getByTestId('label3d-odt-700')).toHaveAttribute('data-hidden', 'false') // the facade labels are back
-    await page.keyboard.press('Escape')
-    await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'false')
     expect(problems).toEqual([])
   })
 
-  test('from the details panel: Tour suite presents and starts at that suite', async ({ page }) => {
+  test('from the details panel: Tour suite presents and starts at that suite in one click; Exit tour ends both', async ({ page }) => {
     await gotoApp(page, '3d')
     await suite3d(page, '410').evaluate((el: HTMLElement) => el.click())
     await page.getByTestId('tour-suite').click()
-    await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'true')
+    await expectPresenting(page, true)
     await expect(page.getByTestId('tour-title')).toHaveText('Suite 410 · Floor 4')
     await expect(stage(page)).toHaveAttribute('data-tour-phase', 'look')
     await page.getByTestId('tour-exit').click()
     await expect(page.getByTestId('tour-bar')).toHaveCount(0)
-    await expect(page.getByTestId('present')).toHaveAttribute('aria-pressed', 'true')
+    await expectPresenting(page, false)
+  })
+
+  test('from the details panel: one Escape ends the tour and the presentation', async ({ page }) => {
+    await gotoApp(page, '3d')
+    await suite3d(page, '410').evaluate((el: HTMLElement) => el.click())
+    await page.getByTestId('tour-suite').click()
+    await expect(page.getByTestId('tour-title')).toHaveText('Suite 410 · Floor 4')
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('tour-bar')).toHaveCount(0)
+    await expectPresenting(page, false)
   })
 
   test('with a shortlisted match it visits exactly that option', async ({ page }) => {
     await gotoApp(page, '3d', { min: '10000' })
     await page.getByTestId('save-match-2').click() // Suites 700 + 710
-    await startFromPresent(page)
+    await startTour(page)
     await expect(page.getByTestId('tour-counter')).toHaveText('1 of 1')
     await expect(page.getByTestId('tour-title')).toHaveText('Suites 700 + 710 · Floor 7')
     await expect(page.getByTestId('tour-caption')).toContainText('10,500 SF · 2 suites combined')
@@ -106,7 +126,7 @@ test.describe('suite tour', () => {
       new MutationObserver(() => seen.push(el.getAttribute('data-tour-camera') ?? '')).observe(el, { attributes: true, attributeFilter: ['data-tour-camera'] })
       Object.assign(window, { tourCameraSeen: seen })
     })
-    await startFromPresent(page)
+    await startTour(page)
     await expect(stage(page)).toHaveAttribute('data-tour-phase', 'look')
     await expect(canvas(page)).toHaveAttribute('data-camera-fov', '60.0')
     await expect(page.getByTestId('tour-play')).toHaveText('Play') // no auto-advance
@@ -117,7 +137,7 @@ test.describe('suite tour', () => {
 
   test('the caption never names a tenant, on any stop', async ({ page }) => {
     await gotoApp(page, '3d', { min: '9000' })
-    await startFromPresent(page)
+    await startTour(page)
     const count = Number((await page.getByTestId('tour-counter').textContent())?.split(' of ')[1])
     expect(count).toBeGreaterThan(0)
     for (let i = 0; i < count; i++) {
@@ -131,7 +151,7 @@ test.describe('suite tour', () => {
   })
   test('with potential space at a later date: a stop subject to the tenant vacating is visited, and no tenant name shows on the stage while flying or inside', async ({ page }) => {
     await gotoApp(page, '3d', { pot: '1', asOf: '2027-07-01' })
-    await startFromPresent(page)
+    await startTour(page)
     await page.getByTestId('tour-play').click() // paused: each stop is stepped to by hand
     await expect(page.getByTestId('tour-play')).toHaveText('Play')
     const count = Number((await page.getByTestId('tour-counter').textContent())?.split(' of ')[1])
@@ -156,7 +176,7 @@ test.describe('suite tour', () => {
   test('the mirror is out of reach of the keyboard and assistive tech for the whole tour', async ({ page }) => {
     await gotoApp(page, '3d')
     await expect(suite3d(page, '900')).toHaveAttribute('data-screen-hit', /true|false/)
-    await startFromPresent(page)
+    await startTour(page)
     await expect(page.getByTestId('mirror3d')).toHaveAttribute('aria-hidden', 'true')
     await expect(page.getByTestId('mirror3d')).toHaveAttribute('inert', '')
     await expect(stage(page)).toHaveAttribute('data-tour-phase', 'look')
@@ -166,7 +186,7 @@ test.describe('suite tour', () => {
 
   test('after Exit tour the camera is the user\'s again: framed, FOV 20, orbits, tenant labels back', async ({ page }) => {
     await gotoApp(page, '3d')
-    await startFromPresent(page)
+    await startTour(page)
     await expect(stage(page)).toHaveAttribute('data-tour-phase', 'look')
     await page.getByTestId('tour-exit').click()
     await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'idle')
@@ -186,7 +206,7 @@ test.describe('suite tour', () => {
     await page.addInitScript(NO_WEBGL)
     await page.setViewportSize({ width: 1280, height: 720 })
     await gotoApp(page, '3d')
-    await startFromPresent(page)
+    await startTour(page)
     await expect(page.getByTestId('webgl-fallback')).toBeVisible()
     await expect(page.getByTestId('tour-title')).toHaveText('Suite 700 · Floor 7')
     await expect(page.getByTestId('tour-play')).toBeFocused()
@@ -208,7 +228,7 @@ test.describe('suite tour', () => {
 
   test('a WebGL context lost for good during a tour: the tour carries on over the 2D stack', async ({ page }) => {
     await gotoApp(page, '3d')
-    await startFromPresent(page)
+    await startTour(page)
     await expect(stage(page)).toHaveAttribute('data-tour-phase', 'look')
     await page.evaluate(() => {
       const c = document.querySelector<HTMLCanvasElement>('[data-testid="stack-3d"] canvas')

@@ -131,14 +131,18 @@ describe('ChatLauncher', () => {
     expect(document.activeElement).toBe(toggle)
   })
 
-  it('shows nothing while presenting or during a tour, and keeps the conversation for after', async () => {
+  it('shows nothing while a tour presents the building, and keeps the conversation for after', async () => {
     stubChat(true)
     renderLauncher()
     await openAndAsk()
-    dispatch({ type: 'present/set', on: true })
+    const stop = {
+      key: 'odt-500', suiteIds: ['odt-500'], suiteNumbers: ['500'], floor: 5, totalSf: 10250, excessSf: 250,
+      blendedRentPsf: 48, availableFrom: '2026-11-15', availability: 'now' as const, caveats: [],
+    }
+    dispatch({ type: 'tour/start', stops: [stop], index: 0, playing: false })
     expect(screen.queryByTestId('chat-toggle')).toBeNull()
     expect(screen.queryByTestId('chat-panel')).toBeNull()
-    dispatch({ type: 'present/set', on: false })
+    dispatch({ type: 'tour/exit' })
     expect(screen.getByTestId('chat-toggle')).toBeInTheDocument()
     expect(screen.getAllByTestId('chat-message').map((m) => m.textContent)).toEqual(['What is vacant today?', ANSWER])
   })

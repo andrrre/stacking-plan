@@ -62,7 +62,7 @@ describe('SummaryButton', () => {
     expect(tip).toHaveAttribute('data-open', 'false')
   })
 
-  it('Escape that closes the tooltip is handled, so presentation mode is not ended by the same key', async () => {
+  it('Escape that closes the tooltip is handled, so a running tour is not ended by the same key', async () => {
     renderButton()
     await userEvent.tab()
     const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })

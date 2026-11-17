@@ -1,9 +1,9 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { selectBuilding } from '../../app/state/selectBuilding'
 import { useAppState } from '../../app/state/useAppState'
 import type { Candidate } from '../../domain/types'
 import { useMatches } from '../finder/useMatches'
-import { enterFullscreen } from '../layout/fullscreen'
+import { enterFullscreen, exitFullscreen } from '../layout/fullscreen'
 import { useReducedMotion } from '../three-d/useReducedMotion'
 import { tourFrom, tourStops } from './tourStops'
 
@@ -22,9 +22,8 @@ export function useTourStops(): Candidate[] {
 
 /**
  * Starts a tour: at its first stop, or (`suiteId`) at the stop holding that suite, `own` being the suite's own
- * stop when none does. Enters presentation mode, and fullscreen where the browser allows it whenever the page is
- * not in it (presenting, the user may have left it: a repeat tour asks again). It plays on its own unless the
- * user asks for reduced motion.
+ * stop when none does. Enters presentation mode, and asks for fullscreen in the same call (the click's user
+ * gesture) where the page is not in it already. It plays on its own unless the user asks for reduced motion.
  */
 export function useStartTour(): (suiteId?: string, own?: Candidate | null) => void {
   const { dispatch } = useAppState()
@@ -36,4 +35,28 @@ export function useStartTour(): (suiteId?: string, own?: Candidate | null) => vo
     dispatch({ type: 'tour/start', stops: from.stops, index: from.index, playing: !reduced })
     if (!document.fullscreenElement) void enterFullscreen(document.documentElement)
   }, [stops, reduced, dispatch])
+}
+
+/**
+ * Keeps browser fullscreen to the tour: a tour that ends (by any route) leaves fullscreen, fullscreen left by the
+ * browser's own controls (or its Escape) ends the tour, and fullscreen granted only after the tour already ended
+ * is left again at once. Mount once.
+ */
+export function useTourFullscreen(): void {
+  const { state, dispatch } = useAppState()
+  const touring = state.tour !== null
+  const live = useRef(touring)
+  useEffect(() => {
+    live.current = touring
+    if (!touring) exitFullscreen()
+  }, [touring])
+  useEffect(() => {
+    const onChange = () => {
+      if (document.fullscreenElement) {
+        if (!live.current) exitFullscreen()
+      } else if (live.current) dispatch({ type: 'tour/exit' })
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [dispatch])
 }

@@ -191,21 +191,21 @@ test.describe('building chat, mocked', () => {
     expect(bodies).toEqual([])
   })
 
-  test('present mode hides the toggle and the panel; the conversation is still there afterwards', async ({ page }) => {
+  test('a tour (presentation mode) hides the toggle and the panel; the conversation is still there afterwards', async ({ page }) => {
     await mockChat(page)
     await gotoApp(page, 'stack')
     await openChat(page)
     await ask(page, FIRST_EXAMPLE)
     await expect(assistant(page)).toHaveText(ANSWER)
 
-    const present = page.getByTestId('present')
-    await present.click()
-    await expect(present).toHaveAttribute('aria-pressed', 'true')
+    const tour = page.getByTestId('tour')
+    await tour.click()
+    await expect(tour).toHaveText('End tour')
     await expect(page.getByTestId('chat-toggle')).toHaveCount(0)
     await expect(page.getByTestId('chat-panel')).toHaveCount(0)
 
-    await present.click()
-    await expect(present).toHaveAttribute('aria-pressed', 'false')
+    await tour.click()
+    await expect(tour).toHaveText('Tour')
     await expect(page.getByTestId('chat-panel')).toBeVisible()
     await expect(user(page)).toHaveText(FIRST_EXAMPLE)
     await expect(assistant(page)).toHaveText(ANSWER)

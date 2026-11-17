@@ -333,12 +333,6 @@ describe('reducer', () => {
     })
   })
 
-  it('present/set turns presentation mode on and off', () => {
-    const on = run(makeState(), { type: 'present/set', on: true })
-    expect(on.presenting).toBe(true)
-    expect(run(on, { type: 'present/set', on: false }).presenting).toBe(false)
-  })
-
   describe('move preview', () => {
     const option: MoveOption = {
       key: 'l1>odt-300',
@@ -366,7 +360,6 @@ describe('reducer', () => {
       ['view/set', { type: 'view/set', view: '3d' }],
       ['mode/set', { type: 'mode/set', mode: 'risk' }],
       ['select', { type: 'select', selection: { kind: 'suite', suiteId: 'odt-500' } }],
-      ['present/set', { type: 'present/set', on: true }],
     ]
 
     it('move/preview sets the option and leaves floor view, the KPI highlight and the legend filter', () => {
@@ -441,10 +434,10 @@ describe('reducer', () => {
       expect(run(touring({ playing: false }), { type: 'tour/play', playing: true }).tour?.playing).toBe(true)
     })
 
-    it('tour/exit ends the tour, keeps presenting and leaves the last toured suite selected', () => {
+    it('tour/exit ends the tour and the presentation, and leaves the last toured suite selected', () => {
       const next = run(touring(), { type: 'tour/exit' })
       expect(next.tour).toBeNull()
-      expect(next.presenting).toBe(true)
+      expect(next.presenting).toBe(false)
       expect(next.selection).toEqual({ kind: 'suite', suiteId: 'odt-700' })
     })
 
@@ -463,12 +456,12 @@ describe('reducer', () => {
       ['scenario/add', { type: 'scenario/add', change: { kind: 'vacate', leaseId: 'odt-600-l1', on: '2027-01-31' } }],
       ['req/set', { type: 'req/set', patch: { minSf: 5000 } }],
       ['view/set stack', { type: 'view/set', view: 'stack' }],
-      ['present/set off', { type: 'present/set', on: false }],
       ['floor/set', { type: 'floor/set', floor: 5 }],
     ]
 
-    it.each(ending)('the tour ends on %s', (_name, action) => {
-      expect(reducer(touring(), action).tour).toBeNull()
+    it.each(ending)('the tour and the presentation end on %s', (_name, action) => {
+      const next = reducer(touring(), action)
+      expect([next.tour, next.presenting]).toEqual([null, false])
     })
 
     // Each with a state the action really changes.
@@ -483,8 +476,9 @@ describe('reducer', () => {
       ['move/preview', {}, { type: 'move/preview', option }],
     ]
 
-    it.each(endingFrom)('the tour ends on %s', (_name, state, action) => {
-      expect(reducer(touring({}, state), action).tour).toBeNull()
+    it.each(endingFrom)('the tour and the presentation end on %s', (_name, state, action) => {
+      const next = reducer(touring({}, state), action)
+      expect([next.tour, next.presenting]).toEqual([null, false])
     })
 
     // Actions that leave the tour's inputs as they were (the reducer may still hand back a new, equal object).
@@ -502,7 +496,8 @@ describe('reducer', () => {
     ]
 
     it.each(unchanged)('the tour survives %s', (_name, state, action) => {
-      expect(reducer(touring({}, state), action).tour).not.toBeNull()
+      const next = reducer(touring({}, state), action)
+      expect([next.tour !== null, next.presenting]).toEqual([true, true])
     })
 
     it('opening a dialog over the tour pauses it; closing it does not play it again', () => {
@@ -514,7 +509,6 @@ describe('reducer', () => {
     })
 
     it('the tour survives what does not change its stops', () => {
-      expect(reducer(touring(), { type: 'present/set', on: true }).tour).not.toBeNull()
       expect(reducer(touring(), { type: 'view/set', view: '3d' }).tour).not.toBeNull()
       expect(reducer(touring(), { type: 'building/set', buildingId: 'odt' }).tour).not.toBeNull()
     })
