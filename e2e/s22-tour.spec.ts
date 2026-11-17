@@ -276,6 +276,45 @@ test.describe('suite tour: inside the suite', () => {
     await expect(canvas(page)).not.toHaveAttribute('data-room-walls', /.*/)
   })
 
+  /** Inside: no status colour is drawn in the room, and the stop's own suite boxes are hidden. */
+  async function expectNoStatusInside(page: Page) {
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    await expect(canvas(page)).toHaveAttribute('data-room-status', '0')
+    await expect(canvas(page)).toHaveAttribute('data-room-suite-hidden', 'true')
+  }
+
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`${scheme}: no status colour shows inside a vacant, a potential, a matched or a selected suite`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: scheme })
+      await gotoApp(page, '3d', { pot: '1', asOf: '2027-07-01' }) // the stops include potential space
+      await startTour(page)
+      await expectNoStatusInside(page) // Suite 700: vacant
+      const count = Number((await page.getByTestId('tour-counter').textContent())?.split(' of ')[1])
+      let potential = 0
+      for (let i = 1; i < count; i++) {
+        await page.getByTestId('tour-next').click()
+        await expect(page.getByTestId('tour-counter')).toHaveText(`${i + 1} of ${count}`)
+        await expectNoStatusInside(page)
+        if ((await page.getByTestId('tour-caption').textContent())?.includes('Subject to the current tenant vacating')) potential++
+      }
+      expect(potential).toBeGreaterThan(0)
+      await page.keyboard.press('Escape')
+
+      await gotoApp(page, '3d', { min: '10000' })
+      await page.getByTestId('save-match-2').click() // matched: Suites 700 + 710, ringed outside
+      await startTour(page)
+      await expect(page.getByTestId('tour-title')).toHaveText('Suites 700 + 710 · Floor 7')
+      await expectNoStatusInside(page)
+      await page.keyboard.press('Escape')
+
+      await gotoApp(page, '3d')
+      await suite3d(page, '410').evaluate((el: HTMLElement) => el.click()) // selected
+      await page.getByTestId('tour-suite').click()
+      await expect(page.getByTestId('tour-title')).toHaveText('Suite 410 · Floor 4')
+      await expectNoStatusInside(page)
+    })
+  }
+
   test('on its own the look turns once all the way round, then stops there', async ({ page }) => {
     await gotoApp(page, '3d')
     await startTour(page)

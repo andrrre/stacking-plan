@@ -8,7 +8,7 @@ import {
 import { occupants, type Spot } from './occupants'
 import { overlaps, placeAt, rectD, rectW, turnedRect, within, type Piece, type Rect, type Tone } from './rect'
 import { roomPlan, type RoomPlan } from './roomPlan'
-import { FLOOR_TOP, shell, wallArt } from './shell'
+import { FLOOR_TOP, shell, sideDressing, wallArt } from './shell'
 
 // A staged test fit for a suite on the tour: an illustration of how the space could be used, not its real layout
 // (the stage says so). Pure and seeded by the suite: the same suite always gets the same rooms, desks and people.
@@ -28,6 +28,7 @@ export type Interior = {
   walls: number // party walls, the corridor wall, its sidelight and the glazed rooms' partitions
   doors: number // the entrance and the glazed rooms' doors
   people: Mover[]
+  decor: Rect[] // what hangs on or stands against the party walls (the side views' dressing), in plan
 }
 
 export type FitOutInput = { foot: Footprint; sf: number; seed: string }
@@ -40,6 +41,7 @@ const SF_PER_ROOM = 2500
 const MAX_ROOMS = 6
 const SF_PER_PLANT = 1200
 const GAP = 0.02
+const SIDE_VIEW = 1 // half the stretch of party wall kept for the side views' dressing
 
 type Placed = Item & { pieces: Piece[]; walls: number; doors: number }
 type Fit = { taken: Rect[]; placed: Placed[]; spots: Spot[] }
@@ -134,6 +136,9 @@ function placeLounge(f: Fit, c: Ctx, onLeft: boolean): Fit {
   return tries.reduce((fit, t) => (fit === f ? tryAdd(f, p, t) : fit), f)
 }
 
+/** The party walls' stretch square across from the viewer: the side views' dressing has it to itself, nothing half in frame beside it. */
+const sightline = (p: RoomPlan): Rect => ({ x0: p.inner.x0, x1: p.inner.x1, z0: p.eye.z - SIDE_VIEW, z1: p.eye.z + SIDE_VIEW })
+
 export function fitOut(input: FitOutInput): Interior {
   const plan = roomPlan(input.foot)
   const rand = seededRandom(hashSeed(`${input.seed}:fit-out`))
@@ -151,13 +156,16 @@ export function fitOut(input: FitOutInput): Interior {
     (f: Fit) => placePlants(f, c),
   ]
   const fit = steps.reduce((f, step) => step(f), start)
+  const rects = fit.placed.map((p) => p.rect)
+  const dressing = sideDressing(plan, [...rects, ...plan.lanes])
   return {
     plan,
-    pieces: [...s.pieces, ...fit.placed.flatMap((p) => p.pieces), ...wallArt(plan, fit.placed.map((p) => p.rect))],
+    pieces: [...s.pieces, ...fit.placed.flatMap((p) => p.pieces), ...dressing.pieces, ...wallArt(plan, [...rects, ...dressing.rects, sightline(plan)])],
     items: fit.placed.map(({ kind, rect, seats }) => ({ kind, rect, seats })),
     walls: s.walls + fit.placed.reduce((n, p) => n + p.walls, 0),
     doors: s.doors + fit.placed.reduce((n, p) => n + p.doors, 0),
     people: occupants(plan, fit.spots, input.sf, rand),
+    decor: dressing.rects,
   }
 }
 

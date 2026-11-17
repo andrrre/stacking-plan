@@ -1,6 +1,6 @@
-import { BufferGeometry, Color, Float32BufferAttribute, type InstancedMesh } from 'three'
+import { BufferGeometry, Color, Float32BufferAttribute, type InstancedMesh, type Material, type Object3D } from 'three'
 import type { Piece, Tone } from '../fitout/rect'
-import type { Palette } from '../palette'
+import { FILL_KEYS, type Palette } from '../palette'
 import { mix, scratch } from './cityShared'
 
 // What the suite tour's interior is drawn with: a colour for every tone, from the palette's tokens (so the light and
@@ -88,4 +88,40 @@ export function byKind(pieces: readonly Piece[]) {
     sphere: solid.filter((p) => p.shape === 'sphere'),
     glass: pieces.filter((p) => p.tone === 'glass'),
   }
+}
+
+/** Status fills that are neutral greys (occupied, common, no lease on file): a wall may share one by chance. */
+const NEUTRAL = new Set(['occupied', 'common', 'risk-open'])
+
+/** Every colour that says something about a suite's status: coloured fills and sides, the hatch, edges, the match accent. */
+export function statusColours(p: Palette): ReadonlySet<string> {
+  const coloured = FILL_KEYS.filter((k) => !NEUTRAL.has(k))
+  return new Set([...coloured.flatMap((k) => [p.fills[k], p.sides[k]]), p.hatch, ...Object.values(p.edges), p.match])
+}
+
+const colourOf = (m: Material | Material[]): Color | null => {
+  const one = Array.isArray(m) ? m[0] : m
+  return one && 'color' in one && one.color instanceof Color ? one.color : null
+}
+
+/** How many meshes, lines and instances under `root` are drawn in a status colour (a room seen from inside: none). */
+export function statusColoured(root: Object3D, p: Palette): number {
+  const status = statusColours(p)
+  const hit = (c: Color) => (status.has(`#${c.getHexString()}`) ? 1 : 0)
+  let n = 0
+  const c = new Color()
+  root.traverse((o) => {
+    const m = o as InstancedMesh
+    const base = 'material' in m ? colourOf(m.material) : null
+    if (!base) return
+    if (!m.isInstancedMesh || !m.instanceColor) {
+      n += hit(base)
+      return
+    }
+    for (let i = 0; i < m.count; i++) {
+      m.getColorAt(i, c)
+      n += hit(c.multiply(base))
+    }
+  })
+  return n
 }

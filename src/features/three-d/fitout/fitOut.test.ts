@@ -97,6 +97,23 @@ describe('fitOut', () => {
     }
   })
 
+  it.each(ALL)('%s: the party walls are dressed facing the viewer (skirting, a whiteboard, framed panels), clear of every item', (_n, input) => {
+    const r = fitOut(input)
+    expect(r.pieces.filter((p) => p.tone === 'frame' && p.h <= 0.03 && p.d > DEPTH - 0.2)).toHaveLength(2) // skirting, both walls
+    for (const d of r.decor) for (const it of r.items) expect(overlaps(d, it.rect), it.kind).toBe(false)
+  })
+
+  it('a narrow suite: both side walls carry something on the viewer\'s line of sight, square across from the eye', () => {
+    const r = fitOut(SMALL)
+    const eye = r.plan.eye
+    const left = r.decor.filter((d) => d.x0 <= r.plan.inner.x0 + 1e-9)
+    const right = r.decor.filter((d) => d.x1 >= r.plan.inner.x1 - 1e-9)
+    for (const side of [left, right]) {
+      expect(side.length).toBeGreaterThan(0)
+      expect(side.some((d) => d.z0 < eye.z && eye.z < d.z1)).toBe(true)
+    }
+  })
+
   it('a tiny suite degrades to a few things, still with its walls and door, and never errors', () => {
     const r = fitOut(TINY)
     expect(r.doors).toBe(1)

@@ -69,6 +69,7 @@ function useTourCue(tour: TourStop | null, layout: Layout3D): TourCue | null {
 }
 
 const NO_ROOM = { foot: null, inside: new Set<string>() }
+const NO_IDS: readonly string[] = []
 
 /** The tour room's floor area in the drawn layout, and its suites (drawn from inside, not as boxes). */
 function useRoom(room: TourStop | null, layout: Layout3D): { foot: Footprint | null; inside: ReadonlySet<string> } {
@@ -131,7 +132,6 @@ export function World(p: WorldProps) {
   const view = useMemo(() => (focus === null ? lerpView(DEFAULT_VIEW, SEPARATED_VIEW, p.spread) : FLOOR_VIEW), [focus, p.spread])
   const cue = useTourCue(p.tour ?? null, framed)
   const room = useRoom(p.room ?? null, layout)
-  const roomFill = palette.fills[looks.get(p.room?.suiteIds[0] ?? '')?.fill ?? 'vacant']
   const roomSf = (p.room?.suiteIds ?? []).reduce((sum, id) => sum + (visuals.get(id)?.suite.areaSf ?? 0), 0)
   const moving = p.tour?.phase === 'look' && !reduced
   return (
@@ -144,7 +144,7 @@ export function World(p: WorldProps) {
       <Ground bounds={layout.bounds} shapes={shapes} shadow={palette.shadow} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} hidden={hidden} inside={room.inside} />
       {room.foot && (
-        <TourRoom foot={room.foot} fill={roomFill} palette={palette} shapes={shapes} sf={roomSf} seed={p.room?.suiteIds.join('+') ?? ''} moving={moving} />
+        <TourRoom foot={room.foot} palette={palette} shapes={shapes} sf={roomSf} suiteIds={p.room?.suiteIds ?? NO_IDS} moving={moving} />
       )}
       <MoveFlight flight={flight} layout={layout} palette={palette} shapes={shapes} />
     </>

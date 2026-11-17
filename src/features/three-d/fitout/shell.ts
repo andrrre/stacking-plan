@@ -1,5 +1,5 @@
 import { SUITE_H } from '../layout3d'
-import { BAND_W, columnXs } from '../tourRoom'
+import { columnXs } from '../tourRoom'
 import { entryX } from '../tourCamera'
 import { DOOR, WALL_T, type RoomPlan } from './roomPlan'
 import { grow, overlaps, piece, rectAt, rectW, type Piece, type Rect } from './rect'
@@ -9,7 +9,7 @@ import { grow, overlaps, piece, rectAt, rectW, type Piece, type Rect } from './r
 // and the structural columns inside the room. Pure: a plan in, pieces out. The facades keep the bays the camera
 // flies through clear (enterVia), and the door stands open on its line.
 
-/** The floor finish's top and the fit-out's base, just above the room's floor and its status band. */
+/** The floor finish's top and the fit-out's base, just above the room's floor. */
 export const FLOOR_TOP = 0.012
 const FLOOR_BASE = 0.008
 const MULLION = { w: 0.014, d: 0.03, pane: 0.4 }
@@ -19,6 +19,10 @@ const LEAF_T = 0.012
 const COLUMN = 0.09
 const COLUMN_CLEAR = 0.5 // no column within this of the eye's clear zone: one at arm's length would fill the view
 const ART = { w: 0.36, h: 0.24, lift: 0.3, every: 2.2 } // framed panels along the party walls
+const SKIRTING = { h: 0.022, t: 0.006 }
+const BOARD = { w: 0.62, h: 0.27, lift: 0.26 } // a whiteboard (≈ 2.5 × 1.1 m)
+const PANELS = { w: 0.2, gap: 0.06, h: 0.26, lift: 0.3 } // three framed panels in a row
+const CREDENZA = { w: 0.72, h: 0.15, d: 0.11 } // a low cabinet under them
 const LIGHT = { w: 0.3, d: 0.15, h: 0.006, spacing: 0.8, most: 100 }
 /** The clear width the camera's way in keeps through the street facade's glazing. */
 const ENTRY_CLEAR = 0.2
@@ -128,6 +132,66 @@ function columns(p: RoomPlan): Rect[] {
   return zs.flatMap((z) => xs.map((x) => rectAt(x, z, COLUMN, COLUMN))).filter((c) => !keepOut.some((k) => overlaps(c, k)))
 }
 
+/** A skirting line along both party walls, the length of the suite. */
+function skirting(p: RoomPlan, y0: number): Piece[] {
+  const f = p.foot
+  return [p.inner.x0 + SKIRTING.t / 2, p.inner.x1 - SKIRTING.t / 2]
+    .map((x) => piece('frame', x, (f.z0 + f.z1) / 2, SKIRTING.t, SKIRTING.h, f.z1 - f.z0 - 0.08, y0))
+}
+
+type Dressing = { pieces: Piece[]; rects: Rect[] }
+
+/** A whiteboard on the wall at x (facing `out`), centred on z: frame, board and pen tray. */
+function whiteboard(x: number, out: number, z: number, y0: number): Piece[] {
+  return [
+    piece('frame', x + out * 0.006, z, 0.012, BOARD.h, BOARD.w, y0, BOARD.lift),
+    piece('pale', x + out * 0.013, z, 0.004, BOARD.h - 0.024, BOARD.w - 0.024, y0, BOARD.lift + 0.012),
+    piece('metal', x + out * 0.02, z, 0.025, 0.008, BOARD.w * 0.6, y0, BOARD.lift - 0.006),
+  ]
+}
+
+/** Three framed panels in a row on the wall at x, centred on z, over a low credenza if there is floor for it. */
+function panelsAndCredenza(x: number, out: number, z: number, y0: number, credenza: boolean): Piece[] {
+  const step = PANELS.w + PANELS.gap
+  const tones = ['accent', 'wood', 'plant'] as const
+  const panels = tones.flatMap((tone, i) => {
+    const pz = z + (i - 1) * step
+    return [
+      piece('frame', x + out * 0.006, pz, 0.012, PANELS.h, PANELS.w, y0, PANELS.lift),
+      piece(tone, x + out * 0.013, pz, 0.004, PANELS.h - 0.03, PANELS.w - 0.03, y0, PANELS.lift + 0.015),
+    ]
+  })
+  const cx = x + out * (CREDENZA.d / 2 + 0.003)
+  const cabinet = [
+    piece('pale', cx, z, CREDENZA.d, CREDENZA.h, CREDENZA.w, y0),
+    piece('wood', cx, z, CREDENZA.d + 0.008, 0.012, CREDENZA.w + 0.008, y0, CREDENZA.h),
+    ...[-1, 1].map((k) => piece('metal', x + out * (CREDENZA.d + 0.004), z + k * CREDENZA.w / 4, 0.004, 0.06, 0.005, y0, 0.06)),
+  ]
+  return credenza ? [...panels, ...cabinet] : panels
+}
+
+/**
+ * The party walls dressed square across from the viewer (the side views): a whiteboard on one, three framed panels
+ * over a low credenza on the other, each only where nothing in `blocked` (the items, the aisles) stands at the wall.
+ * Returns the pieces and their plan rectangles.
+ */
+export function sideDressing(p: RoomPlan, blocked: readonly Rect[]): Dressing {
+  const y0 = p.foot.floor + FLOOR_TOP
+  const z = p.eye.z
+  const free = (r: Rect) => !blocked.some((b) => overlaps(r, b, 0.02))
+  const left = p.inner.x0
+  const right = p.inner.x1
+  const board = rectAt(left + 0.015, z, 0.03, BOARD.w)
+  const wall = rectAt(right - 0.015, z, 0.03, 3 * PANELS.w + 2 * PANELS.gap)
+  const cab = rectAt(right - CREDENZA.d / 2 - 0.004, z, CREDENZA.d + 0.008, CREDENZA.w + 0.008)
+  const withCab = free(cab)
+  const parts: Dressing[] = [
+    free(board) ? { pieces: whiteboard(left, 1, z, y0), rects: [board] } : { pieces: [], rects: [] },
+    free(wall) ? { pieces: panelsAndCredenza(right, -1, z, y0, withCab), rects: withCab ? [wall, cab] : [wall] } : { pieces: [], rects: [] },
+  ]
+  return { pieces: parts.flatMap((d) => d.pieces), rects: parts.flatMap((d) => d.rects) }
+}
+
 /**
  * Framed panels hung along both party walls through the open-plan zone, every ART.every or so, but none over
  * anything standing against the wall there (`clear`: the items' plan rectangles).
@@ -147,10 +211,10 @@ export function wallArt(p: RoomPlan, clear: readonly Rect[]): Piece[] {
   }))
 }
 
-/** The carpet: inside the status band along the walls, from the window to the corridor wall. */
+/** The carpet: wall to wall, from the window to the corridor wall. */
 function carpet(p: RoomPlan, y0: number): Piece[] {
   const f = p.foot
-  const r = { x0: f.x0 + BAND_W, x1: f.x1 - BAND_W, z0: f.z0 + BAND_W, z1: p.corridorZ - WALL_T / 2 }
+  const r = { x0: f.x0 + WALL_T, x1: f.x1 - WALL_T, z0: f.z0 + 0.03, z1: p.corridorZ - WALL_T / 2 }
   if (r.x1 - r.x0 <= 0.05) return []
   return [piece('carpet', (r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2, r.x1 - r.x0, FLOOR_TOP - FLOOR_BASE, r.z1 - r.z0, y0)]
 }
@@ -166,6 +230,7 @@ export function shell(p: RoomPlan): Shell {
   const pieces = [
     ...carpet(p, y0),
     ...partyWalls(p, y0),
+    ...skirting(p, y0),
     ...corridorWall(p, y0, side),
     ...entranceDoor(p, y0, side),
     ...facade(p, p.foot.z0, y0, null),
