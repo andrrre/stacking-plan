@@ -20,12 +20,11 @@ const ranks = (page: Page) =>
 test('demo flow: the eight beats in order, in one session, on the 3D building', async ({ page }) => {
   const problems: string[] = []
   page.on('console', (m) => {
-    // The browser itself logs the two requests this test aborts on purpose; that is not an app error.
+    // The browser itself logs the request this test aborts on purpose; that is not an app error.
     const aborted = m.location().url.includes('/api/') && m.text().startsWith('Failed to load resource')
     if (m.type() === 'error' && !aborted) problems.push(`console: ${m.text()}`)
   })
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`))
-  await page.route('**/api/ask', (route) => route.abort())
   await page.route('**/api/summary', (route) => route.abort())
 
   // 1. First paint: the 3D building, vacant and expiring space labelled flat along the facade, both lines:

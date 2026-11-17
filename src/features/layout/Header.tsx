@@ -2,7 +2,6 @@ import { selectBuilding } from '../../app/state/selectBuilding'
 import { BUNDLED_BUILDINGS } from '../../data'
 import { useAppState } from '../../app/state/useAppState'
 import { BuildingSwitcher } from '../building/BuildingSwitcher'
-import { ChatLauncher } from '../chat/ChatLauncher'
 import { ImportCsv } from '../import/ImportCsv'
 import { SummaryButton } from '../shortlist/SummaryButton'
 import { ThemeToggle } from '../theme/ThemeToggle'
@@ -39,7 +38,6 @@ export function Header() {
         {!state.presenting && <ImportCsv buttonClassName={styles.button} />}
         <button type="button" className={styles.button} onClick={() => window.print()}>Print</button>
         <TourButton className={styles.button} />
-        <ChatLauncher className={styles.button} />
         <SummaryButton className={styles.primary} />
         <ThemeToggle className={styles.iconButton} />
       </div>

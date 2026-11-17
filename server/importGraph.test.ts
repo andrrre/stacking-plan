@@ -51,7 +51,7 @@ describe('server import graph', () => {
   })
 
   it('walks the whole graph (guards against a vacuous pass)', () => {
-    expect(ROOTS).toEqual(expect.arrayContaining(['api/ask.ts', 'api/chat.ts', 'api/summary.ts']))
+    expect(ROOTS).toEqual(expect.arrayContaining(['api/chat.ts', 'api/summary.ts']))
     const files = new Set(specifiers.map((s) => s.file))
     for (const reached of ['server/chat.ts', 'server/chatToolFns.ts', 'src/data/index.ts', 'src/domain/findFits.ts']) {
       expect(files).toContain(reached)

@@ -2,7 +2,7 @@ import {
   createUIMessageStreamResponse, isStepCount, streamText, toUIMessageStream,
   type LanguageModel, type ModelMessage, type UIMessageChunk,
 } from 'ai'
-import { ChatRequestSchema, type ChatMessage } from '../src/shared/chat.schema.js'
+import { CHAT_REQUIREMENT_PART, ChatRequestSchema, ChatRequirementSchema, type ChatMessage, type ChatRequirement } from '../src/shared/chat.schema.js'
 import { chatContext, type ChatContext } from './chatContext.js'
 import { chatInstructions } from './chatPrompt.js'
 import { chatTools } from './chatTools.js'
@@ -39,17 +39,50 @@ const BROWSER_CHUNK_TYPES: ReadonlySet<UIMessageChunk['type']> = new Set([
   'start', 'start-step', 'text-start', 'text-delta', 'text-end', 'finish-step', 'finish', 'error', 'abort',
 ])
 
+/** find_space's validated input as the requirement the search form takes, or null (includePotential is the form's own). */
+function requirementOf(input: unknown): ChatRequirement | null {
+  if (typeof input !== 'object' || input === null) return null
+  const { minSf, maxSf, maxRentPsf, moveInBy } = input as Record<string, unknown>
+  const parsed = ChatRequirementSchema.safeParse({ minSf, maxSf, maxRentPsf, moveInBy })
+  return parsed.success ? parsed.data : null
+}
+
 /**
- * What the browser receives: only BROWSER_CHUNK_TYPES. Tool chunks are dropped: the client renders text only, and the
- * model gets the tool results inside streamText, not through this stream. Provider chunks (`custom`, carrying the
- * model id and token usage) are dropped too. A server-side timeout ends the UI stream with an `abort`
- * chunk, which the client would read as a finished answer; unless the client itself aborted (Stop), turn it into the
- * generic error chunk and log it once.
+ * The one UI effect the stream carries: when a find_space call has run (not refused by the tool budget), the
+ * requirement it searched with goes out as a CHAT_REQUIREMENT_PART data part. The tool chunks themselves never leave.
+ */
+function requirementParts() {
+  const pending = new Map<string, ChatRequirement>()
+  return (chunk: UIMessageChunk): UIMessageChunk | null => {
+    if (chunk.type === 'tool-input-available' && chunk.toolName === 'find_space') {
+      const requirement = requirementOf(chunk.input)
+      if (requirement) pending.set(chunk.toolCallId, requirement)
+      return null
+    }
+    if (chunk.type !== 'tool-output-available') return null
+    const requirement = pending.get(chunk.toolCallId)
+    pending.delete(chunk.toolCallId)
+    const refused = typeof chunk.output === 'object' && chunk.output !== null && 'error' in chunk.output
+    return requirement && !refused ? { type: CHAT_REQUIREMENT_PART, data: requirement } : null
+  }
+}
+
+/**
+ * What the browser receives: only BROWSER_CHUNK_TYPES, plus the requirement data part. Tool chunks are dropped: the
+ * client renders text only, and the model gets the tool results inside streamText, not through this stream. Provider
+ * chunks (`custom`, carrying the model id and token usage) are dropped too. A server-side timeout ends the UI stream
+ * with an `abort` chunk, which the client would read as a finished answer; unless the client itself aborted (Stop),
+ * turn it into the generic error chunk and log it once.
  */
 function forBrowser(request: Request, signal: AbortSignal, env: ServerEnv): TransformStream<UIMessageChunk, UIMessageChunk> {
+  const requirement = requirementParts()
   return new TransformStream({
     transform(chunk, controller) {
-      if (!BROWSER_CHUNK_TYPES.has(chunk.type)) return
+      if (!BROWSER_CHUNK_TYPES.has(chunk.type)) {
+        const part = requirement(chunk)
+        if (part) controller.enqueue(part)
+        return
+      }
       if (chunk.type !== 'abort' || request.signal.aborted) {
         controller.enqueue(chunk)
         return

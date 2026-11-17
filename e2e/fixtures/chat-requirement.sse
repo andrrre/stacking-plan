@@ -1,0 +1,24 @@
+data: {"type":"start"}
+
+data: {"type":"start-step"}
+
+data: {"type":"data-requirement","data":{"minSf":10000}}
+
+data: {"type":"finish-step"}
+
+data: {"type":"start-step"}
+
+data: {"type":"text-start","id":"text-1"}
+
+data: {"type":"text-delta","id":"text-1","delta":"On 15 Nov 2026, suite 500 fits"}
+
+data: {"type":"text-delta","id":"text-1","delta":" with 10,250 SF."}
+
+data: {"type":"text-end","id":"text-1"}
+
+data: {"type":"finish-step"}
+
+data: {"type":"finish","finishReason":"stop"}
+
+data: [DONE]
+

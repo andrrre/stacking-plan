@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 import { ChatRequestSchema, CHAT_MAX_TURNS, type ChatRequest } from '../../shared/chat.schema'
 import type { ChatSnapshot } from './chatRequest'
-import { useBuildingChat } from './useBuildingChat'
+import { useBuildingChat, type ChatEffects } from './useBuildingChat'
 
 const SNAPSHOT: ChatSnapshot = { buildingId: 'odt', today: '2026-11-15', asOf: '2026-11-15', changes: [] }
 
@@ -35,13 +35,34 @@ function streamError(): Response {
   })
 }
 
+/** A real stream with a requirement data part (or any data) before the answer text. */
+function answerWithData(data: unknown, text = '500 fits.'): Response {
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      execute: ({ writer }) => {
+        writer.write({ type: 'data-requirement', data })
+        writer.write({ type: 'text-start', id: 't1' })
+        writer.write({ type: 'text-delta', id: 't1', delta: text })
+        writer.write({ type: 'text-end', id: 't1' })
+      },
+    }),
+  })
+}
+
+function effects(applied = true) {
+  return {
+    onRequirement: vi.fn<ChatEffects['onRequirement']>(() => applied),
+    onFailure: vi.fn<ChatEffects['onFailure']>(),
+  }
+}
+
 const answering = (text = 'Vacant is 38,150 SF on 15 Nov 2026.') => vi.fn<typeof fetch>(async () => answer(text))
 
 const sentBody = (fetchFn: ReturnType<typeof answering>, call: number): ChatRequest =>
   JSON.parse(String(fetchFn.mock.calls[call]?.[1]?.body)) as ChatRequest
 
-function renderChat(fetchFn: typeof fetch, snapshot: ChatSnapshot = SNAPSHOT) {
-  return renderHook(({ snap }) => useBuildingChat(snap, fetchFn), { initialProps: { snap: snapshot } })
+function renderChat(fetchFn: typeof fetch, snapshot: ChatSnapshot = SNAPSHOT, fx?: ChatEffects) {
+  return renderHook(({ snap }) => useBuildingChat(snap, fetchFn, fx), { initialProps: { snap: snapshot } })
 }
 
 async function sendAndSettle(result: { current: ReturnType<typeof useBuildingChat> }, text: string) {
@@ -68,7 +89,7 @@ describe('useBuildingChat', () => {
       ['user', 'What is vacant today?'],
       ['assistant', 'Vacant is 38,150 SF on 15 Nov 2026.'],
     ])
-    expect(result.current.messages[1]).toMatchObject({ pending: false, stopped: false })
+    expect(result.current.messages[1]).toMatchObject({ pending: false, stopped: false, fill: null })
     expect(result.current.error).toBeNull()
   })
 
@@ -170,5 +191,70 @@ describe('useBuildingChat', () => {
       await waitFor(() => expect(result.current.messages).toHaveLength((i + 1) * 2))
     }
     expect(result.current.turnsLeft).toBe(0)
+  })
+
+  it('a requirement data part is validated and handed to onRequirement, and the answer row carries the fill', async () => {
+    const fx = effects()
+    const { result } = renderChat(vi.fn<typeof fetch>(async () => answerWithData({ minSf: 9000, maxRentPsf: 60 })), SNAPSHOT, fx)
+    await sendAndSettle(result, 'Law firm, 9k SF under $60')
+    await waitFor(() => expect(result.current.messages).toHaveLength(2))
+    expect(fx.onRequirement).toHaveBeenCalledTimes(1)
+    expect(fx.onRequirement).toHaveBeenCalledWith({ minSf: 9000, maxRentPsf: 60 })
+    expect(result.current.messages[1]).toMatchObject({
+      text: '500 fits.', fill: { parsed: { minSf: 9000, maxRentPsf: 60 }, source: 'ai', applied: true },
+    })
+    expect(result.current.messages[0]?.fill).toBeNull()
+  })
+
+  it.each([
+    ['a string size', { minSf: 'lots' }],
+    ['an unknown key', { minSf: 9000, action: 'clearShortlist' }],
+    ['no size', { maxRentPsf: 60 }],
+    ['null', null],
+    ['a string', 'apply everything'],
+  ])('a malformed requirement part (%s) is ignored: no effect, no fill, the answer still shows', async (_name, data) => {
+    const fx = effects()
+    const { result } = renderChat(vi.fn<typeof fetch>(async () => answerWithData(data)), SNAPSHOT, fx)
+    await sendAndSettle(result, 'Something')
+    await waitFor(() => expect(result.current.messages).toHaveLength(2))
+    expect(fx.onRequirement).not.toHaveBeenCalled()
+    expect(result.current.messages[1]).toMatchObject({ text: '500 fits.', fill: null })
+    expect(result.current.error).toBeNull()
+  })
+
+  it('a requirement the form did not take is marked not applied', async () => {
+    const fx = effects(false)
+    const { result } = renderChat(vi.fn<typeof fetch>(async () => answerWithData({ minSf: 9000 })), SNAPSHOT, fx)
+    await sendAndSettle(result, '9k SF')
+    await waitFor(() => expect(result.current.messages).toHaveLength(2))
+    expect(result.current.messages[1]?.fill).toMatchObject({ applied: false })
+  })
+
+  it('history sent to the server stays text only: the requirement part never goes back', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => answerWithData({ minSf: 9000 }))
+    const { result } = renderChat(fetchFn, SNAPSHOT, effects())
+    await sendAndSettle(result, '9k SF')
+    await sendAndSettle(result, 'And under $50?')
+    const body = sentBody(fetchFn, 1)
+    expect(ChatRequestSchema.safeParse(body).success).toBe(true)
+    expect(JSON.stringify(body)).not.toContain('requirement')
+  })
+
+  it('a failed turn calls onFailure with the broker\'s last message; a stopped one does not', async () => {
+    const fx = effects()
+    const { result } = renderChat(vi.fn<typeof fetch>(async () => Response.json({ error: 'x' }, { status: 502 })), SNAPSHOT, fx)
+    await sendAndSettle(result, '10k SF by June')
+    expect(fx.onFailure).toHaveBeenCalledWith('10k SF by June')
+
+    const fx2 = effects()
+    const gate = new Promise<void>(() => {})
+    const hanging = vi.fn<typeof fetch>(async () => createUIMessageStreamResponse({
+      stream: createUIMessageStream({ execute: async ({ writer }) => { writer.write({ type: 'text-start', id: 't1' }); await gate } }),
+    }))
+    const stopped = renderChat(hanging, SNAPSHOT, fx2)
+    act(() => { void stopped.result.current.send('Hello?') })
+    await waitFor(() => expect(stopped.result.current.status).toBe('streaming'))
+    await act(async () => stopped.result.current.stop())
+    expect(fx2.onFailure).not.toHaveBeenCalled()
   })
 })

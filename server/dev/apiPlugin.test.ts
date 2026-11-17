@@ -90,19 +90,8 @@ describe('apiMiddleware', () => {
     spy.mockRestore()
   })
 
-  it('POST /api/ask with the real table and no key answers 503', async () => {
-    const { base } = await listen(API_ROUTES, { ANTHROPIC_API_KEY: '' })
-    const res = await fetch(`${base}/api/ask`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ query: '10k', today: '2026-11-15' }),
-    })
-    expect(res.status).toBe(503)
-    expect(await res.json()).toEqual({ error: 'AI unavailable' })
-  })
-
   it('the real table serves POST /api/summary, GET and POST /api/chat, and only the routes that exist', () => {
-    expect(Object.keys(API_ROUTES).sort()).toEqual(['/api/ask', '/api/chat', '/api/summary'])
+    expect(Object.keys(API_ROUTES).sort()).toEqual(['/api/chat', '/api/summary'])
     expect(Object.keys(API_ROUTES['/api/summary'] ?? {})).toEqual(['POST'])
     expect(Object.keys(API_ROUTES['/api/chat'] ?? {}).sort()).toEqual(['GET', 'POST'])
   })

@@ -7,7 +7,7 @@ import { BUNDLED_BUILDINGS } from '../src/data/index.js'
 import type { Building, Change } from '../src/domain/types.js'
 import { handleChat, handleChatStatus } from './chat.js'
 import { chatContext, type ChatContext } from './chatContext.js'
-import { buildingOverview } from './chatToolFns.js'
+import { buildingOverview, findSpace } from './chatToolFns.js'
 import { MAX_TOOL_CALLS, TOOL_BUDGET_TEXT } from './chatTools.js'
 
 const KEY = 'test-key-value'
@@ -47,6 +47,8 @@ const usage = {
 }
 const finish = (unified: 'stop' | 'tool-calls') => ({ type: 'finish', finishReason: { unified, raw: undefined }, usage }) as const
 const toolCall = (id = 'call-1') => ({ type: 'tool-call', toolCallId: id, toolName: 'building_overview', input: '{}' }) as const
+const findCall = (input: Record<string, unknown>, id = 'call-f') =>
+  ({ type: 'tool-call', toolCallId: id, toolName: 'find_space', input: JSON.stringify(input) }) as const
 const textChunks = (parts: string[]) => [
   { type: 'text-start', id: 'text-1' } as const,
   ...parts.map((delta) => ({ type: 'text-delta', id: 'text-1', delta }) as const),
@@ -73,6 +75,24 @@ function roundTripModel(): MockLanguageModelV4 {
     ],
   })
 }
+
+/** The requirement round trip: find_space for 10,000 SF, then an answer whose figures come from its output. */
+function requirementParts(): string[] {
+  const top = findSpace(odtContext(), { minSf: 10000 }).candidates[0]
+  if (!top) throw new Error('no candidate for 10,000 SF')
+  return [`On 15 Nov 2026, suite ${top.suiteNumbers.join(' + ')} fits`, ` with ${top.totalSf.toLocaleString('en-US')} SF.`]
+}
+
+function requirementModel(input: Record<string, unknown> = { minSf: 10000, includePotential: true }): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
+    doStream: [
+      { stream: simulateReadableStream({ chunks: [findCall(input), finish('tool-calls')] }) },
+      { stream: simulateReadableStream({ chunks: [...textChunks(requirementParts()), finish('stop')] }) },
+    ],
+  })
+}
+
+const requirementChunks = (text: string) => chunks(text).filter((c) => c.type === 'data-requirement')
 
 const answerModel = (text = 'An answer.') =>
   new MockLanguageModelV4({ doStream: { stream: simulateReadableStream({ chunks: [...textChunks([text]), finish('stop')] }) } })
@@ -338,6 +358,55 @@ describe('handleChat: streaming', () => {
   })
 })
 
+describe('handleChat: the "apply requirement" data part', () => {
+  it('a find_space call sends its validated requirement as one data-requirement part, without includePotential', async () => {
+    const model = requirementModel({ minSf: 9000, maxSf: 11000, maxRentPsf: 60, moveInBy: '2027-06-30', includePotential: false })
+    const text = await (await handleChat(post(), KEY_ENV, Date.now(), { model })).text()
+    expect(requirementChunks(text)).toEqual([
+      { type: 'data-requirement', data: { minSf: 9000, maxSf: 11000, maxRentPsf: 60, moveInBy: '2027-06-30' } },
+    ])
+    expect(toolChunkTypes(text)).toEqual([])
+    expect(text).not.toContain('includePotential')
+    expect(text).not.toContain('call-f')
+  })
+
+  it('the data part comes after the tool ran and before the answer text', async () => {
+    const text = await (await handleChat(post(), KEY_ENV, Date.now(), { model: requirementModel() })).text()
+    const types = chunks(text).map((c) => String(c.type))
+    expect(types.indexOf('data-requirement')).toBeGreaterThan(-1)
+    expect(types.indexOf('data-requirement')).toBeLessThan(types.indexOf('text-delta'))
+  })
+
+  it('other tools send no data part', async () => {
+    const text = await (await handleChat(post(), KEY_ENV, Date.now(), { model: roundTripModel() })).text()
+    expect(requirementChunks(text)).toEqual([])
+  })
+
+  it('a find_space call with invalid input sends no data part', async () => {
+    const text = await (await handleChat(post(), KEY_ENV, Date.now(), { model: requirementModel({ minSf: 'lots' }) })).text()
+    expect(requirementChunks(text)).toEqual([])
+  })
+
+  it('a find_space call refused by the tool budget sends no data part', async () => {
+    const calls = Array.from({ length: MAX_TOOL_CALLS + 1 }, (_, i) => findCall({ minSf: 1000 + i }, `call-${i}`))
+    const model = new MockLanguageModelV4({
+      doStream: [
+        { stream: simulateReadableStream({ chunks: [...calls, finish('tool-calls')] }) },
+        { stream: simulateReadableStream({ chunks: [...textChunks(['Done.']), finish('stop')] }) },
+      ],
+    })
+    const text = await (await handleChat(post(), KEY_ENV, Date.now(), { model })).text()
+    const sent = requirementChunks(text).map((c) => (c.data as { minSf: number }).minSf)
+    expect(sent).toEqual(Array.from({ length: MAX_TOOL_CALLS }, (_, i) => 1000 + i))
+  })
+
+  it('the instructions tell the model to search with find_space when the broker describes a requirement', async () => {
+    const model = answerModel()
+    await (await handleChat(post(), KEY_ENV, Date.now(), { model })).text()
+    expect(String(model.doStreamCalls[0]?.prompt[0]?.content)).toContain('describes a space requirement')
+  })
+})
+
 describe('handleChat: failures in the stream', () => {
   it('a provider error: status 200, the fixed text, nothing from the error; one log line without the key', async () => {
     const spy = silentLog()
@@ -389,6 +458,15 @@ describe('wire snapshot', () => {
     const text = (await res.text()).replace(/"messageId":"[^"]+"/g, '"messageId":"msg-1"')
     expect(text).toContain(answerParts()[0])
     await expect(text).toMatchFileSnapshot('../e2e/fixtures/chat-answer.sse')
+  })
+})
+
+describe('wire snapshot: requirement', () => {
+  it('the find_space body matches e2e/fixtures/chat-requirement.sse (ids normalised)', async () => {
+    const res = await handleChat(post(body({ messages: [{ role: 'user', text: 'Where could a 10,000 SF tenant go?' }] })), KEY_ENV, Date.now(), { model: requirementModel() })
+    const text = (await res.text()).replace(/"messageId":"[^"]+"/g, '"messageId":"msg-1"')
+    expect(text).toContain(requirementParts()[0])
+    await expect(text).toMatchFileSnapshot('../e2e/fixtures/chat-requirement.sse')
   })
 })
 

@@ -19,7 +19,7 @@ for (const theme of ['light', 'dark'] as const) {
     await gotoApp(page, 'stack')
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
     expect(await css(page, 'req-min-sf', 'border-top-color')).toBe(INPUT_BORDER)
-    expect(await page.getByRole('textbox', { name: /describe the requirement/i }).evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(INPUT_BORDER)
+    expect(await page.getByRole('textbox', { name: /describe a requirement or ask about this building/i }).evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(INPUT_BORDER)
     expect(await css(page, 'req-clear', 'border-top-color')).not.toBe(INPUT_BORDER)
   })
 }

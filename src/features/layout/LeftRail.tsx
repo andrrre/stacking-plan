@@ -1,4 +1,4 @@
-import { AskBox } from '../ask/AskBox'
+import { Assistant } from '../chat/Assistant'
 import { RequirementForm } from '../finder/RequirementForm'
 import { Shortlist } from '../shortlist/Shortlist'
 import type { LeftDrawer } from './useDrawers'
@@ -6,7 +6,7 @@ import styles from './LeftRail.module.css'
 
 const RAIL_ID = 'left-rail'
 
-/** The sign that the panel behind the handle has the AI requirement box: a large four-point spark and a small one. */
+/** The sign that the panel behind the handle has the AI assistant: a large four-point spark and a small one. */
 function Spark() {
   return (
     <svg className={styles.spark} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -22,8 +22,8 @@ function toggleName(open: boolean, count: number): string {
 }
 
 /**
- * The left drawer: requirement and shortlist. Its handle stays on the stage's left edge when it is closed; the
- * closed content is inert (out of the tab order and the accessibility tree). The spark marks the AI box inside;
+ * The left drawer: the assistant, the requirement form and the shortlist. Its handle stays on the stage's left edge when it is closed; the
+ * closed content is inert (out of the tab order and the accessibility tree). The spark marks the AI assistant inside;
  * the badge counts the shortlist.
  */
 export function LeftRail({ open, count, onToggle, onFocusWithin }: LeftDrawer) {
@@ -32,7 +32,7 @@ export function LeftRail({ open, count, onToggle, onFocusWithin }: LeftDrawer) {
       onBlur={(e) => { if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) onFocusWithin(false) }}>
       <div className={styles.clip}>
         <aside id={RAIL_ID} className={styles.rail} data-testid="left-rail" aria-label="Requirement and shortlist" inert={!open}>
-          <AskBox />
+          <Assistant />
           <RequirementForm />
           <Shortlist />
         </aside>

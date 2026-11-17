@@ -5,7 +5,9 @@ import {
   CHAT_MAX_MESSAGES,
   CHAT_MAX_TURNS,
   CHAT_MAX_USER_CHARS,
+  CHAT_REQUIREMENT_PART,
   ChatRequestSchema,
+  ChatRequirementSchema,
 } from './chat.schema'
 
 const user = (text: string) => ({ role: 'user', text })
@@ -86,5 +88,27 @@ describe('ChatRequestSchema', () => {
     expect(ok(withBody({ buildingId: '' }))).toBe(false)
     expect(ok(withBody({ buildingId: 'x'.repeat(121) }))).toBe(false)
     expect(ok(withBody({ buildingId: 'x'.repeat(120) }))).toBe(true)
+  })
+})
+
+describe('ChatRequirementSchema (the "apply requirement" data part)', () => {
+  it('names the part data-requirement', () => {
+    expect(CHAT_REQUIREMENT_PART).toBe('data-requirement')
+  })
+
+  it('accepts a minimum size alone and every optional field', () => {
+    expect(ChatRequirementSchema.safeParse({ minSf: 10000 }).success).toBe(true)
+    const full = { minSf: 9000, maxSf: 11000, maxRentPsf: 60, moveInBy: '2027-06-30' }
+    expect(ChatRequirementSchema.parse(full)).toEqual(full)
+  })
+
+  it('rejects a missing or bad minimum, a max below the min, out-of-range rent, a bad date and unknown keys', () => {
+    for (const bad of [
+      {}, null, 'minSf', { minSf: 'lots' }, { minSf: 0 }, { minSf: 10.5 }, { minSf: 10000, maxSf: 9000 },
+      { minSf: 10000, maxRentPsf: 0 }, { minSf: 10000, maxRentPsf: 5000 }, { minSf: 10000, moveInBy: '2027-13-01' },
+      { minSf: 10000, action: 'delete' }, { minSf: 10000, includePotential: false },
+    ]) {
+      expect(ChatRequirementSchema.safeParse(bad).success, JSON.stringify(bad)).toBe(false)
+    }
   })
 })

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CHAT_MAX_TURNS } from '../../shared/chat.schema'
+import { AI_EXAMPLES, LOCAL_EXAMPLES } from './assistantCopy'
 import { ChatPanel } from './ChatPanel'
+import type { Fill } from './requirementFill'
 import type { ChatErrorKind, ChatStatus, PanelMessage } from './useBuildingChat'
 
 type Overrides = Partial<{
@@ -10,14 +12,20 @@ type Overrides = Partial<{
   status: ChatStatus
   error: ChatErrorKind
   turnsLeft: number
+  fallback: Fill | null
+  mode: 'ai' | 'local'
+  examples: readonly string[]
 }>
 
 function handlers() {
-  return { onSend: vi.fn(), onStop: vi.fn(), onRetry: vi.fn(), onReset: vi.fn(), onClose: vi.fn() }
+  return { send: vi.fn(), stop: vi.fn(), retry: vi.fn(), reset: vi.fn() }
 }
 
 function props(over: Overrides = {}, h = handlers()) {
-  return { id: 'chat-panel', messages: [], status: 'ready' as ChatStatus, error: null, turnsLeft: CHAT_MAX_TURNS, ...over, ...h }
+  return {
+    id: 'chat-panel', mode: 'ai' as const, intro: 'Describe a requirement.', examples: AI_EXAMPLES, horizon: '2031-11-15',
+    messages: [], status: 'ready' as ChatStatus, error: null, fallback: null, turnsLeft: CHAT_MAX_TURNS, ...over, ...h,
+  }
 }
 
 function renderPanel(over: Overrides = {}) {
@@ -28,33 +36,84 @@ function renderPanel(over: Overrides = {}) {
 }
 
 const msg = (id: string, role: PanelMessage['role'], text: string, extra: Partial<PanelMessage> = {}): PanelMessage =>
-  ({ id, role, text, pending: false, stopped: false, ...extra })
+  ({ id, role, text, pending: false, stopped: false, fill: null, ...extra })
 
 const Q = msg('u1', 'user', 'What is vacant today?')
 const A = msg('a1', 'assistant', 'Vacant is 38,150 SF on 15 Nov 2026.')
+const AI_FILL: Fill = { parsed: { minSf: 9000, maxSf: 11000, maxRentPsf: 60, moveInBy: '2027-06-30' }, source: 'ai', applied: true }
 
 describe('ChatPanel', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('is a non-modal dialog named Building chat, hidden from print, with a log', () => {
+  it('is a section named Assistant (not a dialog) with a log and a labelled input', () => {
     const { panel } = renderPanel()
-    expect(panel).toHaveAttribute('role', 'dialog')
-    expect(panel).not.toHaveAttribute('aria-modal', 'true')
-    expect(panel).toHaveAccessibleName('Building chat')
-    expect(panel).toHaveAttribute('data-print', 'hide')
+    expect(panel.tagName).toBe('SECTION')
+    expect(panel).not.toHaveAttribute('role', 'dialog')
+    expect(panel).toHaveAccessibleName('Assistant')
+    expect(within(panel).getByTestId('chat-input')).toHaveAccessibleName('Describe a requirement or ask about this building')
     const log = within(panel).getByTestId('chat-log')
     expect(log).toHaveAttribute('role', 'log')
     expect(log).toHaveAttribute('aria-live', 'off')
   })
 
   it('the empty state shows three examples; clicking one sends its text', async () => {
-    const { panel, onSend } = renderPanel()
+    const { panel, send } = renderPanel()
     const examples = within(panel).getAllByTestId('chat-example')
     expect(examples.map((e) => e.textContent)).toEqual([
       'What is vacant on this date?', 'Which leases expire in the next 12 months?', 'Where could a 10,000 SF tenant go?',
     ])
     await userEvent.click(within(panel).getByRole('button', { name: 'What is vacant on this date?' }))
-    expect(onSend).toHaveBeenCalledWith('What is vacant on this date?')
+    expect(send).toHaveBeenCalledWith('What is vacant on this date?')
+  })
+
+  it('offline, only the requirement example is offered, with the intro the mode gives', () => {
+    const { panel } = renderPanel({ mode: 'local', examples: LOCAL_EXAMPLES })
+    expect(panel).toHaveAttribute('data-mode', 'local')
+    expect(within(panel).getAllByTestId('chat-example').map((e) => e.textContent)).toEqual(['Where could a 10,000 SF tenant go?'])
+    expect(within(panel).getByTestId('chat-intro')).toHaveTextContent('Describe a requirement.')
+  })
+
+  it('an answer that filled the form shows what it put there, read by AI', () => {
+    const { panel } = renderPanel({ messages: [Q, msg('a1', 'assistant', 'Three options fit.', { fill: AI_FILL })] })
+    const row = within(panel).getAllByTestId('chat-message')[1] as HTMLElement
+    expect(within(row).getByTestId('chat-text')).toHaveTextContent('Three options fit.')
+    const understood = within(row).getByTestId('ask-understood')
+    for (const part of ['9,000–11,000 SF', 'rent up to $60.00/SF', 'move in by 30 Jun 2027']) expect(understood).toHaveTextContent(part)
+    expect(within(row).getByTestId('ask-status')).toHaveTextContent('Read by AI · check the fields below')
+    expect(within(row).queryByTestId('ask-warning')).toBeNull()
+  })
+
+  it('an offline fill says so; an unapplied one says the form was left as typed; a missing size is flagged', () => {
+    const offline: Fill = { parsed: { moveInBy: '2027-06-30' }, source: 'offline', applied: false }
+    const { panel } = renderPanel({ messages: [Q, msg('a1', 'assistant', 'AI is unavailable.', { fill: offline })] })
+    expect(within(panel).getByTestId('ask-status')).toHaveTextContent('Offline parsing · check the fields below')
+    expect(within(panel).getAllByTestId('ask-warning').map((w) => w.textContent)).toEqual([
+      'The form was edited while reading, so it was left as you typed it.',
+      'Size not understood: enter a minimum size below to search.',
+    ])
+  })
+
+  it('a failed turn with a fallback shows the error and the requirement read locally', () => {
+    const fallback: Fill = { parsed: { minSf: 10000 }, source: 'offline', applied: true }
+    const { panel } = renderPanel({ messages: [Q], status: 'error', error: 'failed', fallback })
+    expect(within(panel).getByTestId('chat-error')).toHaveTextContent('The AI did not answer. Try again.')
+    const block = within(panel).getByTestId('chat-fallback')
+    expect(block).toHaveTextContent('AI is unavailable, so the requirement was read locally.')
+    expect(within(block).getByTestId('ask-understood')).toHaveTextContent('at least 10,000 SF')
+    expect(within(block).getByTestId('ask-status')).toHaveTextContent('Offline parsing')
+  })
+
+  it('New chat shows only once there is a conversation', () => {
+    const { panel, rerenderWith } = renderPanel()
+    expect(within(panel).queryByTestId('chat-new')).toBeNull()
+    rerenderWith({ messages: [Q, A] })
+    expect(within(panel).getByTestId('chat-new')).toBeVisible()
+  })
+
+  it('announces a local answer when it is added (a local turn is never busy)', () => {
+    const { panel, rerenderWith } = renderPanel({ mode: 'local' })
+    rerenderWith({ mode: 'local', messages: [Q, msg('a1', 'assistant', 'AI is unavailable. The requirement was read locally.')] })
+    expect(within(panel).getByTestId('chat-announce')).toHaveTextContent('AI is unavailable. The requirement was read locally.')
   })
 
   it('hides the examples once the conversation has started', () => {
@@ -63,29 +122,29 @@ describe('ChatPanel', () => {
   })
 
   it('Enter sends and clears the input; Shift+Enter is a new line', async () => {
-    const { panel, onSend } = renderPanel()
+    const { panel, send } = renderPanel()
     const input = within(panel).getByTestId('chat-input')
     await userEvent.type(input, 'Line one{Shift>}{Enter}{/Shift}line two')
-    expect(onSend).not.toHaveBeenCalled()
+    expect(send).not.toHaveBeenCalled()
     expect(input).toHaveValue('Line one\nline two')
     await userEvent.type(input, '{Enter}')
-    expect(onSend).toHaveBeenCalledWith('Line one\nline two')
+    expect(send).toHaveBeenCalledWith('Line one\nline two')
     expect(input).toHaveValue('')
   })
 
   it('the Send button sends the trimmed text', async () => {
-    const { panel, onSend } = renderPanel()
+    const { panel, send } = renderPanel()
     await userEvent.type(within(panel).getByTestId('chat-input'), '  Vacant?  ')
     await userEvent.click(within(panel).getByTestId('chat-send'))
-    expect(onSend).toHaveBeenCalledWith('Vacant?')
+    expect(send).toHaveBeenCalledWith('Vacant?')
   })
 
   it('does not send an empty or whitespace-only input', async () => {
-    const { panel, onSend } = renderPanel()
+    const { panel, send } = renderPanel()
     const input = within(panel).getByTestId('chat-input')
     await userEvent.type(input, '{Enter}')
     await userEvent.type(input, '   {Enter}')
-    expect(onSend).not.toHaveBeenCalled()
+    expect(send).not.toHaveBeenCalled()
     expect(within(panel).getByTestId('chat-send')).toBeDisabled()
   })
 
@@ -99,7 +158,7 @@ describe('ChatPanel', () => {
   })
 
   it('busy: Stop replaces Send and the input is read-only and busy, not disabled', async () => {
-    const { panel, onStop } = renderPanel({ messages: [Q], status: 'submitted' })
+    const { panel, stop } = renderPanel({ messages: [Q], status: 'submitted' })
     expect(within(panel).queryByTestId('chat-send')).toBeNull()
     const input = within(panel).getByTestId('chat-input')
     expect(input).toHaveAttribute('readonly')
@@ -107,7 +166,7 @@ describe('ChatPanel', () => {
     expect(input).toBeEnabled()
     expect(within(panel).getByTestId('chat-pending')).toHaveTextContent('Looking at the building…')
     await userEvent.click(within(panel).getByTestId('chat-stop'))
-    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(stop).toHaveBeenCalledTimes(1)
   })
 
   it('a running tool part with no text shows "Looking at the building…"', () => {
@@ -123,10 +182,10 @@ describe('ChatPanel', () => {
   })
 
   it('keeps focus in the input for the whole turn; typing and Enter do nothing while busy (FR14)', async () => {
-    const { panel, onSend, rerenderWith } = renderPanel()
+    const { panel, send, rerenderWith } = renderPanel()
     const input = within(panel).getByTestId('chat-input')
     await userEvent.type(input, 'Vacant?{Enter}')
-    expect(onSend).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledTimes(1)
     rerenderWith({ messages: [msg('u1', 'user', 'Vacant?')], status: 'submitted' })
     expect(document.activeElement).toBe(input)
     await userEvent.keyboard('more{Enter}')
@@ -134,7 +193,7 @@ describe('ChatPanel', () => {
     expect(document.activeElement).toBe(input)
     await userEvent.keyboard('x{Enter}')
     expect(input).toHaveValue('')
-    expect(onSend).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledTimes(1)
   })
 
   it('a 429 shows the rate-limit text, as an alert, and no Retry', () => {
@@ -145,13 +204,13 @@ describe('ChatPanel', () => {
   })
 
   it('a generic error shows its text with Retry, and keeps the history', async () => {
-    const { panel, onRetry } = renderPanel({ messages: [Q, A, msg('u2', 'user', 'And next year?')], status: 'error', error: 'failed' })
+    const { panel, retry } = renderPanel({ messages: [Q, A, msg('u2', 'user', 'And next year?')], status: 'error', error: 'failed' })
     expect(within(panel).getByTestId('chat-error')).toHaveTextContent('The AI did not answer. Try again.')
     expect(within(panel).getByTestId('chat-error')).toHaveAttribute('role', 'alert')
     expect(within(panel).getAllByTestId('chat-message')).toHaveLength(3)
     expect(within(panel).getByTestId('chat-input')).toBeEnabled()
     await userEvent.click(within(panel).getByTestId('chat-retry'))
-    expect(onRetry).toHaveBeenCalledTimes(1)
+    expect(retry).toHaveBeenCalledTimes(1)
   })
 
   it('a stopped partial answer is kept and marked', () => {
@@ -170,16 +229,14 @@ describe('ChatPanel', () => {
   })
 
   it('New chat calls onReset', async () => {
-    const { panel, onReset } = renderPanel({ messages: [Q, A] })
+    const { panel, reset } = renderPanel({ messages: [Q, A] })
     await userEvent.click(within(panel).getByTestId('chat-new'))
-    expect(onReset).toHaveBeenCalledTimes(1)
+    expect(reset).toHaveBeenCalledTimes(1)
   })
 
-  it('every button has an accessible name; Close calls onClose', async () => {
-    const { panel, onClose } = renderPanel({ messages: [Q, A] })
+  it('every button has an accessible name', () => {
+    const { panel } = renderPanel({ messages: [Q, A] })
     for (const button of within(panel).getAllByRole('button')) expect(button).toHaveAccessibleName()
-    await userEvent.click(within(panel).getByTestId('chat-close'))
-    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('renders model text as text: no HTML is created', () => {
@@ -226,15 +283,22 @@ describe('ChatPanel', () => {
     rerenderWith({ messages: [Q, A], status: 'ready' })
     expect(announce).toHaveTextContent(A.text)
     rerenderWith({ messages: [], status: 'ready' })
-    expect(announce).toHaveTextContent('')
+    expect(within(panel).queryByTestId('chat-announce')).toBeNull()
     rerenderWith({ messages: [Q], status: 'submitted' })
-    expect(announce).toHaveTextContent('')
+    expect(within(panel).getByTestId('chat-announce')).toHaveTextContent('')
   })
 
-  it('opening focuses the input, and focus is in it when an answer ends', () => {
+  it('has no status region until a conversation starts; the first keystroke adds it, empty', async () => {
+    const { panel } = renderPanel()
+    expect(within(panel).queryByRole('status')).toBeNull()
+    await userEvent.type(within(panel).getByTestId('chat-input'), 'a')
+    expect(within(panel).getByRole('status')).toHaveTextContent('')
+  })
+
+  it('does not take focus when it mounts (it lives in the drawer), but focus is in the input when an answer ends', () => {
     const { panel, rerenderWith } = renderPanel()
     const input = within(panel).getByTestId('chat-input')
-    expect(document.activeElement).toBe(input)
+    expect(document.activeElement).not.toBe(input)
     rerenderWith({ messages: [Q], status: 'submitted' })
     expect(input).toHaveAttribute('readonly')
     rerenderWith({ messages: [Q, A], status: 'streaming' })
@@ -249,23 +313,23 @@ describe('ChatPanel', () => {
     expect(document.activeElement).toBe(within(panel).getByTestId('chat-input'))
   })
 
+  it('focus is not pulled back when the broker moved on to something outside the assistant', () => {
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    try {
+      const { panel, rerenderWith } = renderPanel({ messages: [Q], status: 'streaming' })
+      outside.focus()
+      rerenderWith({ messages: [Q, A], status: 'ready' })
+      expect(document.activeElement).toBe(outside)
+      expect(within(panel).getByTestId('chat-input')).not.toBe(document.activeElement)
+    } finally {
+      outside.remove()
+    }
+  })
+
   it('focus returns to the input when a request fails', () => {
     const { panel, rerenderWith } = renderPanel({ messages: [Q], status: 'submitted' })
     rerenderWith({ messages: [Q], status: 'error', error: 'failed' })
     expect(document.activeElement).toBe(within(panel).getByTestId('chat-input'))
-  })
-
-  it('Escape calls onClose and is not left unhandled for window listeners', () => {
-    const seen = vi.fn()
-    const onWindowKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) seen() }
-    window.addEventListener('keydown', onWindowKey)
-    try {
-      const { panel, onClose } = renderPanel()
-      fireEvent.keyDown(within(panel).getByTestId('chat-input'), { key: 'Escape' })
-      expect(onClose).toHaveBeenCalledTimes(1)
-      expect(seen).not.toHaveBeenCalled()
-    } finally {
-      window.removeEventListener('keydown', onWindowKey)
-    }
   })
 })

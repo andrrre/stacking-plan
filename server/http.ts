@@ -20,7 +20,7 @@ export function jsonError(status: number): Response {
  * then the first x-forwarded-for entry only as a last resort (its first entry is the one a client can prepend).
  * Trusted-proxy assumption: on Vercel the platform overwrites these headers. Behind any other proxy, or with none,
  * the caller controls them, so the rate limit is best-effort; real spend control is a provider-side budget cap.
- * /api/ask, /api/summary and /api/chat deploy as separate functions, so each route has its own in-memory budget per
+ * /api/summary and /api/chat deploy as separate functions, so each route has its own in-memory budget per
  * instance.
  */
 export function clientIp(request: Request): string {

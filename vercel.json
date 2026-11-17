@@ -1,6 +1,5 @@
 {
   "functions": {
-    "api/ask.ts": { "maxDuration": 10 },
     "api/summary.ts": { "maxDuration": 10 },
     "api/chat.ts": { "maxDuration": 30, "supportsCancellation": true }
   },

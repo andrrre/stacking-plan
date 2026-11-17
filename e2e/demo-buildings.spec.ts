@@ -30,18 +30,21 @@ test('the switcher lists five buildings and each new one renders in 3D with its 
 })
 
 test('a new demo building may use the AI and keeps its shortlist across a reload', async ({ page }) => {
-  let askCalls = 0
-  await page.route('**/api/ask', (route) => {
-    askCalls += 1
+  let chatPosts = 0
+  await page.route('**/api/chat', (route) => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { available: true } })
+    chatPosts += 1
     return route.abort()
   })
   await gotoApp(page, 'stack', { b: 'bsp', min: '10000' })
   await page.getByTestId('match-1').getByRole('button', { name: /Save to shortlist/ }).click()
   await expect(page.getByTestId('shortlist-entry-1')).toContainText('Suite 3001')
-  await page.getByTestId('ask-input').fill('at least 12k SF')
-  await page.getByTestId('ask-input').press('Enter')
-  await expect(page.getByTestId('ask-status')).toBeVisible()
-  expect(askCalls).toBe(1) // bundled buildings send the query to the AI; imported ones never do
+  await expect(page.getByTestId('chat-panel')).toHaveAttribute('data-mode', 'ai')
+  await page.getByTestId('chat-input').fill('at least 12k SF')
+  await page.getByTestId('chat-input').press('Enter')
+  await expect(page.getByTestId('chat-fallback').getByTestId('ask-status')).toBeVisible()
+  await expect(page.getByTestId('req-min-sf')).toHaveValue('12,000')
+  expect(chatPosts).toBe(1) // bundled buildings send the message to the AI; imported ones never do
   await page.reload()
   await expect(page.getByTestId('building-switcher')).toHaveValue('bsp')
   await expect(page.getByTestId('shortlist-entry-1')).toContainText('Suite 3001')

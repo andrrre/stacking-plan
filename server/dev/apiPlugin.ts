@@ -1,7 +1,6 @@
 // Vite plugin: serves the /api/* handlers under `vite` (dev) and `vite preview`, with the env from `.env`.
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { loadEnv, type Connect, type Plugin } from 'vite'
-import { handleAsk } from '../ask.js'
 import { handleChat, handleChatStatus } from '../chat.js'
 import { jsonError } from '../http.js'
 import { logAiError } from '../log.js'
@@ -14,7 +13,6 @@ export type RouteTable = Readonly<Record<string, Readonly<Record<string, ApiHand
 
 /** One line per route: path -> { METHOD: handler }. */
 export const API_ROUTES: RouteTable = {
-  '/api/ask': { POST: handleAsk },
   '/api/summary': { POST: handleSummary },
   '/api/chat': { GET: handleChatStatus, POST: handleChat },
 }
