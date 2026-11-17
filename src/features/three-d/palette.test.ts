@@ -48,6 +48,15 @@ describe('readPalette', () => {
     }
   })
 
+  it('reads the tour\'s fit-out colours from their tokens, with a different value in each theme', () => {
+    for (const k of ['wood', 'fabric', 'accent', 'plant'] as const) {
+      expect(p.fit[k], k).toBe(resolve(`--c-fit-${k}`).toLowerCase())
+      expect(d.fit[k], k).toBe(resolveDark(`--c-fit-${k}`).toLowerCase())
+      expect(p.fit[k]).toMatch(/^#[0-9a-f]{6}$/)
+      expect(d.fit[k]).not.toBe(p.fit[k])
+    }
+  })
+
   it('has the Night palette in light: crimson vacant, grey occupied, gold expiring', () => {
     expect(p.fills.vacant).toBe('#c62f3b')
     expect(p.sides.vacant).toBe('#97222c')

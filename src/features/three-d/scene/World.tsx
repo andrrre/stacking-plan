@@ -132,6 +132,8 @@ export function World(p: WorldProps) {
   const cue = useTourCue(p.tour ?? null, framed)
   const room = useRoom(p.room ?? null, layout)
   const roomFill = palette.fills[looks.get(p.room?.suiteIds[0] ?? '')?.fill ?? 'vacant']
+  const roomSf = (p.room?.suiteIds ?? []).reduce((sum, id) => sum + (visuals.get(id)?.suite.areaSf ?? 0), 0)
+  const moving = p.tour?.phase === 'look' && !reduced
   return (
     <>
       <CameraRig
@@ -141,7 +143,9 @@ export function World(p: WorldProps) {
       {p.city && <City {...p.city} palette={palette} shapes={shapes} />}
       <Ground bounds={layout.bounds} shapes={shapes} shadow={palette.shadow} />
       <Suites layout={layout} looks={looks} palette={palette} mats={mats} shapes={shapes} group={group} animateAt={animateAt} hidden={hidden} inside={room.inside} />
-      {room.foot && <TourRoom foot={room.foot} fill={roomFill} palette={palette} shapes={shapes} />}
+      {room.foot && (
+        <TourRoom foot={room.foot} fill={roomFill} palette={palette} shapes={shapes} sf={roomSf} seed={p.room?.suiteIds.join('+') ?? ''} moving={moving} />
+      )}
       <MoveFlight flight={flight} layout={layout} palette={palette} shapes={shapes} />
     </>
   )

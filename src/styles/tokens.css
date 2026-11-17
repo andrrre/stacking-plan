@@ -19,6 +19,7 @@
   --c-seg:light-dark(#ECEEF1,#22272E); --c-seg-on:light-dark(#FFFFFF,#353C45);
   --c-grid:light-dark(#F0F2F5,#1F242A) /*24px canvas grid*/; --c-track:light-dark(#E6E9ED,#2A3038) /*progress track*/;
   --c-roof:light-dark(#E9ECF0,#2A3038); --c-roof-edge:light-dark(#CDD2D9,#3A424C) /*slabs, roof caps and the sketched city*/;
+  --c-fit-wood:light-dark(#C9A47A,#8C6C4C); --c-fit-fabric:light-dark(#66707D,#58636F); --c-fit-accent:light-dark(#3D7A7E,#4C9599); --c-fit-plant:light-dark(#5F8F5B,#4E7D4A) /*the tour's illustrative fit-out (decorative)*/;
   --c-accent:light-dark(#121518,#E9E4D8) /*primary button; white ink 18.3 / ink 14.4 ✓*/; --c-accent-ink:light-dark(#FFFFFF,#121518);
   --c-outline-selected:light-dark(#121518,#FFFFFF) /*2px inset; 3.4 on vacant / 3.0 on vacant, 1.7 on expiring ✗ (handoff)*/;
   --c-focus:var(--c-accent) /*16.8 on bg / 14.4 on bg ✓; outset with a 2px gap, so it never reads as the inset selection*/;

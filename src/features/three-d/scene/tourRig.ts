@@ -42,6 +42,9 @@ export class TourRig {
     return this.panStart !== null
   }
 
+  /** How far the look has turned from the stop's own view (degrees, unbounded: a full turn is 360), as last drawn. */
+  yaw = 0
+
   /** Starts from where the camera is now, looking at `target`. */
   from(camera: PerspectiveCamera, target: Readonly<Vec3>): void {
     this.shot.position[0] = camera.position.x
@@ -86,6 +89,7 @@ export class TourRig {
     this.arrive = null
     this.look = look
     this.drag = { yaw: 0, pitch: 0 }
+    this.yaw = 0
     this.shot.fov = INTERIOR_FOV // a cut (reduced motion) arrives here without the flight that widens the lens
     this.share = 0
     this.panStart = now
@@ -103,7 +107,7 @@ export class TourRig {
   step(camera: PerspectiveCamera, now: number): boolean {
     if (this.flight) return this.stepFlight(camera, now)
     if (this.mode !== 'look' || !this.look) return false
-    const ms = this.panStart === null ? PAN_MS : now - this.panStart
+    const ms = this.panStart === null ? 0 : now - this.panStart
     const l = clampLook(panYaw(ms) + this.drag.yaw, this.look.pitch + this.drag.pitch)
     const s = this.shot
     s.position[0] = this.look.eye[0]
@@ -111,7 +115,10 @@ export class TourRig {
     s.position[2] = this.look.eye[2]
     lookTarget(this.look.eye, this.look.yaw + l.yaw, l.pitch, s.target)
     applyShot(camera, s)
+    this.yaw = l.yaw
+    if (this.panStart === null) return false
     if (ms < PAN_MS) return true
+    this.drag.yaw += panYaw(ms) // the turn is done: it stays turned (a full turn), and a drag carries on from there
     this.panStart = null
     return false
   }

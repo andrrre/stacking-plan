@@ -241,3 +241,103 @@ test.describe('suite tour', () => {
     await expect(page.getByTestId('suite-odt-710')).toHaveAttribute('data-dimmed', 'false')
   })
 })
+
+test.describe('suite tour: inside the suite', () => {
+  const attr = async (page: Page, name: string) => Number(await canvas(page).getAttribute(name))
+  const yaw = (page: Page) => attr(page, 'data-tour-yaw')
+
+  /** Drags across the canvas `n` times by `dx` px each (0.2° a px: 450 px is a quarter turn). */
+  async function turn(page: Page, dx: number, n: number) {
+    const box = await canvas(page).boundingBox()
+    if (!box) throw new Error('no canvas')
+    const x = dx > 0 ? box.x + 150 : box.x + box.width - 150
+    for (let i = 0; i < n; i++) await drag(page, { x, y: box.y + box.height / 2 }, dx, 0)
+  }
+
+  test('the room has its walls, an entrance door, furniture and people, and says the fit-out is illustrative; all gone after the tour', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await gotoApp(page, '3d')
+    await startTour(page)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    expect(await attr(page, 'data-room-walls')).toBeGreaterThanOrEqual(3)
+    expect(await attr(page, 'data-room-doors')).toBeGreaterThanOrEqual(1)
+    expect(await attr(page, 'data-room-furniture')).toBeGreaterThanOrEqual(5)
+    expect(await attr(page, 'data-room-people')).toBeGreaterThanOrEqual(2)
+    await expect(page.getByTestId('fitout-tag')).toBeVisible()
+    await expect(page.getByTestId('fitout-tag')).toContainText('Illustrative fit-out')
+    await expectNoTenant(page, 'stack-3d')
+    const small = await attr(page, 'data-room-furniture')
+    await page.getByTestId('tour-next').click() // Suite 710, bigger than 700
+    await expect(page.getByTestId('tour-title')).toHaveText('Suite 710 · Floor 7')
+    await expect.poll(() => attr(page, 'data-room-furniture')).toBeGreaterThan(small)
+    await page.getByTestId('tour-exit').click()
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'idle')
+    await expect(page.getByTestId('fitout-tag')).toHaveCount(0)
+    await expect(canvas(page)).not.toHaveAttribute('data-room-walls', /.*/)
+  })
+
+  test('on its own the look turns once all the way round, then stops there', async ({ page }) => {
+    await gotoApp(page, '3d')
+    await startTour(page)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    await page.getByTestId('tour-play').click() // paused: the stop stays while the look turns
+    await expect(page.getByTestId('tour-play')).toHaveText('Play')
+    await expect.poll(() => yaw(page), { timeout: 10_000 }).toBeGreaterThan(90)
+    await expect.poll(() => yaw(page), { timeout: 15_000 }).toBeGreaterThan(200)
+    await expect.poll(() => yaw(page), { timeout: 15_000 }).toBeGreaterThanOrEqual(359.9)
+    await expect(canvas(page)).toHaveAttribute('data-tour-pan', 'off')
+    expect(await yaw(page)).toBeCloseTo(360, 1)
+  })
+
+  test('a drag turns the look freely all the way round, either way', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' }) // no auto-turn: only the drag moves the look
+    await gotoApp(page, '3d')
+    await startTour(page)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    expect(await yaw(page)).toBe(0)
+    await turn(page, 600, 3) // 3 × 600 px × 0.2° = 360°
+    await expect.poll(() => yaw(page)).toBeCloseTo(360, 0)
+    await turn(page, -600, 6)
+    await expect.poll(() => yaw(page)).toBeCloseTo(-360, 0)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look') // still inside
+  })
+
+  test('the people walk while the look runs, and stand still under reduced motion', async ({ page }) => {
+    await gotoApp(page, '3d')
+    await startTour(page)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    const first = await canvas(page).getAttribute('data-room-walk')
+    await expect.poll(() => canvas(page).getAttribute('data-room-walk')).not.toBe(first)
+
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.getByTestId('tour-next').click()
+    await expect(page.getByTestId('tour-counter')).toHaveText('2 of 6')
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    const still = await canvas(page).getAttribute('data-room-walk')
+    expect(still).toMatch(/^-?\d+\.\d{3},-?\d+\.\d{3}$/)
+    await page.waitForTimeout(1500)
+    expect(await canvas(page).getAttribute('data-room-walk')).toBe(still)
+  })
+
+  test('in the dark theme the room is drawn in the dark palette, with everything in it and no errors', async ({ page }) => {
+    const problems: string[] = []
+    page.on('pageerror', (e) => problems.push(e.message)).on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await gotoApp(page, '3d')
+    await startTour(page)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    const light = await canvas(page).getAttribute('data-room-wall-colour')
+    await page.getByTestId('tour-exit').click()
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
+    await expect(page.getByTestId('scene3d')).toHaveAttribute('data-theme', 'dark')
+    await startTour(page)
+    await expect(canvas(page)).toHaveAttribute('data-tour-camera', 'look')
+    const dark = await canvas(page).getAttribute('data-room-wall-colour')
+    expect(dark).toMatch(/^#[0-9a-f]{6}$/)
+    expect(dark).not.toBe(light)
+    expect(await attr(page, 'data-room-people')).toBeGreaterThanOrEqual(2)
+    expect(await attr(page, 'data-room-doors')).toBeGreaterThanOrEqual(1)
+    await expect(page.getByTestId('fitout-tag')).toBeVisible()
+    expect(problems).toEqual([])
+  })
+})

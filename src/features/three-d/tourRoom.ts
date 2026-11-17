@@ -1,7 +1,7 @@
 import { SUITE_H, type Box } from './layout3d'
 import type { Footprint } from './tourCamera'
 
-// The suite seen from inside on a tour: honest massing, no furniture. Its floor and ceiling over its footprint, a
+// The suite seen from inside on a tour: its massing (the walls, door and illustrative fit-out are fitout/). Its floor and ceiling over its footprint, a
 // thin band just inside the floor's edge (drawn in the suite's status colour, on a neutral floor), and its two facades (every suite runs the plate's depth, front to back) as open window walls: a column at each
 // end and at most a structural bay apart, and a header beam along the top. Pure: a footprint in, boxes out.
 

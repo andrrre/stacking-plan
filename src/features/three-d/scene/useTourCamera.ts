@@ -16,7 +16,7 @@ import { TourRig } from './tourRig'
 // (they would clamp a camera looking out of the facade back to the front half), the projection is centred (the
 // orbit view's offset eases out over the first flight and back in over the last), the near plane comes in while
 // the camera is in or at the stop's room, and the camera flies out to the stop's floor, then into the suite, where
-// it looks around once and can be dragged to look about. When the tour ends it flies back to the building's
+// it turns once all the way round and can be dragged to look about in any direction. When the tour ends it flies back to the building's
 // framing and hands the camera back. Rendering is on demand: a frame is asked for each frame only while the
 // camera flies or pans, so an idle tour (and an idle stage) renders nothing.
 
@@ -77,6 +77,7 @@ function useTourFrame(rig: TourRig, live: { current: Input }): void {
     inside.current = near === INTERIOR_NEAR
     i.el.setAttribute('data-tour-camera', rig.mode)
     i.el.setAttribute('data-tour-pan', rig.panning ? 'on' : 'off')
+    i.el.setAttribute('data-tour-yaw', rig.yaw.toFixed(1)) // degrees turned from the stop's view (360: once round)
   })
 }
 

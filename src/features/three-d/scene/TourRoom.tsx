@@ -7,14 +7,17 @@ import type { Footprint } from '../tourCamera'
 import { roomParts } from '../tourRoom'
 import { mix } from './cityShared'
 import type { Shapes } from './resources'
+import { TourInterior } from './TourInterior'
 
 // The suite on a tour, from inside: a neutral floor (the slab's colour) with its outline and a thin band just
 // inside its edge in the suite's status colour, a ceiling, and its two facades as open window walls (columns and
-// a header beam), so the city shows through. Drawn in place of the suite's box while the camera goes in, stands
+// a header beam), so the city shows through; inside them its walls, door and an illustrative fit-out with people
+// (TourInterior). Drawn in place of the suite's box while the camera goes in, stands
 // inside and leaves. Shared unit shapes scaled per part, and materials made once per palette (a new stop only
 // recolours the band and outline), so moving from stop to stop builds no geometry.
 
-type Props = { foot: Footprint; fill: string; palette: Palette; shapes: Shapes }
+/** `sf`, `seed`: the stop's size and suites (its illustrative fit-out); `moving`: its people walk (the look phase). */
+type Props = { foot: Footprint; fill: string; palette: Palette; shapes: Shapes; sf: number; seed: string; moving: boolean }
 
 function useRoomMaterials(p: Palette) {
   const mats = useMemo(() => ({
@@ -31,7 +34,7 @@ function useRoomMaterials(p: Palette) {
 
 const at = (b: Box) => ({ position: [b.x, b.y, b.z] as const, scale: [b.w, b.h, b.d] as const })
 
-export function TourRoom({ foot, fill, palette, shapes }: Props) {
+export function TourRoom({ foot, fill, palette, shapes, sf, seed, moving }: Props) {
   const invalidate = useThree((s) => s.invalidate)
   const mats = useRoomMaterials(palette)
   const parts = useMemo(() => roomParts(foot), [foot])
@@ -54,6 +57,7 @@ export function TourRoom({ foot, fill, palette, shapes }: Props) {
       {[...parts.columns, ...parts.beams].map((b) => (
         <mesh key={`${b.x.toFixed(3)},${b.y.toFixed(3)},${b.z}`} geometry={shapes.box} material={mats.frame} {...at(b)} />
       ))}
+      <TourInterior foot={foot} sf={sf} seed={seed} palette={palette} moving={moving} />
     </group>
   )
 }

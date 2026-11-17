@@ -138,6 +138,8 @@ function Scene3D({ buildingId, model, mode, separated, floor, focusedId, city, w
         />
       </Canvas>
       <Overlay layout={shown} visuals={derived.visuals} contents={derived.contents} ghosts={derived.ghosts} refs={refs} />
+      {/* The furniture and people inside are a staged test fit, never the suite's real layout or its occupants. */}
+      {room && <p className={styles.fitTag} data-testid="fitout-tag">Illustrative fit-out · not the actual layout</p>}
     </div>
   )
 }

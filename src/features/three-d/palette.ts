@@ -24,6 +24,7 @@ export type Palette = {
   shadow: Rgba // the contact shadow under the building
   match: string // the match accent (rings, rank badges): the previewed move's flying block
   matchInk: string // ink on the match accent: the flying block's edges
+  fit: { wood: string; fabric: string; accent: string; plant: string } // the tour's illustrative fit-out
 }
 
 export type PatternKind = 'hatch' | 'none'
@@ -116,6 +117,7 @@ export function readPalette(read: (name: string) => string): Palette {
     shadow: parseRgba(read('--c-shadow'), { hex: '#000000', alpha: 0.12 }),
     match: hex('--c-match'),
     matchInk: hex('--c-match-ink'),
+    fit: { wood: hex('--c-fit-wood'), fabric: hex('--c-fit-fabric'), accent: hex('--c-fit-accent'), plant: hex('--c-fit-plant') },
   }
 }
 

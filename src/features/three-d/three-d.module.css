@@ -40,6 +40,24 @@
 /* Inside a suite the facade labels, floor numbers and rings would float over the room: they wait outside. */
 /* (data-tour-room: the room is drawn, from going in until the camera has left it again.) */
 .scene[data-tour-room] .overlay { visibility: hidden; }
+/* Inside a suite, an honest tag over the room: its furniture and people are a staged illustration. */
+.fitTag {
+  position: absolute;
+  top: var(--sp-4);
+  left: 50%;
+  z-index: 2;
+  margin: 0;
+  padding: var(--sp-1) var(--sp-3);
+  transform: translateX(-50%);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--c-surface) 90%, transparent);
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  pointer-events: none;
+}
 /* The open sky over the suite (its floors above are lifted away): the stage's grid gives way to a soft horizon. */
 .stage:has(.scene[data-tour-room]) {
   background-image: linear-gradient(to bottom, color-mix(in srgb, var(--c-match) 24%, var(--c-surface)) 0%, color-mix(in srgb, var(--c-match) 12%, var(--c-surface)) 50%, var(--c-bg) 100%);

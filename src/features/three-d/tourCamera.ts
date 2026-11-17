@@ -25,11 +25,14 @@ export const APPROACH = 1.5
 
 export const FLY_MS = 1400 // from wherever the camera is to the stop's floor, outside
 export const ENTER_MS = 1600 // from outside into the suite
-export const PAN_MS = 4000 // one slow look around
-export const PAN_DEG = 25
+export const PAN_MS = 16000 // one slow turn all the way round (22.5°/s on average)
+/** The look-around turns this far: once round the room, window wall, side walls and the way in. */
+export const PAN_TURN = 360
 export const EXIT_MS = 1200 // back out to the building
-/** One stop's time when the tour plays on its own: the flights, the pan, and a few seconds to read the caption. */
-export const STOP_MS = 9500
+/** Time to read the caption once the turn is done. */
+const READ_MS = 2500
+/** One stop's time when the tour plays on its own: the flights, the turn, and a few seconds to read the caption. */
+export const STOP_MS = FLY_MS + ENTER_MS + PAN_MS + READ_MS
 
 /** The eye stands this share of the suite's depth back from the window wall it looks out of: in the room, the view ahead. */
 export const WINDOW_SHARE = 0.3
@@ -38,8 +41,8 @@ export const WINDOW_SHARE = 0.3
  * high up their roofs lie below it, and a level look would show only sky.
  */
 export const LOOK_PITCH = { min: -3, max: -12, perUnit: -0.4 }
-/** How far a drag may turn the look (degrees from straight out of the facade, and up/down). */
-export const LOOK_LIMITS = { yaw: 75, pitchMin: -45, pitchMax: 25 }
+/** How far a drag may tip the look up or down (degrees); it may turn all the way round. */
+export const LOOK_LIMITS = { pitchMin: -50, pitchMax: 35 }
 
 /** The stop's floor area: x and z extents, and the height of its floor (the slab's top). */
 export type Footprint = { x0: number; x1: number; z0: number; z1: number; floor: number }
@@ -84,15 +87,16 @@ export function lookTarget(eye: Readonly<Vec3>, yaw: number, pitch: number, out:
   return out
 }
 
-/** The look-around: one slow sine sweep to +PAN_DEG, over to -PAN_DEG and back, over PAN_MS; 0 outside it. */
+/** The look-around: one slow turn of PAN_TURN over PAN_MS, eased in and out (a sine ramp); 0 before, PAN_TURN after. */
 export function panYaw(ms: number): number {
-  if (ms <= 0 || ms >= PAN_MS) return 0
-  return PAN_DEG * Math.sin((2 * Math.PI * ms) / PAN_MS)
+  if (ms <= 0) return 0
+  if (ms >= PAN_MS) return PAN_TURN
+  return (PAN_TURN * (1 - Math.cos((Math.PI * ms) / PAN_MS))) / 2
 }
 
-/** Clamps a look: `yaw` turned from the stop's own view (degrees), `pitch` above the horizon. */
+/** A look: `yaw` turned from the stop's own view (degrees, free all the way round), `pitch` above the horizon (clamped). */
 export function clampLook(yaw: number, pitch: number): { yaw: number; pitch: number } {
-  return { yaw: clamp(yaw, -LOOK_LIMITS.yaw, LOOK_LIMITS.yaw), pitch: clamp(pitch, LOOK_LIMITS.pitchMin, LOOK_LIMITS.pitchMax) }
+  return { yaw, pitch: clamp(pitch, LOOK_LIMITS.pitchMin, LOOK_LIMITS.pitchMax) }
 }
 
 /** Floors shown below and above the stop's in the exterior shot. */
@@ -129,11 +133,22 @@ export function nearFor(p: Readonly<Vec3>, room: Footprint | null): number {
 }
 
 /** The middle of the facade bay nearest the suite's middle: a way in that passes no column. */
-function bayMiddle(f: Footprint): number {
+export function bayMiddle(f: Footprint): number {
   const xs = columnXs(f.x0, f.x1)
   const centre = (f.x0 + f.x1) / 2
   const mids = xs.slice(1).map((x, i) => (x + (xs[i] ?? x)) / 2)
   return mids.reduce((best, m) => (Math.abs(m - centre) < Math.abs(best - centre) ? m : best), mids[0] ?? centre)
+}
+
+/**
+ * Where the straight last stretch of the way in (enterVia: from the approach point APPROACH out of the facade to
+ * the eye) crosses depth `z`: the room's entrance door stands there, so the camera comes in through it.
+ */
+export function entryX(f: Footprint, z: number): number {
+  const eye = interiorLook(f).eye
+  const from = { x: bayMiddle(f), z: f.z1 + APPROACH }
+  const k = from.z === eye[2] ? 0 : (from.z - z) / (from.z - eye[2])
+  return from.x + (eye[0] - from.x) * k
 }
 
 /**

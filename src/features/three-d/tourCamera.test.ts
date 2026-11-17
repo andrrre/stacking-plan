@@ -5,8 +5,8 @@ import { cityPlan } from './city/plan'
 import { tourGlideAt, type Shot } from './glide'
 import { DEPTH, PITCH, SLAB_T, SUITE_H, buildingLayout, floorLayout, type SuiteBox } from './layout3d'
 import {
-  ENTER_MS, EXTERIOR_NEAR, EYE_HEIGHT, INTERIOR_NEAR, LOOK_LIMITS, PAN_DEG, PAN_MS, clampLook, enterVia, exteriorBounds, exteriorView,
-  footprint, interiorLook, lookTarget, nearFor, panYaw,
+  APPROACH, ENTER_MS, EXIT_MS, EXTERIOR_NEAR, EYE_HEIGHT, FLY_MS, INTERIOR_NEAR, LOOK_LIMITS, PAN_MS, PAN_TURN, STOP_MS, bayMiddle, clampLook,
+  enterVia, entryX, exteriorBounds, exteriorView, footprint, interiorLook, lookTarget, nearFor, panYaw,
 } from './tourCamera'
 import { columnXs } from './tourRoom'
 
@@ -97,21 +97,53 @@ describe('lookTarget', () => {
 })
 
 describe('panYaw', () => {
-  it('sweeps ±PAN_DEG once over PAN_MS and comes back to the facade view', () => {
+  it('turns once all the way round over PAN_MS, slowly at both ends, and comes back to the window view', () => {
+    expect(PAN_TURN).toBe(360)
     expect(panYaw(0)).toBeCloseTo(0, 6)
-    expect(panYaw(PAN_MS / 4)).toBeCloseTo(PAN_DEG, 6)
-    expect(panYaw((3 * PAN_MS) / 4)).toBeCloseTo(-PAN_DEG, 6)
-    expect(panYaw(PAN_MS)).toBeCloseTo(0, 6)
-    expect(panYaw(PAN_MS * 3)).toBe(0)
+    expect(panYaw(PAN_MS / 4)).toBeGreaterThan(0)
+    expect(panYaw(PAN_MS / 4)).toBeLessThan(PAN_TURN / 4) // eased in
+    expect(panYaw(PAN_MS / 2)).toBeCloseTo(PAN_TURN / 2, 6)
+    expect(panYaw((3 * PAN_MS) / 4)).toBeGreaterThan((3 * PAN_TURN) / 4)
+    expect(panYaw(PAN_MS)).toBe(PAN_TURN)
+    expect(panYaw(PAN_MS * 3)).toBe(PAN_TURN) // done: a full turn, not a jump back
     expect(panYaw(-100)).toBe(0)
+  })
+
+  it('only ever turns one way (monotonic) and never faster than a slow walk round (< 45°/s)', () => {
+    let last = panYaw(0)
+    for (let ms = 50; ms <= PAN_MS; ms += 50) {
+      const y = panYaw(ms)
+      expect(y).toBeGreaterThanOrEqual(last)
+      expect(((y - last) / 50) * 1000).toBeLessThan(45)
+      last = y
+    }
+  })
+
+  it('a stop that plays on its own lasts the flights, the whole turn and time to read the caption', () => {
+    expect(STOP_MS).toBeGreaterThan(FLY_MS + ENTER_MS + PAN_MS)
+    expect(STOP_MS - (FLY_MS + ENTER_MS + PAN_MS)).toBeGreaterThanOrEqual(2000)
+    expect(EXIT_MS).toBeLessThan(STOP_MS)
   })
 })
 
 describe('clampLook', () => {
-  it('keeps a dragged look within its limits', () => {
-    expect(clampLook(200, -90)).toEqual({ yaw: LOOK_LIMITS.yaw, pitch: LOOK_LIMITS.pitchMin })
-    expect(clampLook(-200, 90)).toEqual({ yaw: -LOOK_LIMITS.yaw, pitch: LOOK_LIMITS.pitchMax })
+  it('leaves the turn free all the way round, either way, and holds the pitch between its limits', () => {
+    expect(clampLook(200, -90)).toEqual({ yaw: 200, pitch: LOOK_LIMITS.pitchMin })
+    expect(clampLook(-725, 90)).toEqual({ yaw: -725, pitch: LOOK_LIMITS.pitchMax })
     expect(clampLook(10, -5)).toEqual({ yaw: 10, pitch: -5 })
+    expect(LOOK_LIMITS.pitchMin).toBeGreaterThanOrEqual(-60) // never straight down at the feet
+    expect(LOOK_LIMITS.pitchMax).toBeLessThanOrEqual(45) // nor straight up at the ceiling
+  })
+})
+
+describe('entryX: where the way in crosses a depth', () => {
+  it('at the approach point it is the bay middle, at the eye the eye\'s x, and in between on the straight line', () => {
+    const f = footprint([box({ x: 1, w: 2.4 })])!
+    const eye = interiorLook(f).eye
+    expect(entryX(f, f.z1 + APPROACH)).toBeCloseTo(bayMiddle(f), 9)
+    expect(entryX(f, eye[2])).toBeCloseTo(eye[0], 9)
+    const mid = entryX(f, (f.z1 + APPROACH + eye[2]) / 2)
+    expect(mid).toBeCloseTo((bayMiddle(f) + eye[0]) / 2, 9)
   })
 })
 
