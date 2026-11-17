@@ -20,7 +20,8 @@ export function jsonError(status: number): Response {
  * then the first x-forwarded-for entry only as a last resort (its first entry is the one a client can prepend).
  * Trusted-proxy assumption: on Vercel the platform overwrites these headers. Behind any other proxy, or with none,
  * the caller controls them, so the rate limit is best-effort; real spend control is a provider-side budget cap.
- * /api/ask and /api/summary deploy as separate functions, so each route has its own in-memory budget per instance.
+ * /api/ask, /api/summary and /api/chat deploy as separate functions, so each route has its own in-memory budget per
+ * instance.
  */
 export function clientIp(request: Request): string {
   const first = (name: string) => request.headers.get(name)?.split(',')[0]?.trim()
@@ -62,12 +63,18 @@ export async function readJsonBody(request: Request, maxBytes: number): Promise<
   }
 }
 
+/** `sec-fetch-site` values a browser sends for the app's own requests (`none`: typed or opened by the user). */
+const OWN_SITE = new Set(['same-origin', 'none'])
+
 /**
- * Status for a request refused before its body is read, or null. A cross-site no-cors POST arrives as text/plain
- * with no preflight, so only JSON from this site is accepted: nobody else can spend model calls.
+ * Status for a request refused before its body is read, or null. A browser marks every fetch with `sec-fetch-site`;
+ * anything but this origin (cross-site, or a sibling subdomain as same-site) is 403. Without the header (curl, other
+ * non-browser clients) the request passes and the rate limit bounds it. A cross-site no-cors POST arrives as
+ * text/plain with no preflight, so only JSON is accepted as well: nobody else's page can spend model calls.
  */
 export function refusal(request: Request, maxBytes: number): number | null {
-  if (request.headers.get('sec-fetch-site') === 'cross-site') return 403
+  const site = request.headers.get('sec-fetch-site')
+  if (site !== null && !OWN_SITE.has(site)) return 403
   const type = request.headers.get('content-type')?.toLowerCase() ?? ''
   if (!type.startsWith('application/json')) return 415
   return Number(request.headers.get('content-length') ?? 0) > maxBytes ? 413 : null
@@ -75,11 +82,12 @@ export function refusal(request: Request, maxBytes: number): number | null {
 
 export type AiResult<T> = { ok: true; value: T } | { ok: false; response: Response }
 
-/** Runs a model call; a timeout or abort maps to 504, any other error to 502. */
-export async function runAi<T>(fn: () => Promise<T>): Promise<AiResult<T>> {
+/** Runs a model call; a timeout or abort maps to 504, any other error to 502. `onError` sees the error first (logging). */
+export async function runAi<T>(fn: () => Promise<T>, onError?: (error: unknown) => void): Promise<AiResult<T>> {
   try {
     return { ok: true, value: await fn() }
   } catch (error) {
+    onError?.(error)
     return { ok: false, response: jsonError(isTimeout(error) ? 504 : 502) }
   }
 }

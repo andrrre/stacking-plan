@@ -34,7 +34,7 @@ The hero workflow is: requirement, matches with reasons (or a proposed move when
 
 ## Features
 
-All fifteen planned stories are built, including CSV import and the AI summary intro. The one item left out on purpose is a lease timeline view, which is in the development plan. DESIGN.md ranks 3D as a low-priority, CSS-only view with no WebGL. The project owner overruled that: 3D is now the main screen.
+All fifteen planned stories are built, including CSV import and the AI summary intro. The building chat and the local API runtime are newer work on the `feature/ai-chat` branch; they are not part of those fifteen. The one item left out on purpose is a lease timeline view, which is in the development plan. DESIGN.md ranks 3D as a low-priority, CSS-only view with no WebGL. The project owner overruled that: 3D is now the main screen.
 
 **3D building (the main screen)**
 - Built with three.js and `@react-three/fiber`. The three.js code is a separate lazy chunk, so the header, KPI tiles and form paint first.
@@ -89,6 +89,13 @@ All fifteen planned stories are built, including CSV import and the AI summary i
 - Type a requirement in plain words ("Law firm, roughly 9-11k SF, moving in by Q2 next year, under $60"). The app fills the requirement form and sets the date. The broker sees and can edit what was understood.
 - An offline parser handles this with no network. An AI model reads the sentence instead when a key is configured.
 
+**Building chat (optional, needs an API key)**
+- A **Chat** button in the header opens a floating panel. The broker asks about the building on screen: what is vacant, which leases expire within N months, what fits a size, rent or date, why nothing fits, facts about one suite. The answer streams in as plain text.
+- The model does not do the arithmetic. It answers through five read-only tools that call the same domain code as the rest of the app (`building_overview`, `list_suites`, `expiring_leases`, `find_space`, `suite_details`). The instructions tell it that every number, date, suite number and tenant name must come from a tool result, and to refuse questions about anything else. The wording of an answer is still the model's, so check a figure against the stack before you quote it.
+- Answers are for the as-of date on the slider and include any scenario changes, which the server applies itself. The chat is read-only: it never changes the scenario, shortlist, date or view.
+- At most 500 characters per message and 10 questions per conversation, then **New chat**. History lives in memory only: not in the URL or in storage, and gone on reload. Switching building starts a new conversation. It is absent in present mode and during the tour, and hidden when printing.
+- No offline fallback. Without a key the button does not appear in a production build; under `npm run dev` it shows as a disabled button with the hint to add the key. On an imported building it is disabled and makes no request.
+
 **CSV import**
 - Import a building from a CSV file. A template is downloadable. Errors are listed by row and column, and any error rejects the whole file.
 
@@ -108,9 +115,9 @@ npm run dev                        # http://localhost:5173
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Vite dev server |
+| `npm run dev` | Vite dev server, with the `/api/*` routes |
 | `npm run build` | Typecheck, then production build into `dist/` |
-| `npm run preview` | Serves the build on port 4173 |
+| `npm run preview` | Serves the build on port 4173, with the `/api/*` routes |
 | `npm run typecheck` | `tsc -b` |
 | `npm run lint` | ESLint, zero warnings allowed |
 | `npm run test` | Vitest unit and component tests |
@@ -119,7 +126,15 @@ npm run dev                        # http://localhost:5173
 
 `npm run e2e:install` is the same as the `playwright install chromium` line.
 
-The AI endpoints (`/api/ask`, `/api/summary`) are Vercel functions and do not run under `npm run dev`. The app does not need them: it falls back to offline parsing and templated text.
+The AI endpoints (`/api/ask`, `/api/summary`, `/api/chat`) are Vercel functions, and a Vite plugin (`server/dev/`) serves the same handlers under `npm run dev` and `npm run preview`. To turn the AI on locally, copy the example file and paste a key into it, then restart:
+
+```
+cp .env.example .env               # then set ANTHROPIC_API_KEY in .env
+```
+
+`.env` is read by the dev and preview server process only. It is never sent to the browser or put in `dist/`, and git ignores it. Without a key the app does not need the endpoints: Ask and the summary fall back to offline parsing and templated text, and the chat is off.
+
+`npm run test:e2e` starts its server with the key forced empty, so the end-to-end tests never call a model even if your `.env` holds a real key.
 
 A deploy ships security headers from `vercel.json`: a Content-Security-Policy and related headers.
 
@@ -133,29 +148,35 @@ Why: every status, KPI and match depends on today. The demo data and all tests a
 
 The app is fully usable without it. Every test and the demo run on the offline fallback.
 
-Set two variables on the server only, as Vercel environment variables (`.env.example` lists the names; nothing in the repo reads a local `.env` file):
+Set the variables on the server only: in a local `.env` file (see "Run it"), or as Vercel environment variables. On Vercel, redeploy after setting or changing a variable: a deployment keeps the values it was built with. `.env.example` lists the names.
 
 | Variable | Meaning | Default |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Enables the AI paths. Never sent to the browser. | unset (AI off) |
-| `AI_MODEL` | Anthropic model id | `claude-haiku-5-5` |
+| `AI_MODEL` | Anthropic model id for Ask and the summary intro | `claude-haiku-5-5` |
+| `AI_CHAT_MODEL` | Anthropic model id for the chat, called at low effort | `claude-haiku-5-5` |
+
+**Cost of the chat.** The chat uses Haiku by default, the same model as Ask, but one answer can take several model steps. A larger model in `AI_CHAT_MODEL` (for example `claude-opus-5-5`) costs far more per token.
 
 What is sent to the model:
 
 - **Ask:** the sentence the broker typed (at most 500 characters) and today's date. The model returns only requirement fields (minimum and maximum SF, maximum rent, move-in date), checked against a schema. It never picks suites; the deterministic finder does.
 - **Client summary intro:** the shortlisted options in their client wording: building name, floor, suite numbers, SF, asking rent, available-from date, caveat notes. Never tenant names. At most 5 options.
-- **Imported buildings:** nothing. While an imported building is shown, neither the Ask box nor the summary intro makes an AI request, because imported data may be real; both use the offline parser and templated copy.
+- **Chat:** the broker's messages and the earlier answers of that conversation, the building's name, today's date and the as-of date, and the results of the tools the model calls. For the bundled demo building those results include the fictional tenant names, lease dates and rents. What-if changes typed by the broker are applied on the server, so they can appear in tool results too. The model is told to treat all of it as data, not instructions.
+- **Imported buildings:** nothing. While an imported building is shown, the Ask box, the summary intro and the chat make no AI request, because imported data may be real. Ask and the summary use the offline parser and templated copy. The chat server also refuses any building id that is not one of the five bundled buildings.
 
-If the key is missing, or the call fails or takes more than 8 seconds, the app uses the offline parser and templated summary copy. The Ask box then shows an "offline parsing" note.
+A deployment on real data would need tenants redacted from the tool results, or a provider the customer has approved. **This is not done.**
 
-For a public deploy, use a dedicated key with a spend limit set at the provider, and set it for the Production environment only, so preview deploys do not get it.
+If the key is missing, or an Ask or summary call fails or takes more than 8 seconds, the app uses the offline parser and templated summary copy. The Ask box then shows an "offline parsing" note. The chat has no offline fallback: when a turn fails, the panel says "The AI did not answer. Try again." and keeps the conversation. The server stops a chat turn after 25 seconds and allows at most 5 model steps of at most 4,000 output tokens each (the default model's thinking counts toward that cap). The model makes one tool call per step and the last step can only answer, so a question gets at most 4 tool calls; a budget of 6 tool calls per question, after which a tool answers only that the budget is used up, is a second bound. The browser gives up after 30 seconds.
+
+For a public deploy, use a dedicated key with a spend limit set at the provider, and set it for the Production environment only, so preview deploys do not get it. The chat makes that limit matter more.
 
 ## Tools used
 
 - **Claude Code** with the **oh-my-claudecode "autopilot"** workflow, working from [DESIGN.md](DESIGN.md).
 - **App stack:** React 19, TypeScript 6, Vite 8, zod 4 (all external input is validated), date-fns 4. No chart library.
 - **3D:** three.js 0.187.0 and `@react-three/fiber` 9.8.2, with no other 3D library.
-- **AI in the product:** Vercel AI SDK (`ai` 7) with an Anthropic model, server-side only and optional.
+- **AI in the product:** Vercel AI SDK (`ai` 7) with an Anthropic model, server-side only and optional. The chat uses `@ai-sdk/react` in the browser.
 - **Tests:** Vitest 5 with Testing Library, Playwright 1.65, ESLint 10.
 - **Hosting target:** Vercel (`vercel.json`, `api/`). Not deployed.
 
@@ -174,7 +195,11 @@ At the end, three final validators (functional, security, code quality) reviewed
 
 Reviews were substantive, not a rubber stamp. Several used independent brute-force or property checks against the domain logic: the space finder on 100,000 randomised cases, the no-fit explanation on 18,208, scenarios on 40,000, and the CSV parser on 1,357 hostile inputs. Reviews changed the code. Examples: a size parser read "10,5k" as 105,000 SF; an API endpoint accepted cross-site requests; clicks in the 3D view missed suites; a dialog's focus trap could be escaped.
 
-**Test counts at the time of writing:** 1,034 Vitest tests in 80 files and 103 Playwright tests in 15 files, all passing in `npm run test:all`.
+**Chat and local runtime (`feature/ai-chat` branch).** Added after the stories above, as a separate piece of work: the building chat (`server/chat*.ts`, `src/features/chat/`) and the Vite plugin that serves `/api/*` locally (`server/dev/`). This README does not claim they are committed or merged. They were built with the same agent-per-task approach.
+
+**Verification status of the chat.** Unit, component and server tests run with a mocked model. **No live model call has been made in this build, because no API key was available, so the first real chat answer is unverified**, and so is the quality of the default chat model's wording. The chat is covered by a mocked end-to-end spec (`e2e/s23-chat.spec.ts`), which never reaches a model.
+
+**Test counts:** 1,034 Vitest tests in 80 files and 103 Playwright tests in 15 files, all passing in `npm run test:all`, were counted before the chat and local runtime work. The tests added since are not included in those numbers.
 
 **Not used, although the deck suggests them:** the UI/UX Pro Max and Taste skills, Lovable, Claude Design, ElevenLabs.
 
@@ -207,10 +232,11 @@ From the design:
 - **Imported buildings:** they can be removed from the building switcher. If browser storage is full, the save fails silently and the building is gone after reload. CSV dates must be `YYYY-MM-DD` and the file UTF-8; dates outside the years 1900 to 2200 are rejected. Limits: 1 MB, 2,000 rows.
 - **Lease-risk mode:** suites narrower than 140 px show the risk bucket by colour only. The words are in the tooltip and the screen-reader label.
 - **Offline parser gaps:** it ignores sizes written with a European thousands dot ("9.000 SF") and does not read "by next year".
-- **AI on imported buildings:** the Ask box and the summary intro make no AI request for an imported building, only for the two bundled ones. The client summary shows no "offline" note when it uses the template.
-- **Rate limit is best-effort.** `/api/ask` and `/api/summary` deploy as separate functions, so each has its own budget of 10 requests per minute per client, counted per serverless instance; they do not share one. It trusts the platform's forwarded-IP headers. Real spend control is a budget cap on the provider key.
-- **No authentication** on the API endpoints. They accept only same-site JSON requests.
-- **Unverified on Vercel.** The `api/` functions have only been run in tests. Whether their imports resolve on Vercel is unknown until a deploy. If they fail, the AI paths return errors and the offline fallback keeps the app working.
+- **AI on imported buildings:** the Ask box, the summary intro and the chat make no AI request for an imported building, only for the five bundled ones. The client summary shows no "offline" note when it uses the template.
+- **Rate limit is best-effort.** `/api/ask`, `/api/summary` and `/api/chat` deploy as separate functions, so each has its own budget of 10 requests per minute per client, counted per serverless instance; they do not share one. Under `npm run dev` and `npm run preview` the three routes run in one process and share a single budget of 10 per minute, so a few chat questions plus Ask and summary calls can hit it. `GET /api/chat`, which only reports whether a key is set, is not counted. Behind the platform it trusts the forwarded-IP headers; the local server ignores them and uses the connection's address. Real spend control is a budget cap on the provider key.
+- **No authentication** on the API endpoints. They accept only JSON. A browser request from any other site, including a sibling subdomain, is refused (403, from the `sec-fetch-site` header, which must be `same-origin` or `none`); a request without that header, such as curl, passes and only the rate limit bounds it.
+- **Unverified on Vercel.** The `api/` functions have only been run in tests and under the local Vite plugin. Whether their imports resolve on Vercel is unknown until a deploy. The chat adds two more things that depend on it: the server reaches `src/domain/` and the bundled JSON through JSON import attributes (`with { type: 'json' }`), and `vercel.json` gives `api/chat.ts` a 30-second function duration and `supportsCancellation`, which is meant to abort the function, and with it the model call, when the browser stops reading (Stop, a closed tab). Under `npm run dev` and `npm run preview` a disconnect aborts the model call; on Vercel that is untested. If the functions fail, the AI paths return errors; Ask and the summary then fall back offline and the app keeps working, but the chat has no fallback.
+- **Chat limits.** The chat is read-only and answers only about the bundled building on screen. English, plain text, 120 words or fewer by instruction. It does not recommend one option over another. One answer can take several model steps, so it costs more than an Ask call (see "Optional AI").
 - **Make room is one move, inside one building.** It does not chain moves, move tenants between buildings, or split suites. On the 3D building at the default zoom the destination's face is too short to show the tenant's name; zoom in to read it.
 - **WebGL 2 is required for the 3D building.** Without it the 2D stack is shown.
 - **The 3D chunk is large:** `npm run build` gives 969 kB (259 kB gzipped) for the lazy three.js chunk, on top of a 459 kB (140 kB gzipped) main bundle.
@@ -238,9 +264,10 @@ From the design:
 | `src/domain/` | Pure logic: status, KPIs, finder, no-fit, scenarios, CSV, query parser |
 | `src/shared/` | zod schemas and limits shared with the server |
 | `src/styles/` | Design tokens and global CSS |
-| `src/features/` | One folder per feature (stack, finder, shortlist, scenario, ask, three-d, import). `src/features/three-d` is the WebGL building |
-| `src/data/` | The two bundled mock buildings |
-| `api/`, `server/` | The two optional AI endpoints and their shared code |
+| `src/features/` | One folder per feature (stack, finder, shortlist, scenario, ask, three-d, import, chat). `src/features/three-d` is the WebGL building; `src/features/chat` is the chat panel and its hooks |
+| `src/data/` | The five bundled mock buildings |
+| `api/`, `server/` | The three optional AI endpoints (`ask`, `summary`, `chat`) and their shared code, including the chat's tools |
+| `server/dev/` | The Vite plugin that serves `/api/*` under `npm run dev` and `npm run preview`, and reads `.env` |
 | `e2e/` | Playwright tests, including the three judging questions |
 | `docs/` | The development plan, and `docs/spec/`: the requirement resolutions and technical specification written before the build |
 

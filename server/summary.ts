@@ -1,6 +1,7 @@
 import { generateObject } from 'ai'
 import { SummaryCopySchema, SummaryRequestSchema, type SummaryRequest } from '../src/shared/summary.schema.js'
 import { clientIp, jsonError, readJsonBody, refusal, runAi } from './http.js'
+import { logAiError } from './log.js'
 import { getModel, NO_THINKING, type ServerEnv } from './model.js'
 import { allow } from './rateLimit.js'
 
@@ -46,6 +47,7 @@ export async function handleSummary(request: Request, env: ServerEnv, nowMs: num
       maxRetries: 0,
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
     }),
+    (error) => logAiError('summary', error, env),
   )
   if (!result.ok) return result.response
   const copy = SummaryCopySchema.safeParse(result.value.object)

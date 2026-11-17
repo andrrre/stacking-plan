@@ -111,6 +111,15 @@ describe('handleSummary', () => {
     expect(await errorOf(res)).not.toMatch(/sk-secret|x-api-key/)
   })
 
+  it('logs one [ai:summary] line for a provider error, with the key value redacted', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    mockGenerate.mockImplementation(async () => { throw new Error('upstream rejected key test-key') })
+    const res = await handleSummary(summaryRequest(validBody()), KEY_ENV)
+    expect(res.status).toBe(502)
+    expect(spy.mock.calls).toEqual([['[ai:summary] Error: upstream rejected key [key]']])
+    spy.mockRestore()
+  })
+
   it.each([['AbortError'], ['TimeoutError']])('504 on %s', async (name) => {
     mockGenerate.mockImplementation(async () => { throw new DOMException('aborted', name) })
     const res = await handleSummary(summaryRequest(validBody()), KEY_ENV)

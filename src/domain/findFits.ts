@@ -1,7 +1,7 @@
-import { MAX_RESULTS } from './constants'
-import { maxIso } from './dates'
-import { isAvailable, statusAt } from './status'
-import type { Building, Candidate, Caveat, Floor, ISODate, Requirement, StatusResult, Suite } from './types'
+import { MAX_RESULTS } from './constants.js'
+import { maxIso } from './dates.js'
+import { isAvailable, statusAt } from './status.js'
+import type { Building, Candidate, Caveat, Floor, ISODate, Requirement, StatusResult, Suite } from './types.js'
 
 // spec-technical §5.2, spec.md A5. A candidate is one suite or a run of neighbouring suites on one floor that
 // are all available on D, joined only across combinable boundaries, and minimal for the requirement.

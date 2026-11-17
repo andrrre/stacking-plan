@@ -1,6 +1,6 @@
 import { addDays, addMonths, differenceInCalendarMonths, differenceInMonths, format, parseISO, startOfMonth } from 'date-fns'
-import { HORIZON_MONTHS } from './constants'
-import type { ISODate } from './types'
+import { HORIZON_MONTHS } from './constants.js'
+import type { ISODate } from './types.js'
 
 // ISO 'YYYY-MM-DD' in, ISO out. parseISO/format work in local time, so no UTC day shift.
 

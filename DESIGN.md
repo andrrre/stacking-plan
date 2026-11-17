@@ -163,7 +163,7 @@ Boundaries: a lease is active when `start ≤ D` and (`end` is null or `D ≤ en
 
 **Suite details:** tenant, SF, rent or asking rent $/SF/yr, lease start and end, months remaining, status, what it can combine with, upcoming leases. Actions: Renew…, Vacate…, Lease to prospect….
 
-**Buildings:** two bundled mock buildings with a switcher. The first is tuned for the demo; the second has a different shape (uneven floor plates, more small suites) to show nothing is hard-coded.
+**Buildings:** two bundled mock buildings with a switcher (three more were added later; five are bundled now). The first is tuned for the demo; the second has a different shape (uneven floor plates, more small suites) to show nothing is hard-coded.
 
 ### 6.3 Space finder — the hero (tier 1)
 
@@ -221,8 +221,10 @@ The scenario bar shows the change count and before → after for occupancy, vaca
 
 **Rules for both:**
 - Vercel serverless functions, Vercel AI SDK `generateObject` with the shared zod schemas. Default provider Anthropic (small, fast model); provider is one environment variable.
-- Key only in a Vercel environment variable. Query capped at 500 characters. 8 s timeout. Simple per-IP rate limit. Only mock data is sent. Errors return a generic message.
+- Key only in a Vercel environment variable (locally, a git-ignored `.env` read by the dev and preview server). Query capped at 500 characters. 8 s timeout. Simple per-IP rate limit. Only mock data is sent. Errors return a generic message.
 - **Fallback when there is no key, or on timeout or error:** a rule-based parser (numbers and ranges with "k", "SF", "$", "by <month | quarter | year>", "now") and templated summary copy, with a small "offline parsing" note. The demo and all tests run on the fallback.
+
+**Building chat** (added after this design; not in the tiers above). A header button opens a floating, read-only panel where the broker asks about the building on screen. `POST /api/chat` streams a plain-text answer. The model does not compute: it calls five server-side tools (`building_overview`, `list_suites`, `expiring_leases`, `find_space`, `suite_details`) that wrap the same domain code as the app, on the scenario-applied building at the as-of date, and its instructions require every number, date, suite number and tenant name to come from a tool result. This keeps "AI returns filters, not answers" in spirit, not in letter: the numbers are deterministic, the wording is not. Differences from the two rules above: the model is a separate variable (`AI_CHAT_MODEL`, default `claude-haiku-5-5` at low effort, the same default as the Ask model), tool results for the bundled buildings include fictional tenant names, lease dates and rents, there is no offline fallback (without a key the button is absent in a production build), and the turn has its own limits: server abort at 25 s, at most 5 model steps of at most 4,000 output tokens each, one tool call per step and the last step answer-only (so at most 4 tool calls per question; a 6-call budget is a second bound), and the browser gives up at 30 s. Imported buildings make no chat request, and the server refuses any building id that is not bundled. The panel is absent in present mode and during the tour.
 
 ### 6.7 3D view (tier 3)
 

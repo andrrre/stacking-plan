@@ -1,6 +1,6 @@
-import { largestBlock } from './blocks'
-import { statusAt } from './status'
-import type { Building, ISODate, Kpis, StatusResult, Suite } from './types'
+import { largestBlock } from './blocks.js'
+import { statusAt } from './status.js'
+import type { Building, ISODate, Kpis, StatusResult, Suite } from './types.js'
 
 type Rated = { suite: Suite; st: StatusResult }
 

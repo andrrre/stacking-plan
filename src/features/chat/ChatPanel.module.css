@@ -1,0 +1,198 @@
+/*
+  The building chat: a floating, non-modal panel at the stage's bottom right. Above the drawers (z 2 / 6), below
+  the header tooltips (40) and the <dialog> overlays (50). While the right drawer is open it steps left by the
+  drawer's width, so it never covers suite details. On wide screens with the drawer closed, the stage makes room
+  for it instead (main's padding, eased like the drawer it gives way to), so it never covers the stack, legend or
+  date slider. The panel is not rendered while presenting or touring, so those keep the whole stage.
+*/
+.panel {
+  position: fixed;
+  right: var(--sp-6);
+  bottom: var(--sp-6);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--panel-w), calc(100vw - 2 * var(--sp-6)));
+  height: min(560px, calc(100vh - var(--header-h) - var(--kpi-h) - var(--sp-8)));
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: 0 8px 24px var(--c-shadow);
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+  transition: right var(--dur-status) var(--ease);
+}
+
+@media (min-width: 1100px) {
+  :root:has([data-drawer='right'][data-open='true']) .panel { right: calc(var(--panel-w) + var(--sp-6)); }
+  :root:has(.panel) :global(main[data-details='closed']) { padding-right: calc(var(--panel-w) + var(--sp-6)); }
+}
+
+@media (min-width: 1100px) and (prefers-reduced-motion: no-preference) {
+  :root:has(.panel) :global(main) { transition: padding-right 240ms var(--ease); } /* RightPanel's --drawer-dur */
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.title {
+  margin-right: auto;
+  color: var(--c-text-muted);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.barButton, .retry, .stop, .example {
+  padding: 3px var(--sp-2);
+  border: 1px solid var(--c-btn-border);
+  border-radius: var(--r-md);
+  background: var(--c-btn);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.barButton:hover, .retry:hover, .stop:hover, .example:hover { background: var(--c-surface-2); }
+.barButton:focus-visible, .retry:focus-visible, .stop:focus-visible, .example:focus-visible, .send:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 1px;
+}
+
+.log {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-3);
+}
+
+.examples {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+.intro { margin: 0; color: var(--c-text-muted); }
+
+.example { text-align: left; }
+
+.message {
+  max-width: 90%;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.message[data-role='user'] {
+  align-self: flex-end;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+}
+.message[data-role='assistant'] { align-self: flex-start; }
+.message[data-pending='true'] { color: var(--c-text-muted); font-style: italic; }
+
+.stopped {
+  display: block;
+  margin-top: var(--sp-1);
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-style: normal;
+}
+
+.error, .note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 var(--sp-3) var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+}
+.error { background: var(--c-error-bg); color: var(--c-error); }
+.note { background: var(--c-surface-2); color: var(--c-text-muted); }
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-top: 1px solid var(--c-border);
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  resize: none;
+  box-sizing: border-box;
+  padding: 7px var(--sp-3);
+  border: 1px solid var(--c-input-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-md);
+  line-height: var(--lh);
+}
+.input::placeholder { color: var(--c-text-muted); opacity: .8; }
+.input:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 0; border-color: var(--c-focus); }
+/* :read-only covers both a busy turn (readonly, focus stays) and the turn limit (disabled). */
+.input:read-only { background: var(--c-surface-2); color: var(--c-text-muted); }
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.count {
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.send {
+  min-width: 72px;
+  padding: 5px var(--sp-3);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--r-md);
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.send:disabled {
+  border-color: var(--c-border);
+  background: var(--c-surface-2);
+  color: var(--c-text-muted);
+  cursor: default;
+}
+
+.stop { min-width: 72px; padding: 5px var(--sp-3); font-size: var(--fs-md); }
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

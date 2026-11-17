@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest'
-import { clientIp, jsonError, readJsonBody, refusal } from './http.js'
+import { describe, it, expect, vi } from 'vitest'
+import { clientIp, jsonError, readJsonBody, refusal, runAi } from './http.js'
 
 const req = (headers: Record<string, string>) => new Request('http://localhost/api/ask', { headers })
 
@@ -24,6 +24,15 @@ const post = (headers: Record<string, string>, body = '{"a":1}') => new Request(
 describe('refusal', () => {
   it('403 cross-site, checked before the content type', () => {
     expect(refusal(post({ 'sec-fetch-site': 'cross-site', 'content-type': 'text/plain' }), 100)).toBe(403)
+  })
+  it.each(['cross-site', 'same-site', 'something-else'])('403 for sec-fetch-site %s', (site) => {
+    expect(refusal(post({ 'sec-fetch-site': site, 'content-type': 'application/json' }), 100)).toBe(403)
+  })
+  it.each(['same-origin', 'none'])('passes sec-fetch-site %s', (site) => {
+    expect(refusal(post({ 'sec-fetch-site': site, 'content-type': 'application/json' }), 100)).toBeNull()
+  })
+  it('passes a request without sec-fetch-site (a non-browser client)', () => {
+    expect(refusal(post({ 'content-type': 'application/json' }), 100)).toBeNull()
   })
   it('415 unless application/json', () => {
     expect(refusal(post({ 'content-type': 'text/plain' }), 100)).toBe(415)
@@ -112,5 +121,35 @@ describe('readJsonBody', () => {
 describe('jsonError', () => {
   it.each([[502, 'AI request failed'], [503, 'AI unavailable'], [504, 'AI request timed out']])('%i says %j', async (status, text) => {
     expect(await jsonError(status).json()).toEqual({ error: text })
+  })
+})
+
+describe('runAi', () => {
+  it('returns the value and does not call the log callback on success', async () => {
+    const onError = vi.fn()
+    expect(await runAi(async () => 42, onError)).toEqual({ ok: true, value: 42 })
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('calls the log callback with the error and still maps a provider error to 502', async () => {
+    const onError = vi.fn()
+    const error = new Error('provider said no')
+    const result = await runAi(() => Promise.reject(error), onError)
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.response.status).toBe(502)
+  })
+
+  it('calls the log callback and still maps a timeout to 504', async () => {
+    const onError = vi.fn()
+    const error = new DOMException('timed out', 'TimeoutError')
+    const result = await runAi(() => Promise.reject(error), onError)
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error)
+    if (!result.ok) expect(result.response.status).toBe(504)
+  })
+
+  it('works without a callback', async () => {
+    const result = await runAi(() => Promise.reject(new Error('x')))
+    if (!result.ok) expect(result.response.status).toBe(502)
   })
 })

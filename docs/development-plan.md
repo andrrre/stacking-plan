@@ -68,15 +68,18 @@ The prototype keeps the shortlist and imported buildings in browser `localStorag
 
 ### The AI boundary and data privacy
 
-Today the AI is optional, runs server-side, and receives only mock data. Facts from the code:
+Today the AI is optional, runs server-side, and receives only mock data. There are three surfaces. Facts from the code:
 
 - **Ask** sends the typed sentence (at most 500 characters) and today's date. The model returns requirement fields only, checked against a schema. It never picks suites.
 - **Summary intro** sends client-safe option data, no tenant names. It is never requested for imported buildings.
-- Every path has an offline fallback. A failed or slow call (8 s) falls back silently.
+- **Chat** (a streamed, read-only panel) sends the broker's messages and earlier answers, the building name, the dates, and the results of five server-side tools. For the bundled demo building those results include tenant names, lease dates and rents. It is never requested for imported buildings, and the server refuses any building id that is not bundled.
+- Ask and the summary intro have an offline fallback: a failed or slow call (8 s) falls back silently. **The chat has none.** Without a key it is not offered; when a turn fails the broker sees an error and retries.
+
+The chat goes beyond "the model only extracts fields". What keeps its numbers deterministic is grounding through tools: the model is instructed to state only figures from a tool result, and the tools call the same domain code as the app (`kpis`, `findFits`, `explainNoFit`, `statusAt`), with bounded outputs. What stays risky: the model's wording can still misstate or over-reach a tool result (nothing checks the sentence against the numbers); tenant data goes to the provider; and cost, since the chat (default model `claude-haiku-5-5`, low effort, the same default as Ask) takes up to 5 model steps per answer (one tool call per step and the last step can only answer, so at most 4 tool calls per answer, with a 6-call budget as a second bound; at most 4,000 output tokens per step). No live model call has been made in this build, so none of this is observed behaviour yet.
 
 For production:
-- Decide whether real property or lease data may go to an external model provider at all. The prototype's answer is "only the client-safe projection, never tenant names". Confirm this with Ascendix's security and legal owners and with customer contracts. **Not known here.**
-- Keep the model on field extraction. The "AI returns filters, not answers" design means a wrong model output is a visible, editable form value, not a wrong recommendation.
+- Decide whether real property or lease data may go to an external model provider at all. The prototype's answer for Ask and the summary is "only the client-safe projection, never tenant names"; the chat does send tenant names, lease dates and rents for the fictional bundled buildings, and redacting tenants (or an approved provider) is **not done**. Confirm this with Ascendix's security and legal owners and with customer contracts. **Not known here.**
+- Keep Ask and the summary on field extraction. The "AI returns filters, not answers" design means a wrong model output is a visible, editable form value, not a wrong recommendation. The chat cannot offer that guarantee: a wrong sentence is plain text. Keep it read-only and tool-grounded, and decide whether to ship it at all.
 - Move the provider key and model choice into the platform's secret store. Replace the in-memory, per-instance rate limit with a shared one, plus a provider-side budget cap.
 - Log what was sent, not only what came back, if the data-privacy position requires an audit trail.
 - If the Salesforce platform has its own approved AI services, evaluate them instead of calling a provider directly. **Assumption:** not assessed here.
@@ -92,7 +95,7 @@ The prototype already has keyboard-focusable suites, arrow-key navigation, text 
 
 ### Testing
 
-The prototype has 1,034 unit and component tests and 103 end-to-end tests, all passing in `npm run test:all`, all on fictional data in one browser.
+The prototype had 1,034 unit and component tests and 103 end-to-end tests, all passing in `npm run test:all`, all on fictional data in one browser, before the chat work on the `feature/ai-chat` branch added more. The chat's tests use a mocked model; no live model call has been made.
 
 - Add a contract test suite for the xRE adapter, using anonymised real records.
 - Run end-to-end tests on more than Chromium and at the component's real width. WebGL is only exercised with software rendering in headless Chromium; real-GPU, Safari and Firefox behaviour is untested.
@@ -169,11 +172,13 @@ From DESIGN.md section 11. Not built, not sequenced:
 | xRE data lacks combinability, suite order or notice flags | Matches may be shown that are not physically or contractually plausible | Start with single-suite matches; record combinability explicitly (Phase 4); keep caveats on every combined or potential match |
 | "Potential" space is mistaken for available space | A broker offers space the tenant then renews and loses the client | Keep the label, dashed outline and caveat; extend with renewal options (Phase 5) |
 | Lease data is stale or has gaps (missing end dates, overlaps) | Wrong statuses and KPIs | Validate on load as the CSV import does; show data problems instead of hiding them |
-| Real data goes to an AI provider | Customer confidentiality | Keep AI optional and limited to field extraction on client-safe data; get a security and legal decision first |
+| Real data goes to an AI provider | Customer confidentiality. The chat already sends tenant names, lease dates and rents for the demo buildings | Keep AI optional; limit Ask and the summary to client-safe data; redact tenants from the chat's tool results or use an approved provider; get a security and legal decision first |
+| The chat states something its tools did not say | A broker repeats a wrong figure or date to a client. Tools make the numbers deterministic, not the model's wording | Instructions require tool-sourced facts and repeated caveats; the stack and match list stay the source of truth; check wording with real answers before release (none observed yet) |
+| Chat cost | One answer takes several model steps, and a larger model in `AI_CHAT_MODEL` costs far more per token | Haiku (`claude-haiku-5-5`) as the default chat model; capped steps, tool calls and output tokens; provider-side budget cap |
 | Prototype stack (React) does not fit the host platform | Rework in Phase 1 | Settle the component approach in Phase 0; keep `src/domain/` framework-free |
 | 3D bundle size (969 kB, 259 kB gzipped) and WebGL availability on managed corporate machines | The 3D building may load slowly or not draw | The 2D stack is the automatic fallback; measure on real machines and networks in Phase 0 |
 | Scale: larger buildings and portfolios | Untested performance | Test with real-sized data early in Phase 1 |
-| Per-instance rate limit and unverified serverless deploy | The AI paths may fail or be abused | Shared rate limit, provider budget cap, and a real deploy test before relying on them |
+| Per-instance rate limit and unverified serverless deploy | The AI paths may fail or be abused. The chat also depends on JSON import attributes and a 30 s function duration, both unverified on Vercel | Shared rate limit, provider budget cap, and a real deploy test before relying on them |
 
 ## Open questions for the xRE team and Ascendix
 

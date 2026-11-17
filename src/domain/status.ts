@@ -1,6 +1,6 @@
-import { addDaysIso, addMonthsIso } from './dates'
-import { EXPIRING_MONTHS, RISK_EDGES } from './constants'
-import type { ISODate, Lease, RiskBucket, StatusResult, Suite } from './types'
+import { addDaysIso, addMonthsIso } from './dates.js'
+import { EXPIRING_MONTHS, RISK_EDGES } from './constants.js'
+import type { ISODate, Lease, RiskBucket, StatusResult, Suite } from './types.js'
 
 // ISO strings compare lexically; every boundary is inclusive (spec-technical §5.1).
 

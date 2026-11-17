@@ -1,6 +1,7 @@
 import { generateObject } from 'ai'
 import { AskRequestSchema, ParsedQuerySchema } from '../src/shared/ask.schema.js'
 import { clientIp, jsonError, readJsonBody, refusal, runAi } from './http.js'
+import { logAiError } from './log.js'
 import { getModel, NO_THINKING, type ServerEnv } from './model.js'
 import { allow } from './rateLimit.js'
 
@@ -49,6 +50,7 @@ export async function handleAsk(request: Request, env: ServerEnv, nowMs: number 
       maxRetries: 0,
       abortSignal: AbortSignal.timeout(TIMEOUT_MS),
     }),
+    (error) => logAiError('ask', error, env),
   )
   if (!result.ok) return result.response
   const parsed = ParsedQuerySchema.safeParse(result.value.object)

@@ -1,5 +1,5 @@
-import { isAvailable, statusAt } from './status'
-import type { Block, Building, Floor, ISODate, Suite } from './types'
+import { isAvailable, statusAt } from './status.js'
+import type { Block, Building, Floor, ISODate, Suite } from './types.js'
 
 type RunAcc = { runs: Suite[][]; cur: Suite[] }
 

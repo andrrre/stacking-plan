@@ -28,8 +28,8 @@ stacking-plan/
   tsconfig.node.json           vite/playwright configs, api/, server/, e2e/, src/shared/
   eslint.config.js             flat config + repo-rule lint rules (§2)
   playwright.config.ts         chromium, 1440x900, tz America/New_York, build+preview webServer
-  vercel.json                  {"functions":{"api/*.ts":{"maxDuration":10}}}  (no rewrites: single route "/")
-  .env.example                 ANTHROPIC_API_KEY=  AI_MODEL=claude-haiku-5-5
+  vercel.json                  {"functions":{"api/ask.ts":{"maxDuration":10},"api/summary.ts":{"maxDuration":10},"api/chat.ts":{"maxDuration":30}}}  (no rewrites: single route "/"; the chat gets 30 s because it runs a tool loop, see §3.7)
+  .env.example                 ANTHROPIC_API_KEY=  AI_MODEL=claude-haiku-5-5  AI_CHAT_MODEL=claude-haiku-5-5
   .gitignore                   FIX existing typo "*/.envv"; add node_modules dist .env* !.env.example test-results playwright-report .vercel
   api/
     ask.ts                     3-line wrapper: export function POST(req) { return handleAsk(req, process.env) }
@@ -376,6 +376,12 @@ Every access is wrapped in try/catch (private mode or quota errors return `[]`, 
 | model call | `generateObject({ model: getModel(env), schema, system, prompt, temperature: 0, maxRetries: 0, abortSignal: AbortSignal.timeout(8000) })` | same |
 
 Handler shape: `export async function POST(request: Request): Promise<Response>`.
+
+**`/api/chat` (added later; the table above is the original two routes).** `api/chat.ts` exports `GET` and `POST`. `GET` returns `{ available: boolean }` (a key is set) with no model call and no rate limit. `POST` takes `ChatRequestSchema` (`src/shared/chat.schema.ts`: building id, today, as-of date, scenario changes, 1 to 20 text-only messages, the last from the user, at most 10 user messages of at most 500 characters) and returns the AI SDK UI message stream. The server resolves the building from the bundled set (an unknown or imported id is a 400) and applies the scenario itself. Same guards as the other routes (`refusal()` in `server/http.ts`: 403 when `sec-fetch-site` is present and is neither `same-origin` nor `none`, 415 for a non-JSON content type, 413 over the body cap), with a 48,000-byte body cap. The model call is `streamText` with five read-only tools (`server/chatTools.ts`), `stopWhen: isStepCount(5)`, `maxOutputTokens: 4000` (per step), `maxRetries: 0` and `abortSignal` of the client's signal plus `AbortSignal.timeout(25_000)`. `prepareStep` sets `toolChoice: 'none'` on the fifth and last step, so with one tool call per step a question gets at most four tool calls and the last step can only answer. `chatTools(ctx)` also counts tool calls per request as a second bound: after `MAX_TOOL_CALLS = 6` a tool returns an error telling the model to answer with what it has, without running. `getChatModel(env)` uses `AI_CHAT_MODEL` (default `claude-haiku-5-5`); `CHAT_PROVIDER_OPTIONS` sets `effort: 'low'`, `disableParallelToolUse: true` and no `thinking` option. Tool chunks are not sent to the browser, which renders text only. `vercel.json` gives `api/chat.ts` `maxDuration: 30` and `supportsCancellation: true` (untested until a deploy). An error inside the stream reaches the browser only as `AI request failed`; the server logs one line per failure (`server/log.ts`).
+
+**Timeout relationship, chat.** Server abort 25 s < client timeout 30 s (`chatFetch`) = function duration 30 s (`vercel.json`). The server's abort fires first and is turned into an error chunk, so the panel shows its error with Retry. Ask and summary keep 8 s server, 9 s client, 10 s function. The chat has no offline fallback.
+
+**Local runtime.** `server/dev/apiPlugin.ts` (a Vite plugin in `vite.config.ts`) serves the three routes under `npm run dev` and `npm run preview` with the same handlers, reading `.env` server-side via Vite's `loadEnv` (`process.env` wins). The three routes then share one in-memory rate-limit budget; on Vercel each function has its own.
 
 `getModel`:
 - returns `null` when `ANTHROPIC_API_KEY` is unset;
@@ -734,4 +740,4 @@ Rules:
 | 4 | Hero data drifts, or a story's change silently alters the demo answers, and the E2E or the video breaks | The fixture table in §5.7 is the contract; S2 adds `data/ocean-drive-tower.test.ts` checking statuses and KPIs; S5 and S7 add the 10k and 12k assertions; filler leases must end on or after 2027-06-01 |
 | 5 (minor) | The 50-line function lint on JSX-heavy components and the 3D hit-testing eat time | Split components early; 3D cut order: fixed angle first, then cut S13 |
 
-Unverified: Playwright browser install and run; Vercel deploy behaviour; live availability of the `claude-haiku-5-5` model; the `reactRefresh.configs.vite` call form (typed as either an object or a function, and lint passed with the object form); the two domain lint rules (spec only).
+Unverified: Playwright browser install and run; Vercel deploy behaviour (now also the JSON import attributes the chat's server code needs, and the chat's 30 s duration); no live call to the chat model has been made; live availability of the `claude-haiku-5-5` model; the `reactRefresh.configs.vite` call form (typed as either an object or a function, and lint passed with the object form); the two domain lint rules (spec only).

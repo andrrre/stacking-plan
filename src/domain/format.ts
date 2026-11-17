@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns'
-import type { ISODate } from './types'
+import type { ISODate } from './types.js'
 
 const INTEGER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const PSF = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })

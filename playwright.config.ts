@@ -34,5 +34,7 @@ export default defineConfig({
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
     timeout: 120000,
+    // AI forced off: process.env wins over .env in loadEnv, so no spec can reach a model even with a real key.
+    env: { ...process.env, ANTHROPIC_API_KEY: '' },
   },
 })

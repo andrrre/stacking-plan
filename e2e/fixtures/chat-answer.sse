@@ -1,0 +1,22 @@
+data: {"type":"start"}
+
+data: {"type":"start-step"}
+
+data: {"type":"finish-step"}
+
+data: {"type":"start-step"}
+
+data: {"type":"text-start","id":"text-1"}
+
+data: {"type":"text-delta","id":"text-1","delta":"On 15 Nov 2026, Ocean Drive Tower has 38,150 SF vacant"}
+
+data: {"type":"text-delta","id":"text-1","delta":" and is 71.7% occupied."}
+
+data: {"type":"text-end","id":"text-1"}
+
+data: {"type":"finish-step"}
+
+data: {"type":"finish","finishReason":"stop"}
+
+data: [DONE]
+

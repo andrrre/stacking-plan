@@ -1,8 +1,9 @@
+// Relative imports in src/domain end in .js: the server imports this folder under Node ESM (guarded by server/importGraph.test.ts).
 import type { z } from 'zod'
 import type {
   BuildingSchema, CandidateSchema, CaveatSchema, ChangeSchema, FloorSchema, LeaseSchema, ShortlistEntrySchema, SuiteSchema,
-} from '../shared/domain.schema'
-import type { ParsedQuerySchema } from '../shared/ask.schema'
+} from '../shared/domain.schema.js'
+import type { ParsedQuerySchema } from '../shared/ask.schema.js'
 
 export type ISODate = string
 

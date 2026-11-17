@@ -1,8 +1,8 @@
-import { maximalRuns, largestBlock } from './blocks'
-import { HORIZON_MONTHS } from './constants'
-import { monthOffset, sliderDate } from './dates'
-import { findFits } from './findFits'
-import type { Building, ISODate, NoFit, NoFitReason, Requirement } from './types'
+import { maximalRuns, largestBlock } from './blocks.js'
+import { HORIZON_MONTHS } from './constants.js'
+import { monthOffset, sliderDate } from './dates.js'
+import { findFits } from './findFits.js'
+import type { Building, ISODate, NoFit, NoFitReason, Requirement } from './types.js'
 
 // spec-technical §5.4, spec.md A6. Why nothing fits on D, and the first slider step where something does.
 

@@ -1,5 +1,5 @@
-import { formatLongDate } from './format'
-import type { Building, Change, Floor, Lease, ScenarioError, ScenarioResult, Suite } from './types'
+import { formatLongDate } from './format.js'
+import type { Building, Change, Floor, Lease, ScenarioError, ScenarioResult, Suite } from './types.js'
 
 // A scenario is an ordered list of changes over a base building that is never mutated (spec A8, spec-technical §5.5).
 // Every replace copies only the path building → floor → suite → leases; untouched floors and suites keep their identity.
