@@ -4,7 +4,9 @@ StackMatch is an interactive stacking plan for office buildings. The app opens o
 
 Built for the Ascendix "Vice City" tech challenge, November 2026. All buildings, tenants and leases are fictional demo data.
 
-**Status of the other deliverables:** there is no public deploy and no demo video yet. Both need the team's accounts and a decision (see [Status](#status-of-the-other-deliverables)). The app runs locally in two commands. The plan for turning it into a real feature is in [docs/development-plan.md](docs/development-plan.md).
+**Live app:** https://stacking-plan-ten.vercel.app/
+
+**Status of the other deliverables:** there is no demo video yet (see [Status](#status-of-the-other-deliverables)). The app also runs locally in two commands. The plan for turning it into a real feature is in [docs/development-plan.md](docs/development-plan.md).
 
 ## The problem
 
@@ -178,7 +180,7 @@ For a public deploy, use a dedicated key with a spend limit set at the provider,
 - **3D:** three.js 0.187.0 and `@react-three/fiber` 9.8.2, with no other 3D library.
 - **AI in the product:** Vercel AI SDK (`ai` 7) with an Anthropic model, server-side only and optional. The chat uses `@ai-sdk/react` in the browser.
 - **Tests:** Vitest 5 with Testing Library, Playwright 1.65, ESLint 10.
-- **Hosting target:** Vercel (`vercel.json`, `api/`). Not deployed.
+- **Hosting:** Vercel (`vercel.json`, `api/`), deployed at https://stacking-plan-ten.vercel.app/.
 
 ### How it was built
 
@@ -197,7 +199,7 @@ Reviews were substantive, not a rubber stamp. Several used independent brute-for
 
 **Chat and local runtime (`feature/ai-chat` branch).** Added after the stories above, as a separate piece of work: the building chat (`server/chat*.ts`, `src/features/chat/`) and the Vite plugin that serves `/api/*` locally (`server/dev/`). This README does not claim they are committed or merged. They were built with the same agent-per-task approach.
 
-**Verification status of the chat.** Unit, component and server tests run with a mocked model. **No live model call has been made in this build, because no API key was available, so the first real chat answer is unverified**, and so is the quality of the default chat model's wording. The chat is covered by a mocked end-to-end spec (`e2e/s23-chat.spec.ts`), which never reaches a model.
+**Verification status of the chat.** Unit, component and server tests run with a mocked model. The chat has answered against a live model on the Vercel deploy (a manual check on 17 Nov 2026). The quality of the default chat model's wording has not been evaluated beyond that. The chat is covered by a mocked end-to-end spec (`e2e/s23-chat.spec.ts`), which never reaches a model.
 
 **Test counts:** 1,034 Vitest tests in 80 files and 103 Playwright tests in 15 files, all passing in `npm run test:all`, were counted before the chat and local runtime work. The tests added since are not included in those numbers.
 
@@ -235,7 +237,7 @@ From the design:
 - **AI on imported buildings:** the Ask box, the summary intro and the chat make no AI request for an imported building, only for the five bundled ones. The client summary shows no "offline" note when it uses the template.
 - **Rate limit is best-effort.** `/api/ask`, `/api/summary` and `/api/chat` deploy as separate functions, so each has its own budget of 10 requests per minute per client, counted per serverless instance; they do not share one. Under `npm run dev` and `npm run preview` the three routes run in one process and share a single budget of 10 per minute, so a few chat questions plus Ask and summary calls can hit it. `GET /api/chat`, which only reports whether a key is set, is not counted. Behind the platform it trusts the forwarded-IP headers; the local server ignores them and uses the connection's address. Real spend control is a budget cap on the provider key.
 - **No authentication** on the API endpoints. They accept only JSON. A browser request from any other site, including a sibling subdomain, is refused (403, from the `sec-fetch-site` header, which must be `same-origin` or `none`); a request without that header, such as curl, passes and only the rate limit bounds it.
-- **Unverified on Vercel.** The `api/` functions have only been run in tests and under the local Vite plugin. Whether their imports resolve on Vercel is unknown until a deploy. The chat adds two more things that depend on it: the server reaches `src/domain/` and the bundled JSON through JSON import attributes (`with { type: 'json' }`), and `vercel.json` gives `api/chat.ts` a 30-second function duration and `supportsCancellation`, which is meant to abort the function, and with it the model call, when the browser stops reading (Stop, a closed tab). Under `npm run dev` and `npm run preview` a disconnect aborts the model call; on Vercel that is untested. If the functions fail, the AI paths return errors; Ask and the summary then fall back offline and the app keeps working, but the chat has no fallback.
+- **Partly verified on Vercel.** The `api/` functions load and answer on the live deploy, and the chat has returned a real answer there, so their imports resolve, including the JSON import attributes (`with { type: 'json' }`) that reach `src/domain/` and the bundled JSON. One thing is still untested: `vercel.json` gives `api/chat.ts` a 30-second function duration and `supportsCancellation`, which is meant to abort the function, and with it the model call, when the browser stops reading (Stop, a closed tab). Under `npm run dev` and `npm run preview` a disconnect aborts the model call; on Vercel that is unconfirmed. If the functions fail, the AI paths return errors; Ask and the summary then fall back offline and the app keeps working, but the chat has no fallback.
 - **Chat limits.** The chat is read-only and answers only about the bundled building on screen. English, plain text, 120 words or fewer by instruction. It does not recommend one option over another. One answer can take several model steps, so it costs more than an Ask call (see "Optional AI").
 - **Make room is one move, inside one building.** It does not chain moves, move tenants between buildings, or split suites. On the 3D building at the default zoom the destination's face is too short to show the tenant's name; zoom in to read it.
 - **WebGL 2 is required for the 3D building.** Without it the 2D stack is shown.
@@ -250,7 +252,7 @@ From the design:
 |---|---|---|
 | README | This file | |
 | Development plan | [docs/development-plan.md](docs/development-plan.md) | |
-| Public app link | Not done | Needs a Vercel account login and a decision to publish. An Anthropic key is optional. |
+| Public app link | https://stacking-plan-ten.vercel.app/ | Deployed on Vercel from `main`, with an Anthropic key set for Production. |
 | Demo video (60 s or less) | Not done | The planned tooling needs an ElevenLabs account. The beats are written in DESIGN.md section 9. |
 
 **Recording the demo:** the demo starts on the 3D building. Go back to the match list ("All matches") before dragging the date. An open "why this works" panel hides the re-ranking. The search frame and **Separate floors** are the strongest 3D moments.
