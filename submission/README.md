@@ -3,7 +3,6 @@
 An interactive 3D stacking plan for office buildings. It answers the question a leasing broker has: **where can my tenant go, and when?**
 
 - **Prototype:** https://stacking-plan-ten.vercel.app/
-- **Code:** https://github.com/andrrre/stacking-plan
 - Built for the Ascendix "Vice City" tech challenge, November 2026. All buildings, tenants and leases are made-up demo data.
 
 ## The problem
